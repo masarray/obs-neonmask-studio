@@ -29,6 +29,9 @@ typedef struct nm_config {
     float bloom_strength;
     float hotspot_strength;
     float hotspot_size;
+    float art_intensity;
+    float art_gap;
+    int ornament_mode;
     float animation_speed;
     uint32_t primary;
     uint32_t secondary;
