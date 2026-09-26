@@ -84,11 +84,21 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_blend_state_push();
     gs_enable_blending(false);
     struct vec4 transparent;
-    vec4_zero(&transparent);
+    vec4_set(&transparent, 0.0f, 1.0f, 0.0f, 1.0f);
     gs_clear(GS_CLEAR_COLOR, &transparent, 0.0f, 0);
     gs_ortho(0.0f, (float)W, 0.0f, (float)H, -100.0f, 100.0f);
-    while (gs_effect_loop(effect, "Draw"))
+    int draw_count = 0;
+    gs_matrix_push();
+    gs_matrix_identity();
+    const enum gs_cull_mode previous_cull = gs_get_cull_mode();
+    gs_set_cull_mode(GS_NEITHER);
+    while (gs_effect_loop(effect, "Draw")) {
+        ++draw_count;
         gs_draw_sprite(input, 0, W, H);
+    }
+    gs_set_cull_mode(previous_cull);
+    gs_matrix_pop();
+    fprintf(stderr, "INFO: fixture %d draw passes=%d\n", variant, draw_count);
     gs_blend_state_pop();
     gs_enable_framebuffer_srgb(previous_srgb);
     gs_texrender_end(target);
@@ -105,6 +115,10 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *center = mapped + 32u * stride + 32u * 4u;
     const uint8_t *corner = mapped + 1u * stride + 1u * 4u;
     const uint8_t *rim = mapped + 32u * stride + 55u * 4u;
+    fprintf(stderr, "INFO: fixture %d stride=%u center=(%u,%u,%u,%u) corner=(%u,%u,%u,%u) rim=(%u,%u,%u,%u)\n",
+            variant, stride, center[0], center[1], center[2], center[3],
+            corner[0], corner[1], corner[2], corner[3],
+            rim[0], rim[1], rim[2], rim[3]);
 
     /* The black/transparent corner proves the mask is not an opaque box.
      * Semi-transparent center checks the premultiplied-input convention. */
