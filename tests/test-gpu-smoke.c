@@ -44,6 +44,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_texrender_t *target = gs_texrender_create(GS_RGBA, GS_ZS_NONE);
     gs_stagesurf_t *stage = gs_stagesurface_create(W, H, GS_RGBA);
     int failed = 0;
+    const bool glow_case = variant == 5 || variant == 6 || variant == 9 || variant == 10;
 
     if (!input || !target || !stage) {
         fprintf(stderr, "FAIL: GPU fixture resource creation\n");
@@ -76,9 +77,9 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "style_id"), 0);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "feather"), 0.5f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "glow_radius"),
-                        variant == 5 || variant == 6 ? 12.0f : 8.0f);
+                        glow_case ? 12.0f : 8.0f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "glow_strength"),
-                        variant == 5 || variant == 6 ? 0.85f : 0.0f);
+                        glow_case ? 0.85f : 0.0f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "mid_glow_strength"), 0.75f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "bloom_strength"), variant == 6 ? 0.0f : 0.92f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "hotspot_strength"), variant == 8 ? 1.0f : 0.0f);
@@ -86,12 +87,14 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "color_a"), &magenta);
     gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "color_b"), &magenta);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "color_phase"), 0.0f);
-    gs_effect_set_float(gs_effect_get_param_by_name(effect, "pulse_phase"), 0.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "pulse_phase"),
+                        variant == 9 ? 0.25f : variant == 10 ? 0.75f : 0.0f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "flow_phase"), 0.0f);
-    gs_effect_set_int(gs_effect_get_param_by_name(effect, "animation_id"), variant == 8 ? 2 : 0);
+    gs_effect_set_int(gs_effect_get_param_by_name(effect, "animation_id"),
+                      variant == 8 ? 2 : (variant == 9 || variant == 10 ? 1 : 0));
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "segment_count"), 0);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "border_enabled"), variant == 2 || variant >= 5);
-    gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), variant == 5 || variant == 6);
+    gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), glow_case);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "image"), input);
 
     if (!gs_texrender_begin(target, W, H)) {
@@ -149,7 +152,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
 
     /* The black/transparent corner proves the mask is not an opaque box.
      * Semi-transparent center checks the premultiplied-input convention. */
-    if (variant != 5 && variant != 6 &&
+    if (!glow_case &&
         (corner[3] > 2 || corner[0] > 2 || corner[1] > 2 || corner[2] > 2)) {
         fprintf(stderr, "FAIL: GPU fixture %d outside mask RGBA=(%u,%u,%u,%u)\n",
                 variant, corner[0], corner[1], corner[2], corner[3]);
@@ -195,6 +198,12 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                ((int)rim[1] - (int)opposite_rim[1] < 65 || far_glow[3] > 2)) {
         fprintf(stderr, "FAIL: localized hot spot / glow bypass eastG=%u westG=%u farA=%u\n",
                 rim[1], opposite_rim[1], far_glow[3]);
+        failed = 1;
+    } else if (variant == 9 && near_glow[3] < 113) {
+        fprintf(stderr, "FAIL: glow pulse high phase is too dim: %u\n", near_glow[3]);
+        failed = 1;
+    } else if (variant == 10 && (near_glow[3] > 103 || near_glow[3] < 35)) {
+        fprintf(stderr, "FAIL: glow pulse low phase not bounded/visible: %u\n", near_glow[3]);
         failed = 1;
     }
 
@@ -297,7 +306,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 9; ++variant)
+            for (int variant = 0; variant < 11; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
@@ -306,6 +315,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: real libobs shader + alpha/framing/mid-glow/bloom/local-hotspot pixel fixtures (partial G4)");
+    puts("PASS: real libobs alpha/framing/core/mid/bloom/hotspot/pulse GPU fixtures (partial G4)");
     return 0;
 }
