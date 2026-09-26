@@ -43,7 +43,11 @@ static const char *nm_get_name(void *unused)
 static void nm_update(void *data, obs_data_t *settings)
 {
     struct nm_filter *f = data;
-    const uint32_t schema = (uint32_t)obs_data_get_int(settings, "schema_version");
+    /* OBS returns a default value for an unset field. Inspect the explicit
+     * user value or a legacy v0 scene is mistaken for schema v1. */
+    const uint32_t schema = obs_data_has_user_value(settings, "schema_version")
+                                ? (uint32_t)obs_data_get_int(settings, "schema_version")
+                                : 0u;
 
     /* Future scene/import data must not reinterpret known fields. Keep the
      * last validated snapshot rather than partially applying unknown state. */
