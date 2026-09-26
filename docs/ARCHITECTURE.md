@@ -39,9 +39,9 @@ Dependency rule: core math/config must remain testable without OBS. Effects have
 
 Canonical means an authoritative representation, not a special optimization technology.
 
-Settings flow: OBS settings → schema check/migrate → validate all fields → complete config snapshot → derived geometry/render parameters. `neonmask-config.*` now owns validation/defaults and `schema_version = 1`; missing-version scenes are legacy v0. Presets write complete values and updates replace the filter snapshot only after validation. Rendering reads that snapshot and never parses user files.
+Settings flow: OBS settings → schema check/migrate → validate all fields → complete config snapshot → derived geometry/render parameters. `neonmask-config.*` now owns validation/defaults and `schema_version = 2`; v0/v1 scenes migrate the legacy uniform `scale` into equal mask width/height with zero mask offset, zero subject pan and 1× zoom. Presets write complete values and updates replace the filter snapshot only after validation. Rendering reads that snapshot and never parses user files.
 
-The config schema owns field name, type, unit, default, valid range and enum identity. Use one schema table where practical for host validation/UI bounds; test GPU enum and uniform agreement. Keep current keys and enum numeric values stable. `schema_version` is now present: missing-version scenes are detected with `obs_data_has_user_value` (not default-value lookup), accepted as v0, and marked v1 without reinterpreting existing enum IDs; unsupported future versions keep the last validated state. Save explicit user values so changed preset defaults do not rewrite old scenes; scene-fixture runtime verification remains required.
+The config schema owns field name, type, unit, default, valid range and enum identity. Use one schema table where practical for host validation/UI bounds; test GPU enum and uniform agreement. Keep current keys and enum numeric values stable. `schema_version` is present: missing-version scenes are detected with `obs_data_has_user_value` (not default-value lookup); v0/v1 framing migrates additively to v2 without reinterpreting existing shape/style enum IDs; unsupported future versions keep the last validated state. Save explicit user values so changed preset defaults do not rewrite old scenes; scene-fixture runtime verification remains required.
 
 Reject NaN/infinity, invalid dimensions and integer overflow before allocation or shader upload. Clamp ordinary out-of-range controls consistently; report invalid imported data. Colors, feather and border units must be explicit. Defaults and preset application must cover every intended field, including speed/glow toggles, without accidental dependence on the previous preset.
 
@@ -49,9 +49,7 @@ OBS callback scheduling must be checked against the pinned SDK before assuming s
 
 ## Framing contract: independent shape and image transforms
 
-The current implementation centers the mask in the captured source and
-samples the unmodified source UV. Replace that coupled assumption
-incrementally. Define a source-pixel coordinate system with origin at
+Phase A removes the former coupled assumption: the shader receives independent mask offset/extent and subject pan/zoom uniforms. The contract below remains authoritative for validation and follow-up safe-fit work. Define a source-pixel coordinate system with origin at
 the captured source center, +X right and +Y down. Keep **four distinct**
 validated concepts in the complete config snapshot:
 
