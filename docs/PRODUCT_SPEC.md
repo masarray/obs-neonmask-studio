@@ -146,3 +146,14 @@ M1 motion contract: static freezes every visual phase; speed zero freezes animat
 A preview is successful when a new user can install, choose a design and record a correct OBS output with acceptable measured cost. The next *visual* preview additionally must let the user reframe the face with X/Y and show a visibly improved neon hierarchy. A polished/stable procedural release cannot be declared solely from G1–G3 or partial G4; VISUAL-01 and actual OBS composition evidence are required. A stable release additionally requires the lifecycle, memory, visual, compatibility and packaging gates.
 
 Prioritize: correctness and reproducibility → beautiful basic output → measured performance → advanced ornaments → wider mask providers. Performance measurement starts with the first render slice, not at the end. Do not expand all subsystems simultaneously. Every completed feature links to implementation and acceptance evidence.
+
+## Phase B delivery interpretation (NEON-01/05)
+
+User-proven Phase-A manual X/Y framing is preserved. Next implementation
+delivers an adjustable *light hierarchy* rather than one uniformly stronger
+outline: stable fine core, compact mid glow, wider bloom and independently
+controllable local traveling highlight. The initial shape-aware corner
+accents are a first grammar element, not a claim that the entire signature
+preset collection matches the concept artwork. Actual OBS captures,
+light/dark/320×180 art review, displacement-safe halo bounds and measured
+performance are mandatory follow-up evidence. No background removal.

@@ -125,7 +125,7 @@ jobs:
             obs_sdk = "31.1.1"
             target = "windows-x64"
             build_config = "Release"
-            gpu_smoke = "D3D11 effect compilation; not pixel validation"
+            gpu_smoke = "D3D11 effect compilation plus direct shader GPU pixel fixtures; not final OBS canvas"
             plugin_zip_sha256 = $hash
             fixture_zip_sha256 = $fixtureHash
           }

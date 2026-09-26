@@ -7,9 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
-assert len(names) == len(set(names)) == 23, f"Expected 23 unique bindings: {names!r}"
+assert len(names) == len(set(names)) == 27, f"Expected 27 unique bindings: {names!r}"
 uniforms = {name: kind for kind, name in re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader)}
-assert len(uniforms) == 25, f"Unexpected number of shader uniforms: {uniforms}"
+assert len(uniforms) == 29, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
     "Host/shader uniform drift: " + str(set(names) ^ (set(uniforms) - {"ViewProj", "image"}))
 )
@@ -19,6 +19,21 @@ assert uniforms["mask_offset"] == uniforms["subject_pan"] == "float2"
 assert uniforms["subject_zoom"] == uniforms["shape_rotation"] == "float"
 assert uniforms["polygon_sides"] == "int"
 assert uniforms["style_id"] == "int"
+for key in ("mid_glow_strength", "bloom_strength", "hotspot_strength", "hotspot_size"):
+    assert uniforms[key] == "float", f"Missing premium light uniform {key}"
+    assert f'NM_PARAM({key}, "{key}")' in host
+    assert f'gs_effect_set_float(f->{key}, f->config.{key})' in host
+assert "float midA =" in shader and "float outerA =" in shader
+assert "float fineA =" in shader and "float hotspotA =" in shader
+assert "float breath =" in shader and "animation_id == 1" in shader
+assert "float turnDelta =" in shader and "animation_id == 2" in shader
+assert "premul = outerColor * outerA" in shader
+assert "premul = midColor * midA" in shader
+assert "premul = fineColor * fineA" in shader
+assert "premul = hotspotColor * hotspotA" in shader
+for key in ("mid_glow_strength", "bloom_strength", "hotspot_strength", "hotspot_size"):
+    assert f'obs_data_has_user_value(settings, "{key}")' in host
+    assert f'obs_data_set_double(settings, "{key}", next.{key})' in host
 assert uniforms["color_phase"] == uniforms["pulse_phase"] == uniforms["flow_phase"] == "float"
 assert "elapsed_time" not in uniforms and "animation_speed" not in uniforms
 assert "fmodf(f->time" not in host

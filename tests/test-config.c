@@ -39,6 +39,9 @@ int main(void)
     check("default polygon sides", cfg.polygon_sides == 8);
     check("default border enabled", cfg.show_border);
     check("default glow enabled", cfg.show_glow);
+    check("premium defaults active", cfg.mid_glow_strength > 0.0f &&
+          cfg.bloom_strength > 0.0f && cfg.hotspot_strength > 0.0f);
+    check("premium hotspot range", cfg.hotspot_size >= 0.04f && cfg.hotspot_size <= 0.25f);
 
     cfg.scale = -FLT_MAX;
     cfg.mask_width = -FLT_MAX;
@@ -55,6 +58,10 @@ int main(void)
     cfg.feather_px = NAN;
     cfg.glow_px = 999.0f;
     cfg.glow_amount = -1.0f;
+    cfg.mid_glow_strength = NAN;
+    cfg.bloom_strength = INFINITY;
+    cfg.hotspot_strength = -999.0f;
+    cfg.hotspot_size = 999.0f;
     cfg.animation_speed = 99.0f;
     cfg.shape_id = 999;
     cfg.animation_id = -99;
@@ -79,6 +86,10 @@ int main(void)
     near("feather nan fallback", cfg.feather_px, 0.5f);
     near("glow radius clamp", cfg.glow_px, 80.0f);
     near("glow amount clamp", cfg.glow_amount, 0.0f);
+    near("mid glow nan clamp", cfg.mid_glow_strength, 0.0f);
+    near("bloom inf clamp", cfg.bloom_strength, 0.0f);
+    near("hotspot strength clamp", cfg.hotspot_strength, 0.0f);
+    near("hotspot size clamp", cfg.hotspot_size, 0.25f);
     near("speed clamp", cfg.animation_speed, 5.0f);
     check("shape fallback", cfg.shape_id == NM_SHAPE_ROUNDED);
     cfg.shape_id = NM_SHAPE_POLYGON;
@@ -95,6 +106,10 @@ int main(void)
     cfg.feather_px = 29.0f;
     cfg.glow_px = 70.0f;
     cfg.animation_speed = 4.0f;
+    cfg.mid_glow_strength = 0.0f;
+    cfg.bloom_strength = 0.0f;
+    cfg.hotspot_strength = 0.0f;
+    cfg.hotspot_size = 0.25f;
     cfg.show_border = false;
     cfg.show_glow = false;
     check("apply preset", nm_config_apply_preset(&cfg, 2));
@@ -103,6 +118,10 @@ int main(void)
     near("preset feather complete", cfg.feather_px, 0.85f);
     near("preset glow radius complete", cfg.glow_px, 18.0f);
     near("preset speed complete", cfg.animation_speed, 0.65f);
+    near("preset mid glow complete", cfg.mid_glow_strength, 0.82f);
+    near("preset bloom complete", cfg.bloom_strength, 0.90f);
+    near("preset highlight complete", cfg.hotspot_strength, 0.92f);
+    near("preset hotspot size complete", cfg.hotspot_size, 0.10f);
     check("preset restores border", cfg.show_border);
     check("preset restores glow", cfg.show_glow);
 
@@ -110,6 +129,8 @@ int main(void)
     check("current schema supported", nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION));
     check("legacy v1 schema supported", nm_config_schema_supported(1));
     check("future schema rejected", !nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION + 1));
+    check("phase-b keeps schema v2 for additive default-backed fields",
+          NM_CONFIG_SCHEMA_VERSION == 2u);
 
     check("unknown preset rejected", !nm_config_apply_preset(&cfg, 99));
     check("null preset target rejected", !nm_config_apply_preset(NULL, 1));
