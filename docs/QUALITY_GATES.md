@@ -134,3 +134,19 @@ a *direct-effect* framebuffer test; actual OBS frontend compositing,
 dark/light backgrounds, small 320×180 visual review, filter chaining and
 frame timing remain required before G4-V/G5/G6 acceptance. A green CI
 result alone does not mean proposal-level visual parity.
+
+
+## Phase C art-direction gate (first authored family)
+
+Unit-test rounded-rectangle contour-turn mapping across straight/arc
+tangencies and enforce bounded recipe settings. Direct libobs OpenGL/D3D11
+pixel fixtures must distinguish a bright Cyber corner trace from the same
+fixture with ornament mode 0; baseline alpha/framing/glow tests must continue
+to pass. This establishes **partial shader-level G4**, not final OBS output.
+
+For Cyber acceptance, collect actual OBS stills (Static, Flow) at full
+resolution and 320×180 with dark/light background. Review intentional gaps,
+visible paired corner traces, proportions, downscale readability and motion
+continuity on a non-square frame. Test extreme mask X/Y for clipping. Do not
+claim Phase C completion without verified Reactor/HUD/Streamer signatures,
+full G4-V/G5/G6 evidence and release acceptance.
