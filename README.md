@@ -7,7 +7,8 @@ A native, GPU-rendered OBS facecam filter: **mask + dual-color neon core + analy
 - One OBS video filter: `NeonMask Studio — Facecam Mask & Border`.
 - Rounded rectangle, circle, ellipse, hexagon and diamond; size, roundness and feather controls.
 - Dual-color neon, width, analytic halo radius/intensity, static/pulse/traveling-light modes, angular segmentation.
-- Four editable presets: Cyber Rounded, Reactor Ring, Emerald Hex, Ember Frame.
+- Four GPU-composited border styles: Classic Neon, Cyber Double Rim, Tech HUD, Minimal Glow.
+- Four editable presets: Cyber Rounded, Reactor Ring, Emerald Hex, Ember Frame; style included in preset data.
 - OBS-native properties, English and Indonesian strings, direct GPU effect. No web browser or recurring texture uploads.
 - Release-safe C geometry and preset tests; static shader/host contract tests.
 - Corrected RGBA color handling, captured-alpha compositing and base-size calculations.

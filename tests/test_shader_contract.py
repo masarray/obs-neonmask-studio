@@ -7,14 +7,16 @@ ROOT = Path(__file__).resolve().parents[1]
 host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
-assert len(names) == len(set(names)) == 16, f"Expected 16 unique bindings: {names!r}"
+assert len(names) == len(set(names)) == 17, f"Expected 17 unique bindings: {names!r}"
 uniforms = {name: kind for kind, name in re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader)}
-assert len(uniforms) == 18, f"Unexpected number of shader uniforms: {uniforms}"
+assert len(uniforms) == 19, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
     "Host/shader uniform drift: " + str(set(names) ^ (set(uniforms) - {"ViewProj", "image"}))
 )
 assert uniforms["color_a"] == uniforms["color_b"] == "float4"
 assert uniforms["uv_size"] == uniforms["half_size"] == "float2"
+assert uniforms["style_id"] == "int"
+assert "nm_custom_changed" in host
 assert shader.count("technique Draw") == 1
 assert shader.count("float4 drawNeonMask(") == 1
 assert "VertData mainTransform(VertData v_in)" in shader

@@ -15,6 +15,7 @@ struct nm_filter {
     gs_eparam_t *corner_radius;
     gs_eparam_t *shape;
     gs_eparam_t *border_width;
+    gs_eparam_t *style;
     gs_eparam_t *feather;
     gs_eparam_t *glow_radius;
     gs_eparam_t *glow_strength;
@@ -39,6 +40,7 @@ struct nm_filter {
     int shape_id;
     int animation_id;
     int segment_count;
+    int style_id;
     bool show_border;
     bool show_glow;
 };
@@ -65,6 +67,9 @@ static void nm_update(void *data, obs_data_t *settings)
     if (f->shape_id < 0 || f->shape_id > 4) f->shape_id = 0;
     f->animation_id = (int)obs_data_get_int(settings, "animation");
     if (f->animation_id < 0 || f->animation_id > 2) f->animation_id = 0;
+    f->style_id = (int)obs_data_get_int(settings, "style");
+    if (f->style_id < NM_STYLE_CLASSIC || f->style_id > NM_STYLE_MINIMAL)
+        f->style_id = NM_STYLE_CLASSIC;
     f->segment_count = (int)obs_data_get_int(settings, "segments");
     if (f->segment_count < 0) f->segment_count = 0;
     if (f->segment_count > 48) f->segment_count = 48;
@@ -89,6 +94,7 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_int(settings, "animation", initial.animation);
     obs_data_set_default_double(settings, "speed", 0.65);
     obs_data_set_default_int(settings, "segments", initial.segments);
+    obs_data_set_default_int(settings, "style", initial.style);
     obs_data_set_default_bool(settings, "border_enabled", true);
     obs_data_set_default_bool(settings, "glow_enabled", true);
 }
@@ -110,6 +116,7 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_double(settings, "border_width", preset.border_width);
     obs_data_set_double(settings, "glow_strength", preset.glow_strength);
     obs_data_set_int(settings, "segments", preset.segments);
+    obs_data_set_int(settings, "style", preset.style);
     return true;
 }
 
@@ -151,6 +158,13 @@ static obs_properties_t *nm_properties(void *data)
     NM_CUSTOM(obs_properties_add_float_slider(props, "feather", obs_module_text("Feather"), 0.5, 30.0, 0.5));
     NM_CUSTOM(obs_properties_add_bool(props, "border_enabled", obs_module_text("Border.Enabled")));
     NM_CUSTOM(obs_properties_add_float_slider(props, "border_width", obs_module_text("Border.Width"), 0.5, 32.0, 0.5));
+    obs_property_t *style = obs_properties_add_list(props, "style", obs_module_text("Border.Style"),
+                                                    OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
+    obs_property_list_add_int(style, obs_module_text("Border.Style.Classic"), NM_STYLE_CLASSIC);
+    obs_property_list_add_int(style, obs_module_text("Border.Style.Double"), NM_STYLE_DOUBLE);
+    obs_property_list_add_int(style, obs_module_text("Border.Style.Hud"), NM_STYLE_HUD);
+    obs_property_list_add_int(style, obs_module_text("Border.Style.Minimal"), NM_STYLE_MINIMAL);
+    obs_property_set_modified_callback(style, nm_custom_changed);
     NM_CUSTOM(obs_properties_add_color(props, "primary", obs_module_text("Color.Primary")));
     NM_CUSTOM(obs_properties_add_color(props, "secondary", obs_module_text("Color.Secondary")));
     NM_CUSTOM(obs_properties_add_bool(props, "glow_enabled", obs_module_text("Glow.Enabled")));
@@ -191,6 +205,7 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         NM_PARAM(corner_radius, "corner_radius");
         NM_PARAM(shape, "shape_id");
         NM_PARAM(border_width, "border_width");
+        NM_PARAM(style, "style_id");
         NM_PARAM(feather, "feather");
         NM_PARAM(glow_radius, "glow_radius");
         NM_PARAM(glow_strength, "glow_strength");
@@ -272,6 +287,7 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_float(f->corner_radius, g.radius);
     gs_effect_set_int(f->shape, f->shape_id);
     gs_effect_set_float(f->border_width, f->border_px);
+    gs_effect_set_int(f->style, f->style_id);
     gs_effect_set_float(f->feather, f->feather_px);
     gs_effect_set_float(f->glow_radius, f->glow_px);
     gs_effect_set_float(f->glow_strength, f->glow_amount);

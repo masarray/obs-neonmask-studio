@@ -28,14 +28,17 @@ int main(void)
         check("width range", p.border_width >= 0.5 && p.border_width <= 32.0);
         check("glow range", p.glow_strength >= 0.0 && p.glow_strength <= 1.0);
         check("segments range", p.segments >= 0 && p.segments <= 48);
+        check("border style range", p.style >= NM_STYLE_CLASSIC && p.style <= NM_STYLE_MINIMAL);
     }
     nm_get_preset(2, &p);
     check("reactor ring shape", p.shape == NM_SHAPE_CIRCLE);
     check("reactor segmented", p.segments == 10);
+    check("reactor HUD style", p.style == NM_STYLE_HUD);
     nm_get_preset(3, &p);
     check("emerald hex", p.shape == NM_SHAPE_HEXAGON);
     nm_get_preset(4, &p);
     check("ember static", p.animation == NM_ANIM_STATIC);
+    check("ember minimal style", p.style == NM_STYLE_MINIMAL);
     if (failures) return 1;
     puts("PASS: four preset configurations and input validation");
     return 0;
