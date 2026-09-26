@@ -44,6 +44,16 @@ Automated suites cover G1–G3 and a **partial G4 direct-effect pixel fixture**:
 
 ## G4-V visual identity and framing gate (mandatory for polished claim)
 
+**Art-direction check:** for each shipped signature family, the still image
+must be visibly different in its contour graphics, relative line weights,
+negative space, accent locations and color hierarchy—not merely its shape,
+hue or glow amount. Verify a distinct sharp core, mid glow and broader bloom
+on both dark and light scenes at full resolution and at 320 × 180. The target
+is an artistic neon frame around geometrically masked source pixels, **not**
+person/background segmentation. Verify the source image remains intact inside
+the silhouette and no black rectangle or smeared edge appears outside it.
+Do not mark a generic uniform rim as premium based on passing pixel tests.
+
 The user's September 26 concept board (#9) is the target, while OBS
 screenshots #1–#8 document the current functional but visually incomplete
 baseline. Distinguish a **feature built**, **a shader-level pixel test**,
