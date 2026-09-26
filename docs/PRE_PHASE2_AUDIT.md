@@ -1,6 +1,6 @@
 # Pre-Phase-2 quality gate
 
-Historical baseline audit. Current requirements and milestone status are owned by [PRODUCT_SPEC.md](PRODUCT_SPEC.md) and [ROADMAP.md](ROADMAP.md). The Windows preview workflow now exists; backend compilation, frontend behavior and visual evidence remain separate gates.
+Historical baseline audit. Current requirements and milestone status are owned by [PRODUCT_SPEC.md](PRODUCT_SPEC.md) and [ROADMAP.md](ROADMAP.md). Windows preview artifacts and both OpenGL/D3D11 backend shader compilation checks now exist; full OBS frontend behavior, correct pixels and performance remain separate gates.
 
 ## Source study and attribution
 
@@ -27,10 +27,10 @@ We used these as architectural references, along with official libobs implementa
 
 ## Remaining hard requirements for next phase
 
-- Shader **runtime compilation** on OpenGL and D3D11, and live source/scene/filter-chain smoke tests are not yet certified by CI. Native compilation and static parsing alone cannot prove GPU correctness.
+- OpenGL and D3D11 backend **shader compilation** now pass in CI (see GPU_SMOKE.md). Live source/scene/filter-chain behavior and pixel correctness remain unverified by those checks.
 - Exercise semi-transparent input (hair, webcam virtual background), sRGB/non-sRGB and straight/premultiplied compositing visually in OBS.
 - Glow still uses the source canvas and can clip at large radius/high scale; expanded render area or linked companion source is a separate feature.
 - Polygon/ellipse path lengths and segmented animation are still approximations.
-- Image/SVG/source masks, per-platform installer, Windows OBS artifact, and benchmark matrix belong to later phases.
+- Image/SVG/source masks, per-platform installer, runtime-verified Windows compatibility, and benchmark matrix belong to later phases; the unsigned Windows preview artifact is available via CI.
 
 Do not tag a production release solely on green headless/native compile CI.
