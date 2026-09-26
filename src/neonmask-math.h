@@ -20,4 +20,5 @@ float nm_sd_round_rect(float x, float y, float half_width,
 float nm_sd_circle(float x, float y, float radius);
 float nm_sd_ellipse_approx(float x, float y, float radius_x,
                            float radius_y);
-uint32_t nm_obs_bgr(unsigned r, unsigned g, unsigned b);
+/* OBS property colors use packed 0xAABBGGRR (bytes R,G,B,A on LE). */
+uint32_t nm_obs_rgba(unsigned r, unsigned g, unsigned b);
