@@ -2,6 +2,7 @@
 #pragma once
 #include <stdbool.h>
 #include <stdint.h>
+#include "neonmask-art.h"
 
 enum nm_shape {
     NM_SHAPE_ROUNDED = 0,
@@ -48,6 +49,9 @@ typedef struct nm_preset {
     double bloom_strength;
     double hotspot_strength;
     double hotspot_size;
+    int ornament_mode;
+    double art_intensity;
+    double art_gap;
 } nm_preset;
 
 /* IDs 1..4; 0 is Custom, not an editable preset. */
