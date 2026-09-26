@@ -8,6 +8,11 @@ option(NEONMASK_BUILD_SHADER_SMOKE "Compile effect on a live libobs graphics dev
 add_library(neonmask-math STATIC src/neonmask-math.c src/neonmask-presets.c src/neonmask-config.c src/neonmask-motion.c src/neonmask-art.c)
 target_include_directories(neonmask-math PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_features(neonmask-math PUBLIC c_std_11)
+# The art/perimeter helper adds atan2f/fmodf to the shared static library.
+# Link libm transitively for every headless test and native plugin consumer.
+if(UNIX AND NOT APPLE)
+  target_link_libraries(neonmask-math PUBLIC m)
+endif()
 set_target_properties(neonmask-math PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(NOT MSVC)
   target_compile_options(neonmask-math PRIVATE -Wall -Wextra -Wpedantic)
