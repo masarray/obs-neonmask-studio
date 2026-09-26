@@ -10,7 +10,7 @@ Update the ledger in the same change that advances implementation or verificatio
 | --- | --- | --- |
 | Native filter | C11/libobs callbacks in src/neonmask-filter.c | Frontend/lifecycle tests pending |
 | Geometry | Five shapes, approximate distances, source-size coordinates | Precision and corner/ellipse visual validation pending |
-| Neon | Dual color, analytic glow, pulse/flow, four styles, four presets | Concept-board parity not established |
+| Neon | Dual color, analytic glow, pulse/flow, four styles and presets; independent bounded double-precision phase accumulators | Actual eight-hour OBS soak and final rendered pixels pending |
 | State | Canonical pure-C config snapshot, schema v1, v0 legacy marker migration, complete preset values | OBS callback handoff/lifecycle concurrency still needs runtime evidence; future schema/import UI not exposed |
 | Safety | Shader load/uniform checks; bypass; effect cleanup | Fault injection, resource accounting and soak pending |
 | CI | Headless/platform builds, OpenGL and Windows D3D11 compile smokes, Windows preview ZIP; M0 synthetic fixture generator and build provenance in preview pipeline | Final OBS frontend/pixel checks and benchmarks remain pending |
@@ -38,11 +38,11 @@ Performance work is continuous through M0–M5. Stable procedural release can sh
 ## Immediate work queue
 
 1. Use the [M0 visual test procedure](M0_VISUAL_TEST.md) and its separate synthetic fixture pack with the pinned Windows preview in OBS Studio 31.1.1 portable; record exact artifact metadata, OBS log, final output captures and renderer; reproduce and fix any loading/visual defects.
-2. Render deterministic fixtures through the real OBS composition path. Focus on semi-transparent input, color packing, small sources, maximum glow and filter order.
+2. Render deterministic fixtures through the real OBS composition path. Focus on semi-transparent input, color packing, small sources, maximum glow, filter order, and static/flow frames at deterministic times.
 3. Establish GPU/CPU/memory baseline on named Windows hardware. Do not claim “lighter than Advanced Masks” without a like-for-like mask-only comparison plus separate neon overhead.
 4. ✅ Canonical validation/config extracted without changing existing setting keys or enum IDs; schema v1 treats missing-version scenes as v0, rejects future schemas, and has invalid-value/complete-preset regression tests. Next: verify saved v0/v1 scene fixtures in OBS and the callback handoff assumptions.
 5. Implement safe-fit bounds and perimeter mapping as separate reviewable slices; update screenshots and budgets.
-6. Add the signature ornament presets only on top of the verified geometry contract.
+6. M1 motion slice: replace the former 3600-second clock reset with independent bounded phases. Cross-platform tests simulate 8 hours of ticks, but do not establish the G6 eight-hour OBS runtime soak. Add signature ornaments only after geometry/pixel validation.
 
 ## M0 reproducible visual test inputs (automation, not runtime evidence)
 
@@ -70,3 +70,15 @@ A failed gate blocks the affected release claim, not unrelated documentation or 
 For every runtime PR: update changed requirements/status and relevant tests. For every dependency/OBS upgrade: pin versions, run supported backend and package checks, verify old scene fixtures. For every release: archive the evidence record and publish known limitations. For every reported crash/regression: retain a minimized reproducer, add a meaningful regression test and document the fix.
 
 Do not start a new roadmap in another file. New architectural choices append or supersede an ADR in ARCHITECTURE with reason, tradeoff and migration plan.
+
+## M1 animation continuity (implementation and evidence limits)
+
+The procedural renderer now uses pure-C `neonmask-motion.*`: bounded double-precision
+phase for color gradient, pulse, and traveling accent, uploaded as float turns.
+This fixes the exact-hour `fmodf(time, 3600)` jump and preserves phase when a
+user changes speed. Static mode and zero speed freeze all phase channels;
+relative visual frequencies remain unchanged. `neonmask-motion-tests` exercises
+invalid inputs, mode/speed changes, one-hour boundary and simulated 8-hour
+60 fps phase integration. Backend effect compilation is covered by the existing
+OpenGL and D3D11 smoke checks. This is **not** measured continuous rendering,
+final-pixel verification or a hardware performance result. G4–G6 stay pending.
