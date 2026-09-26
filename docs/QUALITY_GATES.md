@@ -42,6 +42,50 @@ Fixed Low/Balanced/High modes may be introduced after measurements. Reduce optio
 
 Automated suites cover G1–G3 and a **partial G4 direct-effect pixel fixture**: real OpenGL/D3D11 framebuffer readback samples opaque, premultiplied half-alpha and border-only inputs. This does not exercise the OBS source/filter chain or final canvas output. Inspect run results rather than inferring success from script presence. The motion suite advances G1 by simulating eight hours of 60 fps ticks, but it does **not** satisfy the eight-hour OBS runtime/driver/memory soak in G6. Follow [GPU_SMOKE.md](GPU_SMOKE.md) and [WINDOWS_PREVIEW.md](WINDOWS_PREVIEW.md) for setup.
 
+## G4-V visual identity and framing gate (mandatory for polished claim)
+
+The user's September 26 concept board (#9) is the target, while OBS
+screenshots #1–#8 document the current functional but visually incomplete
+baseline. Distinguish a **feature built**, **a shader-level pixel test**,
+**actual OBS rendering**, and **human reference-family acceptance**.
+Only the latter two can support "premium" or visual-parity wording.
+
+For each advertised preset family, record an actual OBS output screenshot
+against a dark and light background and a short clip for motion modes.
+Archive settings/geometry, test image identity, source and canvas sizes,
+OBS version/backend/GPU/driver, commit and ZIP hash. Inspect full
+resolution and downscaled 320 × 180, before/after filter chaining and
+a resized source. Compare with the named recipe in VISUAL_SPEC, not
+pixel-match a different person's photo.
+
+Specific next-preview exit cases:
+
+1. **Framing:** move an off-center subject horizontally/vertically with
+   subject pan while holding the border position fixed; then move the
+   mask while holding source sampling fixed. Verify independent width/height,
+   uniform zoom, reset, saved-scene restart and unchanged legacy default.
+   Out-of-range UV cannot smear edge pixels or reveal unintended areas.
+2. **Premium light:** show a stable narrow core, distinguishable mid glow
+   and wider soft outer bloom; document core, halo and accent settings.
+   Check over dark, light and moving footage. A single uniformly brighter
+   rim is not an acceptable substitution.
+3. **Motion:** provide fixed-time frames and short videos showing a clear
+   localized flow accent, preserved base rim and visible controlled pulse;
+   speed zero/static must freeze all channels. Test shape seams and
+   reduced-motion variant.
+4. **Geometry:** common mask/border/light alignment including translated
+   shape, effect envelope and independent source transform; preserve
+   existing mask-edge/stroke/safe-fit pixel tolerances.
+5. **Resource tradeoff:** capture GPU/CPU and render-lag measurements for
+   new light layers on declared hardware and compare to the baseline.
+   If added bloom passes exceed budgets, optimize or publish the failure;
+   do not quietly substitute the older plain look while claiming parity.
+
+Human visual review is required in addition to automated tolerances.
+Unverified images, synthetic marketing mocks and shader compilation
+cannot be recorded as G4 final OBS evidence. The quality thresholds in
+the existing G4/G5/G6/G7 gates remain in force.
+
 ## Reliability and failure matrix
 
 | Test | Minimum procedure | Pass criterion |

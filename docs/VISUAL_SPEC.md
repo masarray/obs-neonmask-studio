@@ -2,6 +2,31 @@
 
 Reference: user-supplied “Gambar ChatGPT 26 Sep 2026, 14.52.27.png”, inspected on 2026-09-26. The image is a concept board, not a screenshot of implemented output. It depicts masked facecams with cyan/magenta, violet, emerald and amber neon, organized into shape, animation, stream-style and customization families. This written mapping remains usable without the external attachment. Do not treat faces, photography or board typography as distributable product assets.
 
+## Binding reference and 2026-09-26 feedback
+
+**Target:** the user's concept board (image #9 in the September 26 OBS test
+feedback), not the current plain-outline appearance. Its facecam designs are
+visual *recipes*, not literal pixel-identical screenshots: adapt to owned test
+imagery, different webcam aspect ratios and real OBS compositing without
+redistributing the board's portrait. The design direction must remain
+recognizable in actual OBS recordings, not only in documentation/mockups.
+
+**Observed current state:** user OBS screenshots #1–#8 demonstrate the filter
+appearing in Effect Filters and rendering rounded rectangle, circle, ellipse,
+hexagon and diamond plus Reactor/Emerald/Ember examples. Compared with image
+#9, there is no independent face X/Y framing, the halo reads as a thin/soft
+outline rather than a graduated luminous bloom, the second track/ornaments
+are visually subdued, and motion lacks a pronounced traveling highlight.
+This is user feedback on the pictured artifact; exact OBS version, GPU,
+scene settings and artifact SHA still need to be recorded for formal G4/G5.
+
+**Acceptance rule:** every claimed *shipped* visual family must have a real
+OBS output still plus a short motion clip (when applicable), the named
+settings recipe, a dark and light backdrop, the 320 × 180 viewing case and
+a recorded human review against the intended reference family. A shape with
+only a single ordinary colored outline is not a completed premium design.
+Any missing family must be called *planned*, not represented as shipped.
+
 ## Visual rules
 
 The visible face is the subject; the luminous frame supports it. Keep the center clear, avoid tinting skin, use a sharp core with a softer exterior halo, and keep rim spacing intentional. Glow should remain attractive over black, white and moving game footage. No opaque black rectangle around transparent content.
@@ -9,6 +34,53 @@ The visible face is the subject; the luminous frame supports it. Keep the center
 Small facecam use matters: judge at 320 × 180 as well as full source resolution. Thin forms and restrained movement should survive downscaling. A design that only looks good in a large marketing image is not accepted.
 
 Separate the mask silhouette from decorative accents. Chat tails, HUD corners and electric sparks must have explicit semantics: silhouette-changing shapes affect coverage; decorative accents do not punch holes in the facecam. Use the same contour anchor data for all decorative placement.
+
+## Premium frame anatomy (shared renderer contract)
+
+1. **Base image / silhouette:** preserved facecam color inside one canonical
+   mask; no unintended RGB fringe outside it. The user's face can be positioned
+   independently of the shape with no nonuniform stretch.
+2. **Fine luminous core:** crisp near-white/colored highlight at the intended
+   contour, readable at small facecam sizes, not a uniform blurred ribbon.
+3. **Mid glow and outer bloom:** at least two visually distinguishable light
+   scales around the core; restrained inward spill, stronger falloff outside,
+   controllable cutoff and no unintentional canvas clipping in safe-fit mode.
+   Analytic or measured GPU implementation is acceptable; the look, not an
+   artificial single-pass rule, is the acceptance criterion.
+4. **Secondary graphic track:** configurable narrow inner/outer rim, dashes,
+   ring or corner accent anchored to the same distance/contour geometry.
+   Features do not become disconnected when size, position or aspect changes.
+5. **Motion identity:** static keeps a recognizable premium form. Flow has a
+   clear traveling hot spot on a stable base rim; pulse modulates bloom without
+   switching off the outline; ring rotation follows the contour. Speed zero
+   freezes all phases; reduced-motion variant remains polished.
+6. **Color hierarchy:** two editable base colors; optional ordered contour
+   gradients later. Keep skin/background inside the silhouette unchanged
+   except at intentionally composited contour pixels.
+
+The image #9 examples are design targets across the four reference families,
+not evidence of implementation. A high halo slider alone, or an increased
+global brightness that washes out the image, does not meet this anatomy.
+
+## Reframing and fit visual behavior
+
+Expose **mask center X/Y** and **subject pan X/Y** separately. The mask
+coordinates control the shape, rim, glow and ornaments together; subject
+pan changes where captured webcam pixels appear *within* the mask without
+moving the frame itself. Subject zoom uses a uniform scale and does not
+stretch faces. Independent shape width/height handles silhouette dimensions,
+with circle remaining truly circular unless the user selects ellipse.
+Default values reproduce the existing centered image. Reset to center must
+be immediate and predictable. Outside-source sampling must be transparent
+rather than clamped edge smear. Safe-fit must account for translations,
+glow support, stroke and ornaments, and must never silently undo user
+framing or move the face to satisfy effect padding.
+
+Check face alignment using an **owned off-center portrait/synthetic subject**
+and a movable landmark, not only a centrally posed reference image.
+Verify X-only, Y-only, combined shift, zoom, aspect change, source resize,
+preset edit and restart. OBS scene/source transform stays independent:
+filter pixel controls are source-relative, not screen/canvas coordinates.
 
 ## Reference-to-delivery mapping
 
@@ -29,6 +101,20 @@ Separate the mask silhouette from decorative accents. Chat tails, HUD corners an
 | Multiple Layers | Main core plus one or two secondary offset rims | Double rim exists; explicit capped layer model in M3 |
 | Dashed Segments | Even visible segments and consistent gaps | Angular segmentation exists; arc-length placement in M2 |
 | Glow / Speed / Thickness | Independent controls with safe envelopes | Controls exist; validated fit and continuous motion in M2 |
+
+## Mandatory next-preview comparison
+
+| Actual screenshots #1–#8 | Reference-board requirement | Next evidence |
+| --- | --- | --- |
+| Person cannot be centered within mask independently | Flexible X/Y subject positioning with independent mask placement | Off-center fixture moved into frame without changing contour |
+| Single rim dominates; exterior bloom is comparatively faint | Sharp luminous core, visible middle glow, wider soft bloom | Dark/light OBS captures at default and boosted glow, both full size and 320 × 180 |
+| Existing Cyber Double Rim/HUD visuals are understated | Distinct supporting tracks/corners; not just a preset label | Actual capture demonstrates secondary element and alignment on multiple shapes |
+| Flow/pulse hard to distinguish in stills | Visible but controlled dynamic travel/pulse | Short OBS clips at fixed speeds plus static/reduced-motion baseline |
+| Diamond/circle naturally cut subject where shape overlaps | Subject pan/zoom separate from mask; transparency outside silhouette | Reframe subject without stretching or revealing out-of-source pixels |
+
+Aesthetic acceptance is a documented visual comparison, not a fabricated
+numeric "premium score". The [QUALITY_GATES.md](QUALITY_GATES.md) pixel,
+performance and reliability requirements still apply.
 
 ## Launch preset collection
 
@@ -52,4 +138,4 @@ Quantitative targets at 1:1 source pixels:
 
 These are proposed gates; establish reference captures per supported backend before claiming a pass. Antialiasing differences need a documented tolerance, not unconditional pixel identity across drivers.
 
-Human review also checks visual balance, skin-color preservation, compression/downscale appearance, electric flicker and whether the face remains the focus. Store preset, input fixture identity, OBS/backend/version, resolution and deterministic animation times with each capture. Never label the concept board as an actual plugin screenshot.
+Human review also checks visual balance, skin-color preservation, whether the core/mid glow/outer bloom are distinguishable at 320 × 180, presence and trajectory of the flow hot spot, purposeful separation of graphic tracks, compression/downscale appearance, electric flicker and whether the face remains the focus. Store preset, input fixture identity, OBS/backend/version, resolution and deterministic animation times with each capture. Never label the concept board as an actual plugin screenshot.

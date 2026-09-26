@@ -3,6 +3,8 @@
 Read [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/QUALITY_GATES.md](docs/QUALITY_GATES.md), [docs/VISUAL_SPEC.md](docs/VISUAL_SPEC.md) and the current [docs/ROADMAP.md](docs/ROADMAP.md) before changing runtime behavior. These are the project reference documents; keep them consistent with implementation and evidence.
 
 - Inspect current main and open work before editing. Preserve the latest verified baseline and avoid duplicating active PRs.
+- Treat the user's concept board (image #9 in September 26 feedback) as the binding visual north star; user OBS screenshots #1–#8 document current gaps, not parity. Read VISUAL_SPEC's premium-frame anatomy and framing contract before altering shaders, geometry, presets or UX. Never relabel a plain rim as a completed premium family.
+- Prioritize independent mask X/Y and subject pan/zoom, then distinct sharp core/mid-glow/outer bloom and visible localized motion, then safe-fit/contour ornaments. Require actual OBS stills/clips, not concept artwork or CI compilation, for visual completion claims.
 - Keep changes cohesive. Preserve the native C11/libobs architecture unless a documented decision justifies a change.
 - Keep source IDs, setting keys and enum numeric values compatible; provide migrations for intentional schema changes.
 - Use one validated config/geometry path for presets, UI and rendering. Keep pure code testable without OBS.
