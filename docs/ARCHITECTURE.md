@@ -187,3 +187,22 @@ For future custom masks, expose explicit failure policy: Hide (default), Last va
 - [Advanced Masks reference revision](https://github.com/FiniteSingularity/obs-advanced-masks/tree/7e80d7a5b58e3f039172bf8a647d045bc0d42997).
 
 OBS web documentation may describe a newer version than our pinned 31.1.1 Windows SDK. Confirm each API against that SDK before implementation.
+
+## ADR 013 — independent analytic light envelopes (Phase B)
+
+Keep a single source-space SDF for clipping, core, supporting track and
+light placement. Apply four bounded contributions from broad to narrow:
+outer bloom, compact mid glow, stable colored core and narrow white-biased
+highlight. A localized angular Flow accent brightens, never dims, the stable
+base rim. Pulse changes only glow envelopes. The composed result remains
+premultiplied until the final straight-alpha conversion expected by OBS.
+
+New scalar controls are additive, default-backed schema-v2 fields; do not
+reset Phase-A mask X/Y, subject pan/zoom or shape IDs while applying them.
+Preset application writes complete light recipes; manual edits return to
+Custom. Current implementation uses one GPU effect pass and no readback.
+If actual OBS images cannot reach the target in one pass, benchmark a
+bounded extra pass instead of silently accepting generic visual quality.
+The glow envelope is bounded but can still be clipped by the original
+source canvas near its edges; safe-fit/expanded-output is a separately
+validated follow-up, not falsely marked complete here.
