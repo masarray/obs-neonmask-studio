@@ -30,6 +30,12 @@ Relative to user concept board image #9, the pictured outputs still
 lack independent facepan X/Y, the multi-scale premium luminous appearance,
 clearly distinguishable secondary tracks and pronounced localized animation.
 
+**Scope clarification:** pursue **art-directed geometric masks and futuristic
+luminous frame compositions**, not background removal or an AI portrait cutout.
+The webcam background remains inside the selected mask. Distinctive stroke
+hierarchy, intentional gaps, contour-anchored ornaments and premium color/light
+balance matter more than simply adding generic shapes or preset names.
+
 **North star is unchanged:** achieve the intended image #9 visual families
 in actual OBS, not just ship all names from the concept board. The revised
 [PRODUCT_SPEC.md](PRODUCT_SPEC.md) and [VISUAL_SPEC.md](VISUAL_SPEC.md) make
@@ -74,9 +80,12 @@ Performance work is continuous through M0–M5. Stable procedural release can sh
    bounds; no source-edge smear or unwanted outer clipping. Add
    independent shape dimensions, precision contour and arc-length
    motion in reviewable slices.
-4. **Signature design recipes:** double/triple rim, moving ring, bright
-   corner accents/HUD, Streamer/Chat then optional bounded Electric.
-   No new advertised premium preset without an actual OBS capture.
+4. **Signature design recipes:** implement the art-direction grammar in
+   VISUAL_SPEC with coherent static compositions (line hierarchy, negative
+   space, contour-aware accents and dual-color balance) before adding
+   double/triple rim, moving ring, Streamer/Chat and optional Electric.
+   No new advertised premium preset without an actual OBS capture; no
+   background-removal or person-segmentation work is needed.
 5. **Reliability and release:** source/restart/legacy-scene tests,
    real performance measurements and eight-hour soak; honor G1–G7.
    Image/gradient/SVG/live-mask providers remain later M4 work.
