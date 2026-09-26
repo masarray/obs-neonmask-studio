@@ -1,6 +1,6 @@
 # Delivery roadmap and evidence ledger
 
-Snapshot: 2026-09-26. Main after PR #6: `e4d01b56528ca27f07c10d8caf48f7565e7b5abc`.
+Snapshot: 2026-09-26. Baseline includes Windows preview/D3D11 evidence through PR #8; this ledger is updated with each verified runtime slice.
 This file owns delivery status; [PRODUCT_SPEC.md](PRODUCT_SPEC.md) owns requirements.
 Update the ledger in the same change that advances implementation or verification.
 
@@ -11,7 +11,7 @@ Update the ledger in the same change that advances implementation or verificatio
 | Native filter | C11/libobs callbacks in src/neonmask-filter.c | Frontend/lifecycle tests pending |
 | Geometry | Five shapes, approximate distances, source-size coordinates | Precision and corner/ellipse visual validation pending |
 | Neon | Dual color, analytic glow, pulse/flow, four styles, four presets | Concept-board parity not established |
-| State | Clamping and preset table; editable properties | Versioned schema, complete migration and atomic handoff design not implemented |
+| State | Canonical pure-C config snapshot, schema v1, v0 legacy marker migration, complete preset values | OBS callback handoff/lifecycle concurrency still needs runtime evidence; future schema/import UI not exposed |
 | Safety | Shader load/uniform checks; bypass; effect cleanup | Fault injection, resource accounting and soak pending |
 | CI | Headless/platform builds, OpenGL and Windows D3D11 compile smokes, Windows preview ZIP | Final OBS frontend/pixel checks and benchmarks remain pending |
 | Assets/workers | No custom image/SVG/live-mask provider | Bounded service is a future requirement |
@@ -40,7 +40,7 @@ Performance work is continuous through M0–M5. Stable procedural release can sh
 1. Install the verified Windows preview in OBS Studio 31.1.1 portable and record the OBS log, final output captures and renderer; reproduce and fix any loading/visual defects.
 2. Render deterministic fixtures through the real OBS composition path. Focus on semi-transparent input, color packing, small sources, maximum glow and filter order.
 3. Establish GPU/CPU/memory baseline on named Windows hardware. Do not claim “lighter than Advanced Masks” without a like-for-like mask-only comparison plus separate neon overhead.
-4. Extract canonical validation/config from the filter while preserving all current settings and enum IDs. Add regression tests for invalid values and older scenes.
+4. ✅ Canonical validation/config extracted without changing existing setting keys or enum IDs; schema v1 treats missing-version scenes as v0, rejects future schemas, and has invalid-value/complete-preset regression tests. Next: verify saved v0/v1 scene fixtures in OBS and the callback handoff assumptions.
 5. Implement safe-fit bounds and perimeter mapping as separate reviewable slices; update screenshots and budgets.
 6. Add the signature ornament presets only on top of the verified geometry contract.
 
