@@ -84,6 +84,7 @@ jobs:
           Write-Host "OBS dependency DLLs:"
           Get-ChildItem "$dep/bin" -Filter *.dll | Select-Object -ExpandProperty Name
           $env:NEONMASK_GRAPHICS_MODULE = "$sdk/bin/64bit/libobs-d3d11.dll"
+          $env:NEONMASK_LIBOBS_DATA_DIR = (Resolve-Path ".deps/obs-studio-31.1.1/libobs/data").Path
           ctest --test-dir build-win -C Release --output-on-failure
           if ($LASTEXITCODE -ne 0) { throw "NeonMask tests (including D3D11 shader smoke) failed" }
       - name: Stage and verify portable plugin files
