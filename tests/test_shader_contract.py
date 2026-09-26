@@ -7,14 +7,17 @@ ROOT = Path(__file__).resolve().parents[1]
 host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
-assert len(names) == len(set(names)) == 18, f"Expected 18 unique bindings: {names!r}"
+assert len(names) == len(set(names)) == 23, f"Expected 23 unique bindings: {names!r}"
 uniforms = {name: kind for kind, name in re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader)}
-assert len(uniforms) == 20, f"Unexpected number of shader uniforms: {uniforms}"
+assert len(uniforms) == 25, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
     "Host/shader uniform drift: " + str(set(names) ^ (set(uniforms) - {"ViewProj", "image"}))
 )
 assert uniforms["color_a"] == uniforms["color_b"] == "float4"
 assert uniforms["uv_size"] == uniforms["half_size"] == "float2"
+assert uniforms["mask_offset"] == uniforms["subject_pan"] == "float2"
+assert uniforms["subject_zoom"] == uniforms["shape_rotation"] == "float"
+assert uniforms["polygon_sides"] == "int"
 assert uniforms["style_id"] == "int"
 assert uniforms["color_phase"] == uniforms["pulse_phase"] == uniforms["flow_phase"] == "float"
 assert "elapsed_time" not in uniforms and "animation_speed" not in uniforms
@@ -36,4 +39,8 @@ assert "src.rgb * baseA" not in shader, "Would double-multiply alpha at edges"
 assert "obs_source_get_base_width" in host and "obs_source_get_base_height" in host
 assert "if (!valid)" in host, "Missing shader parameters must disable effect gracefully"
 assert "nm_custom_changed" in host, "User edits should reset preset status to Custom"
+assert "sourcePos - mask_offset" in shader
+assert "sourcePos - subject_pan" in shader and "/ max(subject_zoom" in shader
+assert "insideSource" in shader and "float4(0.0, 0.0, 0.0, 0.0)" in shader
+assert "NM_SHAPE_RECTANGLE" in host and "NM_SHAPE_TRIANGLE" in host and "NM_SHAPE_POLYGON" in host
 print("PASS: shader bindings, alpha/color contracts, dimensions and fallback guards")
