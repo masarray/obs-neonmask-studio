@@ -80,6 +80,8 @@ Launch scope: local native filter, procedural shapes, curated neon designs, edit
 
 Deferred: AI subject segmentation, cloud accounts, online preset marketplace, automatic face tracking, arbitrary user shaders, unlimited layers, browser UI, GPU-to-CPU video processing, and automatic in-process binary replacement. Audio reactivity is optional later and never a prerequisite for attractive motion. HDR is unverified until explicitly implemented and tested.
 
+M1 motion contract: static freezes every visual phase; speed zero freezes animation; changing speed preserves phase; no visible time-based reset at the one-hour boundary. A pure tick simulation verifies state integration, while G4 final pixels and G6 full OBS soak remain required before an animation reliability claim.
+
 “Smart” initially means validated settings, safe margins, bounded resource use, capability-aware choices and sensible defaults. Adaptive quality is opt-in later; it must not silently change the silhouette, crop or mask privacy.
 
 ## Success and delivery policy
