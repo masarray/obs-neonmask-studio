@@ -1,0 +1,81 @@
+# Quality, performance and release gates
+
+All numeric budgets below are initial engineering targets, not measurements of v0.1.0.
+Every release report names the exact commit, OBS/SDK version, OS, GPU, driver, source resolution, canvas resolution, frame rate and preset.
+
+## Performance budgets and measurement
+
+At 60 fps, the total frame budget is about 16.67 ms; NeonMask receives only a small fraction.
+Default procedural mode targets one custom composition pass plus host capture, no recurring CPU allocations, no CPU video readback, no recurring texture upload and no asset worker activity.
+
+| Scenario | Incremental GPU p95 target per active filter | CPU callback p95 target | Incremental steady GPU memory target |
+| --- | --- | --- | --- |
+| 1920 × 1080 input at 60 fps, default procedural | ≤ 0.50 ms | ≤ 0.10 ms | ≤ 32 MiB |
+| 1920 × 1080 input at 60 fps, maximum shipped ornament preset | ≤ 1.00 ms | ≤ 0.15 ms | ≤ 64 MiB |
+| 3840 × 2160 input at 60 fps, default procedural | ≤ 1.50 ms | ≤ 0.15 ms | ≤ 128 MiB |
+
+Measure at actual source resolution, not just the small facecam size on the canvas. Four active filters must also be tested as a combined scene; do not assume perfectly linear scaling. Asset-provider budgets are additional and must be declared before shipping them.
+
+M0 selects and records exact reference machines: at least one modest integrated GPU and one discrete gaming GPU on Windows/D3D11. Until those devices and runs exist, budgets remain provisional and “lightweight” remains a design intent. Mesa software rendering validates compilation/pixels but cannot certify consumer GPU performance.
+
+Protocol:
+1. Use identical OBS scene, deterministic input and output settings, with filter disabled/enabled. Warm up for 60 seconds.
+2. Record three five-minute trials per scenario. Report median, p95, p99 and worst frame, not just average FPS.
+3. Use GPU timestamp profiling without synchronous readback in the normal renderer; CPU callback duration is not GPU time. Identify whether measured GPU cost includes host capture.
+4. Record OBS render-lag counters and skipped frames during real recording/streaming. Require no reproducible plugin-induced render-lag increase in the controlled scene.
+5. Include single/four-filter scenes, 720p/1080p/4K sources, hidden/visible transitions and default/max settings.
+6. Save raw timing summaries and memory measurements with methodology. Investigate a reproducible >10% regression even if under the absolute budget; compare run variance.
+
+Fixed Low/Balanced/High modes may be introduced after measurements. Reduce optional halo/ornament cost before affecting mask accuracy. Adaptive quality, if added, needs hysteresis, a cooldown, visible mode indication and a manual lock; it must not oscillate every frame or silently change crop.
+
+## Evidence ladder
+
+| Gate | Required evidence | What it does not prove |
+| --- | --- | --- |
+| G1 Headless | Release-safe math/config/preset tests; validation/migration cases; sanitizers | Real shader execution |
+| G2 Native/package | Pinned SDK compilation, link and archive layout | Loading in OBS or visual correctness |
+| G3 GPU compile | Real libobs effect compilation/binding on OpenGL and D3D11 | Correct final pixels |
+| G4 Pixel/visual | Render fixtures and final OBS captures per VISUAL_SPEC | Long-term reliability |
+| G5 Runtime/lifecycle | OBS frontend, filter chains, scene transitions, device/source changes | Performance on every GPU |
+| G6 Performance/soak | Budget report, lifecycle stress and memory checks on declared hardware | Universal absence of crashes |
+| G7 Release | Exact artifact provenance, install/restart/rollback checks and known limitations | Support for untested platforms |
+
+Current scripts cover parts of G1–G3 only; inspect run results rather than inferring success from script presence. Follow [GPU_SMOKE.md](GPU_SMOKE.md) and [WINDOWS_PREVIEW.md](WINDOWS_PREVIEW.md) for setup.
+
+## Reliability and failure matrix
+
+| Test | Minimum procedure | Pass criterion |
+| --- | --- | --- |
+| Repeated lifecycle | 1,000 create/update/destroy cycles in a harness; 100 add/remove or scene-switch cycles in OBS | No crash, UAF, double-free, sanitizer error or retained plugin-owned resources |
+| Long session | Eight-hour default and animated soak on declared Windows runtime | No crash, hang, phase reset/jitter or sustained unexplained memory growth |
+| Memory recovery | Warm baseline, repeated peak use, destroy all filters, wait for documented cleanup | Owned allocations/refs return to zero; bounded caches plateau; driver retention separated from leaks |
+| Malformed values | NaN/Inf, enum overflow, extreme sizes, missing keys, old settings | Finite validated state, no invalid GPU parameters |
+| Shader failure | Missing file, compile error, missing uniform/technique | Documented fallback and bounded logs |
+| Source disruption | Resize, disconnect/reconnect, zero-size, duplicate/remove, nested scenes | Correct recovery and no stale pointer use |
+| Filter order | Crop, color correction, chroma key before/after NeonMask | Correct geometry/alpha or explicit supported-order restriction |
+| Future asset races | Rapid replace, destroy during decode, stale result, cancellation, invalid image/SVG | Latest live generation only; bounded memory; no deadlock |
+| Future source masks | Self-reference, indirect cycles, deleted source | Reject recursion, matched reference release and safe output |
+
+Use ASan/UBSan for applicable native/harness paths; test concurrency with a race detector where supported when workers are introduced. Do not rely on process RSS alone to assert leaks: track plugin allocations, graphics resources, reference lifetimes and cache occupancy. Retained driver memory must be distinguished from unbounded growth.
+
+## Automated and manual responsibilities
+
+Automate pure geometry/config tests, invalid-input cases, scene migrations, uniform contracts, backend compilation, deterministic pixel fixtures and archive manifests. Use a real OBS frontend for camera/capture/filter chaining and visual interaction checks. If the execution environment cannot run OBS, mark these checks Pending and provide the exact artifact/test instructions; never mark complete.
+
+CI build success alone cannot promote a stable release. Release evidence should use a short record:
+
+- Commit and artifact SHA256:
+- OS / OBS / SDK / GPU / driver:
+- Source / canvas / fps / preset:
+- Gates G1–G7: pass, fail or pending with evidence links:
+- Frame timing and memory report:
+- Screenshots/clips and deterministic fixture settings:
+- Known limitations, reproduction steps and rollback instructions:
+
+## Packaging and support
+
+Windows x64 portable unsigned ZIP is the first delivery. Include DLL, matching effects/locales, version, license and checksum. A signing certificate is not a prerequisite for this open-source preview. Never replace a loaded DLL; close OBS for manual install/update. Validate fresh install, upgrade preserving settings, missing shader behavior and rollback.
+
+The baseline Windows build pins OBS 31.1.1; this does not establish compatibility with every later OBS version. Define a supported runtime matrix from actual tests, then add newer stable OBS versions deliberately. Linux and macOS headless builds do not establish native packaging/runtime support. Publish only platforms that passed the relevant gates, with preview/stable labels matching the evidence.
+
+Do not add paid certification, DCO/signoff or CLA machinery as a substitute for engineering validation. Keep provenance/license notices and ordinary review.

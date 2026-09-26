@@ -2,6 +2,10 @@
 
 A native, GPU-rendered OBS facecam filter: **mask + dual-color neon core + analytic glow + animation** driven by the **same signed-distance shape**. This is an early **v0.1.0 source-code milestone**, not a production release.
 
+## Project direction
+
+Start with the [product and engineering charter](docs/PRODUCT_SPEC.md). It links the canonical [architecture](docs/ARCHITECTURE.md), [visual specification](docs/VISUAL_SPEC.md), [quality gates](docs/QUALITY_GATES.md) and [delivery roadmap](docs/ROADMAP.md). Requirements are targets; the roadmap distinguishes implemented code from runtime-verified behavior.
+
 ## Implemented
 
 - One OBS video filter: `NeonMask Studio — Facecam Mask & Border`.
@@ -32,7 +36,7 @@ cmake --build build-test
 ctest --test-dir build-test --output-on-failure
 ```
 
-On Windows, select your OBS SDK toolchain and supply `-Dlibobs_DIR=<directory containing libobs-config.cmake>` as needed. For portable Windows installations, staged output uses `obs-plugins/64bit/obs-neonmask.dll` and `data/obs-plugins/obs-neonmask/`. Restart OBS after installation. The first deliverable is source only; no Windows binary is supplied or claimed tested here. Linux staging places the data files under `share/obs/obs-plugins/obs-neonmask/`.
+On Windows, select your OBS SDK toolchain and supply `-Dlibobs_DIR=<directory containing libobs-config.cmake>` as needed. For portable Windows installations, staged output uses `obs-plugins/64bit/obs-neonmask.dll` and `data/obs-plugins/obs-neonmask/`. Restart OBS after installation. An unsigned Windows x64 preview packaging workflow is available; see [Windows preview instructions](docs/WINDOWS_PREVIEW.md). A successful artifact build does not establish OBS frontend or visual verification. Linux staging places the data files under `share/obs/obs-plugins/obs-neonmask/`.
 
 ## In OBS
 
@@ -55,8 +59,4 @@ This implementation is newly written around the documented libobs filter/effect 
 
 ## Roadmap
 
-1. Test shader and dynamic properties in Windows OBS; fix packaging and GPU differences.
-2. Expanded render area / no-clipping glow, correct chained-filter dimensions.
-3. Image alpha, source mask, SVG, and cached generated distance fields.
-4. Curvilinear segment parametrization, multilayer borders, preset gallery, audio response.
-5. Frame-time benchmark matrix and platform release automation.
+See the [canonical delivery roadmap and evidence ledger](docs/ROADMAP.md) for milestone order, active work and acceptance gates.
