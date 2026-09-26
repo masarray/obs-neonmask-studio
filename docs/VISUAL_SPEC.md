@@ -27,6 +27,26 @@ a recorded human review against the intended reference family. A shape with
 only a single ordinary colored outline is not a completed premium design.
 Any missing family must be called *planned*, not represented as shipped.
 
+## Design intent: artistic rather than generic
+
+The target is a **futuristic, fancy, modern, artistically composed frame**.
+The body of the picture (face, hair, room, gaming setup or other webcam
+background) is preserved **inside** the geometric mask. Outside pixels are
+clipped solely by the selected silhouette. Do not add background removal,
+AI person cutout, automatic subject detection or a requirement for third-party
+segmentation to achieve the visual target. Artwork that appears to have a
+cut-out portrait is a composition reference for the frame, not a product
+requirement to isolate a person.
+
+A signature family must read as a recognizable graphic composition without
+animation: purposeful asymmetry where appropriate, fine-versus-heavy line
+hierarchy, tuned gaps/negative space, contour-following inner/outer tracks,
+small bright focal accents and harmonious dual-color placement. Animation
+adds character rather than masking an ordinary static outline. Avoid a
+uniform neon stroke with an indiscriminate blur, random disconnected HUD
+sticks, overdraw across the face, or reusing the same outline with only a
+color/preset-name change.
+
 ## Visual rules
 
 The visible face is the subject; the luminous frame supports it. Keep the center clear, avoid tinting skin, use a sharp core with a softer exterior halo, and keep rim spacing intentional. Glow should remain attractive over black, white and moving game footage. No opaque black rectangle around transparent content.
@@ -34,6 +54,21 @@ The visible face is the subject; the luminous frame supports it. Keep the center
 Small facecam use matters: judge at 320 × 180 as well as full source resolution. Thin forms and restrained movement should survive downscaling. A design that only looks good in a large marketing image is not accepted.
 
 Separate the mask silhouette from decorative accents. Chat tails, HUD corners and electric sparks must have explicit semantics: silhouette-changing shapes affect coverage; decorative accents do not punch holes in the facecam. Use the same contour anchor data for all decorative placement.
+
+## Signature style grammar
+
+| Family | Static silhouette and linework | Controlled light and motion |
+| --- | --- | --- |
+| Cyber Flow | Sculpted rounded frame, balanced double-track, intentionally broken secondary line and corner glints | Cyan/magenta contrast; luminous core and localized contour-traveling highlight |
+| Reactor Ring | True circle, concentric differentiated arcs and restrained instrument-like ticks | Blue/violet depth with a legible moving arc, not uniform spinning brightness |
+| Emerald Hex | Crisp symmetric polygon with precisely placed corner hardware and inset accents | Green/cyan gradient hierarchy, small bright corner nodes and a stable base edge |
+| Ember Minimal | Minimal sharp contour, warm fine highlight, carefully weighted open space | Amber rim with soft controlled external bloom; works beautifully in Static |
+| Tech HUD / Streamer | Shape-aware brackets, short inset traces, coherent micro-details rather than generic disconnected bars | Sparse accent pulse/travel; optional reduced-motion version preserves the static identity |
+
+Each recipe must specify silhouette, core width, supporting-track offsets,
+gap placement, accent locations, color balance, bloom envelope and motion
+behavior. These are **targets, not shipped feature claims**. Do not add a
+named style until its geometry/lighting has a verifiable OBS render.
 
 ## Premium frame anatomy (shared renderer contract)
 
@@ -138,4 +173,4 @@ Quantitative targets at 1:1 source pixels:
 
 These are proposed gates; establish reference captures per supported backend before claiming a pass. Antialiasing differences need a documented tolerance, not unconditional pixel identity across drivers.
 
-Human review also checks visual balance, skin-color preservation, whether the core/mid glow/outer bloom are distinguishable at 320 × 180, presence and trajectory of the flow hot spot, purposeful separation of graphic tracks, compression/downscale appearance, electric flicker and whether the face remains the focus. Store preset, input fixture identity, OBS/backend/version, resolution and deterministic animation times with each capture. Never label the concept board as an actual plugin screenshot.
+Human review also checks visual balance, skin-color preservation, whether the core/mid glow/outer bloom are distinguishable at 320 × 180, presence and trajectory of the flow hot spot, purposeful separation of graphic tracks, purposeful ornament placement and spacing, a recognizable static design identity, compression/downscale appearance, electric flicker and whether the face remains the focus. A generic outline with more glow fails the art-direction check even if its shape and shader tests pass. Store preset, input fixture identity, OBS/backend/version, resolution and deterministic animation times with each capture. Never label the concept board as an actual plugin screenshot.
