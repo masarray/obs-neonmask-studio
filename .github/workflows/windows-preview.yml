@@ -19,6 +19,9 @@ jobs:
         shell: pwsh
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Download and verify official OBS SDK sources
         run: |
           $ErrorActionPreference = "Stop"
@@ -87,6 +90,15 @@ jobs:
           $env:NEONMASK_LIBOBS_DATA_DIR = (Resolve-Path ".deps/obs-studio-31.1.1/libobs/data").Path
           ctest --test-dir build-win -C Release --output-on-failure
           if ($LASTEXITCODE -ne 0) { throw "NeonMask tests (including D3D11 shader smoke) failed" }
+      - name: Generate and verify owned M0 visual fixtures
+        run: |
+          $ErrorActionPreference = "Stop"
+          python tools/generate_visual_fixtures.py --out visual-fixtures --verify
+          if ($LASTEXITCODE -ne 0) { throw "Visual fixture verification failed" }
+          Copy-Item -LiteralPath "docs/M0_VISUAL_TEST.md" -Destination "visual-fixtures/README-TESTING.md"
+          Compress-Archive -Path "visual-fixtures/*" -DestinationPath "obs-neonmask-M0-visual-fixtures.zip" -Force
+          $fixtureHash = (Get-FileHash -Algorithm SHA256 "obs-neonmask-M0-visual-fixtures.zip").Hash.ToLowerInvariant()
+          "$fixtureHash  obs-neonmask-M0-visual-fixtures.zip" | Set-Content -Encoding ascii "obs-neonmask-M0-visual-fixtures.sha256"
       - name: Stage and verify portable plugin files
         run: |
           $ErrorActionPreference = "Stop"
@@ -106,6 +118,19 @@ jobs:
           $hash = (Get-FileHash -Algorithm SHA256 "obs-neonmask-v0.1.0-windows-x64-preview.zip").Hash.ToLowerInvariant()
           "$hash  obs-neonmask-v0.1.0-windows-x64-preview.zip" | Set-Content -Encoding ascii "obs-neonmask-v0.1.0-windows-x64-preview.sha256"
           Write-Host "Windows preview ZIP SHA256: $hash"
+          $fixtureHash = (Get-FileHash -Algorithm SHA256 "obs-neonmask-M0-visual-fixtures.zip").Hash.ToLowerInvariant()
+          $buildInfo = [ordered]@{
+            checkout_commit = (& git rev-parse HEAD).Trim()
+            workflow_url = "https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+            obs_sdk = "31.1.1"
+            target = "windows-x64"
+            build_config = "Release"
+            gpu_smoke = "D3D11 effect compilation; not pixel validation"
+            plugin_zip_sha256 = $hash
+            fixture_zip_sha256 = $fixtureHash
+          }
+          $buildInfo | ConvertTo-Json | Set-Content -Encoding utf8 "build-info.json"
+          if (!(Test-Path "build-info.json")) { throw "Missing build metadata" }
       - name: Upload Windows preview plugin
         uses: actions/upload-artifact@v4
         with:
@@ -113,5 +138,8 @@ jobs:
           path: |
             obs-neonmask-v0.1.0-windows-x64-preview.zip
             obs-neonmask-v0.1.0-windows-x64-preview.sha256
+            obs-neonmask-M0-visual-fixtures.zip
+            obs-neonmask-M0-visual-fixtures.sha256
+            build-info.json
           if-no-files-found: error
           retention-days: 14

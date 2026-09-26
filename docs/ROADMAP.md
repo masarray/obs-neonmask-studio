@@ -13,7 +13,7 @@ Update the ledger in the same change that advances implementation or verificatio
 | Neon | Dual color, analytic glow, pulse/flow, four styles, four presets | Concept-board parity not established |
 | State | Canonical pure-C config snapshot, schema v1, v0 legacy marker migration, complete preset values | OBS callback handoff/lifecycle concurrency still needs runtime evidence; future schema/import UI not exposed |
 | Safety | Shader load/uniform checks; bypass; effect cleanup | Fault injection, resource accounting and soak pending |
-| CI | Headless/platform builds, OpenGL and Windows D3D11 compile smokes, Windows preview ZIP | Final OBS frontend/pixel checks and benchmarks remain pending |
+| CI | Headless/platform builds, OpenGL and Windows D3D11 compile smokes, Windows preview ZIP; M0 synthetic fixture generator and build provenance in preview pipeline | Final OBS frontend/pixel checks and benchmarks remain pending |
 | Assets/workers | No custom image/SVG/live-mask provider | Bounded service is a future requirement |
 | Performance | Procedural one-effect design | No hardware budget evidence recorded |
 | Padding | Existing source canvas only | Large glow can clip; safe-fit/expanded-output validation pending |
@@ -37,12 +37,27 @@ Performance work is continuous through M0–M5. Stable procedural release can sh
 
 ## Immediate work queue
 
-1. Install the verified Windows preview in OBS Studio 31.1.1 portable and record the OBS log, final output captures and renderer; reproduce and fix any loading/visual defects.
+1. Use the [M0 visual test procedure](M0_VISUAL_TEST.md) and its separate synthetic fixture pack with the pinned Windows preview in OBS Studio 31.1.1 portable; record exact artifact metadata, OBS log, final output captures and renderer; reproduce and fix any loading/visual defects.
 2. Render deterministic fixtures through the real OBS composition path. Focus on semi-transparent input, color packing, small sources, maximum glow and filter order.
 3. Establish GPU/CPU/memory baseline on named Windows hardware. Do not claim “lighter than Advanced Masks” without a like-for-like mask-only comparison plus separate neon overhead.
 4. ✅ Canonical validation/config extracted without changing existing setting keys or enum IDs; schema v1 treats missing-version scenes as v0, rejects future schemas, and has invalid-value/complete-preset regression tests. Next: verify saved v0/v1 scene fixtures in OBS and the callback handoff assumptions.
 5. Implement safe-fit bounds and perimeter mapping as separate reviewable slices; update screenshots and budgets.
 6. Add the signature ornament presets only on top of the verified geometry contract.
+
+## M0 reproducible visual test inputs (automation, not runtime evidence)
+
+The visual-fixture generator produces six owned RGBA PNG inputs (opaque bars,
+alpha ramp, soft edge, small checkerboard, portrait bars and fully transparent)
+plus an SHA256/alpha manifest. The Windows preview workflow packages them
+separately from the installable plugin ZIP and records the exact checked-out
+commit, workflow run, OBS 31.1.1 SDK and both ZIP checksums. The headless
+matrix verifies PNG structure, CRC, dimensions, RGBA and alpha categories.
+
+This removes test-input ambiguity; it does **not** establish G4 output-pixel
+correctness or G5 OBS frontend/lifecycle behavior. Those still require real
+captured OBS output and logs on Windows as specified in
+[M0_VISUAL_TEST.md](M0_VISUAL_TEST.md). G6 hardware timing and eight-hour soak
+are not claimed.
 
 ## Definition of done for a work item
 
