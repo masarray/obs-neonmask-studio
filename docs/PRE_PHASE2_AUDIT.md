@@ -1,5 +1,7 @@
 # Pre-Phase-2 quality gate
 
+Historical baseline audit. Current requirements and milestone status are owned by [PRODUCT_SPEC.md](PRODUCT_SPEC.md) and [ROADMAP.md](ROADMAP.md). The Windows preview workflow now exists; backend compilation, frontend behavior and visual evidence remain separate gates.
+
 ## Source study and attribution
 
 The reference [OBS Advanced Masks](https://github.com/FiniteSingularity/obs-advanced-masks) uses separate masking implementations and OBS GPU effects:
