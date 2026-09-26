@@ -58,6 +58,27 @@ Work in small vertical slices: implementation + relevant automated test + runnab
 
 Performance work is continuous through M0–M5. Stable procedural release can ship after M3 and M5 without waiting for all M4 providers, provided scope is explicitly documented. This avoids delaying a useful product for complete upstream parity.
 
+## Art-first scope clarification
+
+The maintainer explicitly wants a beautiful, artistic, fancy and futuristic
+**mask + neon frame**, not background removal. No AI segmentation,
+portrait extraction or auto-face tracking work is planned. Manual X/Y
+reframing is the only subject-positioning feature required for the current
+goal. Preserve original imagery inside the chosen geometric mask.
+
+After X/Y framing, prioritize the **art-directed light and contour grammar**
+over adding more generic shape presets: sharp/mid/bloom hierarchy,
+intentional two-tone placement, selective glints, secondary tracks,
+designed corner cuts/gaps, localized flow and graceful static forms.
+Each family needs its own recognizable visual motif and actual OBS
+capture/clip against image #9. A new color, radius, thickness or preset
+label without distinct linework is not progress toward the target.
+
+Image/gradient/SVG/source mask providers, if pursued later, are geometric
+mask inputs rather than background-removal features; they must not
+preempt the premium procedural collection. Keep PERFORMANCE/SAFETY gates
+intact while pursuing visual quality, and report any unmet constraints.
+
 ## Next-preview implementation order (vertical PRs)
 
 1. **Framing / X-Y first (MASK-04):** separate mask center X/Y from subject
@@ -74,9 +95,11 @@ Performance work is continuous through M0–M5. Stable procedural release can sh
    bounds; no source-edge smear or unwanted outer clipping. Add
    independent shape dimensions, precision contour and arc-length
    motion in reviewable slices.
-4. **Signature design recipes:** double/triple rim, moving ring, bright
-   corner accents/HUD, Streamer/Chat then optional bounded Electric.
-   No new advertised premium preset without an actual OBS capture.
+4. **Art-directed signature recipes:** distinctive authored contour
+   and color grammar, selective glints, refined double/triple tracks,
+   intentional corner cuts, moving ring, HUD, Streamer/Chat and optional
+   bounded Electric. No new advertised premium preset without an actual
+   OBS capture and a motif distinguishable beyond hue/thickness changes.
 5. **Reliability and release:** source/restart/legacy-scene tests,
    real performance measurements and eight-hour soak; honor G1–G7.
    Image/gradient/SVG/live-mask providers remain later M4 work.
