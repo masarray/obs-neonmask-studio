@@ -11,6 +11,31 @@ Give streamers a beautiful facecam frame in under one minute: add one native OBS
 
 “Better than Advanced Masks” means measurable improvements in the selected facecam workflow, visual integration and cost. It is not a claim of complete feature parity or higher performance until measured. Build incrementally on the existing C11/libobs implementation.
 
+## Product identity: artistic neon masking, not subject removal
+
+Maintainer clarification (2026-09-26): NeonMask Studio is an **art-directed
+facecam mask and futuristic luminous frame designer**. Its differentiation
+is beauty, recognizable visual identity, modern/fancy details and expressive
+yet tasteful animation — **not** background removal, AI segmentation,
+subject cutouts, camera tracking, or a generic uniform neon outline.
+The user's source photo/video remains intact *inside* the chosen geometric
+mask; masking outside that silhouette is the intentional effect.
+Manual X/Y framing and zoom position the image *within* the shape. These
+controls must not introduce any segmentation dependency.
+
+Art direction is a first-class product requirement: each shipped family
+needs a recognizable authored contour, intentional color placement,
+well-composed negative space, fine luminous core, graduated glow, purposeful
+secondary linework (rather than random decoration), and a signature motion
+behavior. Variations of only hue, thickness or halo radius do **not** count
+as distinct premium design families. The target is the creative language
+of the user-approved board #9 adapted to real OBS rendering; it is not a
+pixel-for-pixel reproduction of a photo/marketing board.
+
+**Explicit non-goal:** do not add background-removal/portrait-segmentation
+work to this project's plan. Optional use with another OBS filter is an OBS
+integration detail, not a NeonMask feature or prerequisite.
+
 ## Visual north star and user acceptance
 
 The **user-supplied concept board (image #9 in the 2026-09-26 OBS feedback) is the
@@ -110,7 +135,7 @@ Study proven algorithms and integration patterns, then implement the smallest co
 
 Launch scope: local native filter, procedural shapes, curated neon designs, editable settings, reliable saving, safe degradation, Windows preview and measured SDR rendering. Linux/OpenGL provides a second validation backend. Native macOS and additional OBS versions only become supported after runtime/package evidence.
 
-Deferred: AI subject segmentation, cloud accounts, online preset marketplace, automatic face tracking, arbitrary user shaders, unlimited layers, browser UI, GPU-to-CPU video processing, and automatic in-process binary replacement. Audio reactivity is optional later and never a prerequisite for attractive motion. HDR is unverified until explicitly implemented and tested.
+Explicitly out of scope: background removal, AI subject/portrait segmentation, and automatic face tracking. Deferred: cloud accounts, online preset marketplace, arbitrary user shaders, unlimited layers, browser UI, GPU-to-CPU video processing, and automatic in-process binary replacement. Audio reactivity is optional later and never a prerequisite for attractive motion. HDR is unverified until explicitly implemented and tested.
 
 M1 motion contract: static freezes every visual phase; speed zero freezes animation; changing speed preserves phase; no visible time-based reset at the one-hour boundary. A pure tick simulation verifies state integration, while G4 final pixels and G6 full OBS soak remain required before an animation reliability claim.
 
