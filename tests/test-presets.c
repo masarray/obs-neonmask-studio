@@ -29,6 +29,10 @@ int main(void)
         check("feather range", p.feather >= 0.5 && p.feather <= 30.0);
         check("glow radius range", p.glow_radius >= 1.0 && p.glow_radius <= 80.0);
         check("glow range", p.glow_strength >= 0.0 && p.glow_strength <= 1.0);
+        check("mid glow range", p.mid_glow >= 0.0 && p.mid_glow <= 1.0);
+        check("bloom range", p.bloom_strength >= 0.0 && p.bloom_strength <= 1.0);
+        check("hotspot range", p.hotspot_strength >= 0.0 && p.hotspot_strength <= 1.0);
+        check("hotspot size range", p.hotspot_size >= 0.04 && p.hotspot_size <= 0.25);
         check("speed range", p.speed >= 0.0 && p.speed <= 5.0);
         check("border enabled", p.border_enabled);
         check("glow enabled", p.glow_enabled);
