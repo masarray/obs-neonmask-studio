@@ -123,3 +123,14 @@ Windows x64 portable unsigned ZIP is the first delivery. Include DLL, matching e
 The baseline Windows build pins OBS 31.1.1; this does not establish compatibility with every later OBS version. Define a supported runtime matrix from actual tests, then add newer stable OBS versions deliberately. Linux and macOS headless builds do not establish native packaging/runtime support. Publish only platforms that passed the relevant gates, with preview/stable labels matching the evidence.
 
 Do not add paid certification, DCO/signoff or CLA machinery as a substitute for engineering validation. Keep provenance/license notices and ordinary review.
+
+## Phase B targeted shader pixel checks (partial G4 only)
+
+The actual libobs GPU smoke now distinguishes three cases over a transparent
+source: broad+mid glow, mid-only with bloom disabled, and both glow envelopes
+disabled. It also compares the local Flow highlight near and opposite its
+configured phase while checking transparency outside the frame. This is
+a *direct-effect* framebuffer test; actual OBS frontend compositing,
+dark/light backgrounds, small 320×180 visual review, filter chaining and
+frame timing remain required before G4-V/G5/G6 acceptance. A green CI
+result alone does not mean proposal-level visual parity.
