@@ -14,7 +14,8 @@
 static const char *const uniforms[] = {
     "uv_size", "half_size", "mask_offset", "subject_pan", "subject_zoom",
     "shape_rotation", "polygon_sides", "corner_radius", "shape_id", "border_width",
-    "feather", "glow_radius", "glow_strength", "color_a", "color_b",
+    "feather", "glow_radius", "glow_strength", "mid_glow_strength",
+    "bloom_strength", "hotspot_strength", "hotspot_size", "color_a", "color_b",
     "color_phase", "pulse_phase", "flow_phase", "animation_id", "segment_count",
     "border_enabled", "glow_enabled", "style_id", "image", "ViewProj"
 };
@@ -74,17 +75,23 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "border_width"), 4.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "style_id"), 0);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "feather"), 0.5f);
-    gs_effect_set_float(gs_effect_get_param_by_name(effect, "glow_radius"), 8.0f);
-    gs_effect_set_float(gs_effect_get_param_by_name(effect, "glow_strength"), 0.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "glow_radius"),
+                        variant == 5 || variant == 6 ? 12.0f : 8.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "glow_strength"),
+                        variant == 5 || variant == 6 ? 0.85f : 0.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "mid_glow_strength"), 0.75f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "bloom_strength"), variant == 6 ? 0.0f : 0.92f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "hotspot_strength"), variant == 8 ? 1.0f : 0.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "hotspot_size"), 0.10f);
     gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "color_a"), &magenta);
     gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "color_b"), &magenta);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "color_phase"), 0.0f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "pulse_phase"), 0.0f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "flow_phase"), 0.0f);
-    gs_effect_set_int(gs_effect_get_param_by_name(effect, "animation_id"), 0);
+    gs_effect_set_int(gs_effect_get_param_by_name(effect, "animation_id"), variant == 8 ? 2 : 0);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "segment_count"), 0);
-    gs_effect_set_int(gs_effect_get_param_by_name(effect, "border_enabled"), variant == 2);
-    gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), 0);
+    gs_effect_set_int(gs_effect_get_param_by_name(effect, "border_enabled"), variant == 2 || variant >= 5);
+    gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), variant == 5 || variant == 6);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "image"), input);
 
     if (!gs_texrender_begin(target, W, H)) {
@@ -135,11 +142,15 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *corner = mapped + 1u * stride + 1u * 4u;
     const uint8_t *rim = mapped + 32u * stride + 55u * 4u;
     const uint8_t *shifted_center = mapped + 32u * stride + 60u * 4u;
+    const uint8_t *near_glow = mapped + 32u * stride + 59u * 4u;
+    const uint8_t *far_glow = mapped + 32u * stride + 63u * 4u;
+    const uint8_t *opposite_rim = mapped + 32u * stride + 8u * 4u;
 
 
     /* The black/transparent corner proves the mask is not an opaque box.
      * Semi-transparent center checks the premultiplied-input convention. */
-    if (corner[3] > 2 || corner[0] > 2 || corner[1] > 2 || corner[2] > 2) {
+    if (variant != 5 && variant != 6 &&
+        (corner[3] > 2 || corner[0] > 2 || corner[1] > 2 || corner[2] > 2)) {
         fprintf(stderr, "FAIL: GPU fixture %d outside mask RGBA=(%u,%u,%u,%u)\n",
                 variant, corner[0], corner[1], corner[2], corner[3]);
         failed = 1;
@@ -152,7 +163,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                     variant, center[0], center[1], center[2], center[3]);
             failed = 1;
         }
-    } else if (variant == 2 && (rim[0] < 180 || rim[1] > 30 || rim[2] < 180 || rim[3] < 180)) {
+    } else if (variant == 2 && (rim[0] < 180 || rim[1] > 150 || rim[2] < 180 || rim[3] < 180)) {
         fprintf(stderr, "FAIL: GPU border-only rim RGBA=(%u,%u,%u,%u)\n",
                 rim[0], rim[1], rim[2], rim[3]);
         failed = 1;
@@ -167,6 +178,24 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                     shifted_center[0], shifted_center[1], shifted_center[2], shifted_center[3]);
             failed = 1;
         }
+    } else if (variant == 5 &&
+               (near_glow[3] < 55 || far_glow[3] < 25 || near_glow[3] <= far_glow[3])) {
+        fprintf(stderr, "FAIL: layered glow near=%u far=%u (expected mid + broad bloom)\n",
+                near_glow[3], far_glow[3]);
+        failed = 1;
+    } else if (variant == 6 &&
+               (near_glow[3] < 30 || far_glow[3] >= 22)) {
+        fprintf(stderr, "FAIL: mid-only glow near=%u far=%u (bloom must be independent)\n",
+                near_glow[3], far_glow[3]);
+        failed = 1;
+    } else if (variant == 7 && far_glow[3] > 2) {
+        fprintf(stderr, "FAIL: disabled glow leaks outside core: %u\n", far_glow[3]);
+        failed = 1;
+    } else if (variant == 8 &&
+               ((int)rim[1] - (int)opposite_rim[1] < 65 || far_glow[3] > 2)) {
+        fprintf(stderr, "FAIL: localized hot spot / glow bypass eastG=%u westG=%u farA=%u\n",
+                rim[1], opposite_rim[1], far_glow[3]);
+        failed = 1;
     }
 
     gs_stagesurface_unmap(stage);
@@ -268,7 +297,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 5; ++variant)
+            for (int variant = 0; variant < 9; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
@@ -277,6 +306,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: real libobs shader compilation + direct GPU pixel fixtures (partial G4)");
+    puts("PASS: real libobs shader + alpha/framing/mid-glow/bloom/local-hotspot pixel fixtures (partial G4)");
     return 0;
 }
