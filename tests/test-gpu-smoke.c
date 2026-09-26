@@ -5,6 +5,7 @@
 #include <graphics/graphics.h>
 #include <util/bmem.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static const char *const uniforms[] = {
     "uv_size", "half_size", "corner_radius", "shape_id", "border_width",
@@ -25,7 +26,9 @@ int main(int argc, char **argv)
     }
 
     struct obs_video_info video = {0};
-    video.graphics_module = "libobs-opengl";
+    /* Windows CI selects its built Direct3D 11 module; Linux defaults to OpenGL. */
+    const char *module = getenv("NEONMASK_GRAPHICS_MODULE");
+    video.graphics_module = module && *module ? module : "libobs-opengl";
     video.fps_num = 30;
     video.fps_den = 1;
     video.base_width = 640;
@@ -36,7 +39,7 @@ int main(int argc, char **argv)
     video.adapter = 0;
 
     if (obs_reset_video(&video) != OBS_VIDEO_SUCCESS) {
-        fprintf(stderr, "FAIL: obs_reset_video: OpenGL context unavailable\n");
+        fprintf(stderr, "FAIL: obs_reset_video: graphics device unavailable\n");
         obs_shutdown();
         return 2;
     }
@@ -65,6 +68,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: compiled NeonMask shader with real libobs OpenGL graphics device");
+    puts("PASS: compiled NeonMask shader with real libobs graphics device");
     return 0;
 }
