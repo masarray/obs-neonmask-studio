@@ -85,8 +85,8 @@ and evidence above; do not declare G4/G5 complete without real OBS output.
 
 The preview currently implements five shapes, four border styles and four
 presets, not all examples on the board. The halo can clip at source edges.
-Current OpenGL/D3D11 CI smoke compiles effects but does not render final OBS
-pixels. G6 timing, lifecycle stress and eight-hour soak remain pending.
+Current OpenGL/D3D11 CI smoke compiles effects and draws synthetic GPU
+pixel fixtures, but does **not** capture final OBS output or filter chains. G6 timing, lifecycle stress and eight-hour soak remain pending.
 
 No signing certificate or installer is required for this portable preview.
 To roll back, close OBS, remove the matching NeonMask DLL and data directory,
