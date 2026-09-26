@@ -79,9 +79,9 @@ float regularPolygonDistance(float2 p, float2 bounds, int sides, float rotation)
 float shapeDistance(float2 p)
 {
     if (shape_id == 1) return length(p) - min(half_size.x, half_size.y);
-    if (shape_id == 2) return ellipseDistance(p, half_size);
+    if (shape_id == 2) return ellipseDistance(rotatePoint(p, shape_rotation), half_size);
     if (shape_id == 3) {
-        float2 q = abs(p);
+        float2 q = abs(rotatePoint(p, shape_rotation));
         // Flat-top six-sided silhouette with pixel-space unit-length normals.
         return max(q.y - half_size.y,
                    0.8660254 * (q.x - half_size.x) + 0.5 * q.y);
