@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: neonmask-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   geometry:
     name: Headless tests (${{ matrix.os }})
