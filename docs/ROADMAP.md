@@ -10,7 +10,7 @@ Update the ledger in the same change that advances implementation or verificatio
 | --- | --- | --- |
 | Native filter | C11/libobs callbacks in src/neonmask-filter.c | Frontend/lifecycle tests pending |
 | Geometry | Proposal Phase-A set implemented: rounded rectangle, circle, oval, hexagon, diamond, rectangle, triangle and configurable polygon; mask X/Y and independent width/height | Actual OBS shape/framing captures, safe-fit and precision/corner validation pending |
-| Neon | Dual color, analytic glow, pulse/flow, four styles and presets; independent bounded double-precision phase accumulators | Actual eight-hour OBS soak and final rendered pixels pending |
+| Neon | Phase-B analytic sharp/fine core, independent mid glow and broad bloom, additive local Flow hotspot, corner glints; existing four styles/presets and bounded phases | Actual OBS dark/light/320×180 art-direction review, safe-fit and eight-hour soak pending |
 | State | Canonical pure-C config snapshot, schema v2; v0/v1 uniform-scale framing migrates additively to centered width/height + pan/zoom defaults | OBS callback handoff/lifecycle concurrency still needs runtime evidence; future schema/import UI not exposed |
 | Safety | Shader load/uniform checks; bypass; effect cleanup | Fault injection, resource accounting and soak pending |
 | CI | Headless/platform builds, OpenGL and Windows D3D11 compile smokes, Windows preview ZIP; M0 synthetic fixture generator and build provenance in preview pipeline | Direct GPU effect pixel fixtures cover only part of G4; final OBS source/filter-chain captures and benchmarks remain pending |
@@ -168,3 +168,27 @@ invalid inputs, mode/speed changes, one-hour boundary and simulated 8-hour
 60 fps phase integration. Backend effect compilation is covered by the existing
 OpenGL and D3D11 smoke checks. This is **not** measured continuous rendering,
 final-pixel verification or a hardware performance result. G4–G6 stay pending.
+
+## Phase B — premium light engine implementation slice
+
+Issue #17 implementation: one shared mask SDF feeds the sharp color core,
+a fine bright centerline, a separate compact mid-glow envelope and a wider
+exterior bloom. New native OBS controls expose mid strength, bloom strength,
+highlight intensity and highlight width; existing overall strength/radius,
+border width, colors and animation continue to work. In Flow, the base rim
+remains bright and a white-biased local flare travels; Pulse modulates glow
+while preserving the core. Supporting tracks gain bounded corner glints
+in rounded/rectangle styles. All light layers composite in premultiplied
+space and output OBS-compatible straight alpha. No segmentation, no CPU
+video readback, no new rendering pass or worker.
+
+The config remains schema v2: the four added fields have explicit OBS defaults
+and preset snapshots; old saved framing/pan/zoom and preset IDs are not
+rewritten. Tests now target mid-only versus broad-bloom falloff, the disabled
+glow path and an east/west local hotspot using the actual OpenGL/D3D11 effect.
+
+**Evidence boundary:** passing shader/device/pixel checks is not an OBS
+frontend image/animation comparison. Actual screenshots/clips against the
+proposal, filter-chain tests, safe-fit for displaced masks and performance
+on named hardware remain open G4-V/G5/G6 gates. Existing angle-based Flow
+is still provisional; arc-length routing is a follow-up.
