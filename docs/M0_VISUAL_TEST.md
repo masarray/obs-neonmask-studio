@@ -54,9 +54,11 @@ evidence; it does not certify performance, memory or eight-hour stability.
 6. Put Crop/Pad, Color Correction and Chroma Key before and after NeonMask
    one at a time. Toggle the filter, change scene, duplicate/remove source,
    resize the source and restart OBS with the scene saved.
-7. Test Static/Pulse/Flow, including zero speed. Record short clips for
-   animation and any seam/phase jump. Do not infer eight-hour reliability
-   from this short test.
+7. Test Static/Pulse/Flow, including zero speed and changing speed while Flow
+   is active. Static must freeze the color gradient as well as the core/glow.
+   Record fixed-time clips around normal flow seams; capture a real long-session
+   sample across the one-hour mark and eventual eight-hour soak on named GPU.
+   The simulated tick test is not an OBS video/driver soak.
 
 ## What to save per finding
 
