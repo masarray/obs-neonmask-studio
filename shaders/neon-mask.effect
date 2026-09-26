@@ -80,7 +80,9 @@ float4 drawNeonMask(VertData v) : TARGET
     float4 src = image.Sample(image_sampler, v.uv);
     float mask = 1.0 - smoothstep(-max(feather, 0.5), max(feather, 0.5), d);
     float baseA = src.a * mask;
-    float3 premul = src.rgb * baseA;
+    // OBS's non-direct filter texrender contains premultiplied RGB.
+    // Multiplying src.rgb by src.a again would darken semi-transparent pixels.
+    float3 premul = src.rgb * mask;
     float outA = baseA;
 
     // Both the core and halo are composited over the masked source in
@@ -119,6 +121,7 @@ float4 drawNeonMask(VertData v) : TARGET
         premul = neon * coreA + premul * (1.0 - coreA);
         outA = coreA + outA * (1.0 - coreA);
     }
+    // The final effect outputs straight alpha for OBS's SRC_ALPHA blend stage.
     float3 straight = outA > 0.00001 ? premul / outA : float3(0.0, 0.0, 0.0);
     return float4(straight, outA);
 }

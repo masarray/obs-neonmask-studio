@@ -9,7 +9,8 @@ A native, GPU-rendered OBS facecam filter: **mask + dual-color neon core + analy
 - Dual-color neon, width, analytic halo radius/intensity, static/pulse/traveling-light modes, angular segmentation.
 - Four editable presets: Cyber Rounded, Reactor Ring, Emerald Hex, Ember Frame.
 - OBS-native properties, English and Indonesian strings, direct GPU effect. No web browser or recurring texture uploads.
-- Headless C geometry/color tests.
+- Release-safe C geometry and preset tests; static shader/host contract tests.
+- Corrected RGBA color handling, captured-alpha compositing and base-size calculations.
 
 ## Build
 
@@ -42,6 +43,10 @@ Right-click webcam source → **Filters** → **Effect Filters** → **+** → *
 - Custom alpha images, SVG and source masks are **not yet implemented**, nor are a graphical preset gallery, audio reactivity and GPU benchmarks.
 - The outline on ellipses and segmented non-circular shapes is approximate; later versions will use better distance-field/path-length algorithms.
 - No physical OBS runtime smoke test or cross-platform release verification has been completed yet.
+
+## Engineering quality gate
+
+See [docs/PRE_PHASE2_AUDIT.md](docs/PRE_PHASE2_AUDIT.md) for the upstream comparison, resolved baseline defects, CI coverage, and explicit remaining runtime checks.
 
 ## Attribution and reuse
 

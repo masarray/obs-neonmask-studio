@@ -1,10 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "neonmask-math.h"
 #include <math.h>
+#include <float.h>
 
 float nm_clamp(float value, float min_value, float max_value)
 {
-    if (!isfinite(value)) return min_value;
+    /* Comparison also rejects NaN/Inf and avoids non-portable C isfinite. */
+    if (!(value >= -FLT_MAX && value <= FLT_MAX)) return min_value;
     return fminf(max_value, fmaxf(min_value, value));
 }
 
@@ -26,6 +28,7 @@ nm_geometry nm_make_geometry(uint32_t width, uint32_t height, float scale,
 float nm_sd_round_rect(float x, float y, float half_width,
                        float half_height, float radius)
 {
+    if (half_width <= 0.0f || half_height <= 0.0f) return 1.0e6f;
     radius = nm_clamp(radius, 0.0f, fminf(half_width, half_height));
     const float qx = fabsf(x) - half_width + radius;
     const float qy = fabsf(y) - half_height + radius;
@@ -42,10 +45,14 @@ float nm_sd_circle(float x, float y, float radius)
 float nm_sd_ellipse_approx(float x, float y, float rx, float ry)
 {
     if (rx <= 0.0f || ry <= 0.0f) return 1.0e6f;
-    return (hypotf(x / rx, y / ry) - 1.0f) * fminf(rx, ry);
+    /* Match the GPU distance approximation, including its center guard. */
+    const float k0 = hypotf(x / rx, y / ry);
+    if (k0 < 0.0001f) return -fminf(rx, ry);
+    const float k1 = hypotf(x / (rx * rx), y / (ry * ry));
+    return k0 * (k0 - 1.0f) / fmaxf(k1, 0.00001f);
 }
 
-uint32_t nm_obs_bgr(unsigned r, unsigned g, unsigned b)
+uint32_t nm_obs_rgba(unsigned r, unsigned g, unsigned b)
 {
     return (r & 255u) | ((g & 255u) << 8) | ((b & 255u) << 16);
 }

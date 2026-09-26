@@ -1,19 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "neonmask-filter.h"
 #include "neonmask-math.h"
+#include "neonmask-presets.h"
 #include <math.h>
 #include <graphics/vec2.h>
+#include <graphics/vec4.h>
 #include <util/bmem.h>
-
-#define NM_PI 3.14159265358979323846f
-#define NM_SHAPE_ROUNDED 0
-#define NM_SHAPE_CIRCLE 1
-#define NM_SHAPE_ELLIPSE 2
-#define NM_SHAPE_HEXAGON 3
-#define NM_SHAPE_DIAMOND 4
-#define NM_ANIM_STATIC 0
-#define NM_ANIM_PULSE 1
-#define NM_ANIM_FLOW 2
 
 struct nm_filter {
     obs_source_t *context;
@@ -83,18 +75,20 @@ static void nm_update(void *data, obs_data_t *settings)
 static void nm_defaults(obs_data_t *settings)
 {
     obs_data_set_default_int(settings, "preset", 0);
-    obs_data_set_default_int(settings, "shape", NM_SHAPE_ROUNDED);
-    obs_data_set_default_double(settings, "scale", 0.81);
-    obs_data_set_default_double(settings, "roundness", 0.15);
-    obs_data_set_default_double(settings, "border_width", 4.0);
+    nm_preset initial;
+    if (!nm_get_preset(1, &initial)) return;
+    obs_data_set_default_int(settings, "shape", initial.shape);
+    obs_data_set_default_double(settings, "scale", initial.scale);
+    obs_data_set_default_double(settings, "roundness", initial.roundness);
+    obs_data_set_default_double(settings, "border_width", initial.border_width);
     obs_data_set_default_double(settings, "feather", 0.85);
     obs_data_set_default_double(settings, "glow_radius", 18.0);
-    obs_data_set_default_double(settings, "glow_strength", 0.65);
-    obs_data_set_default_int(settings, "primary", nm_obs_bgr(255, 49, 221));
-    obs_data_set_default_int(settings, "secondary", nm_obs_bgr(54, 219, 255));
-    obs_data_set_default_int(settings, "animation", NM_ANIM_FLOW);
+    obs_data_set_default_double(settings, "glow_strength", initial.glow_strength);
+    obs_data_set_default_int(settings, "primary", initial.primary);
+    obs_data_set_default_int(settings, "secondary", initial.secondary);
+    obs_data_set_default_int(settings, "animation", initial.animation);
     obs_data_set_default_double(settings, "speed", 0.65);
-    obs_data_set_default_int(settings, "segments", 0);
+    obs_data_set_default_int(settings, "segments", initial.segments);
     obs_data_set_default_bool(settings, "border_enabled", true);
     obs_data_set_default_bool(settings, "glow_enabled", true);
 }
@@ -104,21 +98,28 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
                               obs_data_t *settings)
 {
     (void)props; (void)property;
-    const int preset = (int)obs_data_get_int(settings, "preset");
-    if (preset <= 0 || preset > 4) return false;
-    const int shapes[] = {0, NM_SHAPE_ROUNDED, NM_SHAPE_CIRCLE, NM_SHAPE_HEXAGON, NM_SHAPE_ROUNDED};
-    const int animations[] = {0, NM_ANIM_FLOW, NM_ANIM_FLOW, NM_ANIM_PULSE, NM_ANIM_STATIC};
-    const uint32_t c1[] = {0, 0x00DD31FFu, 0x00FF8B44u, 0x007FFF40u, 0x00236BFFu};
-    const uint32_t c2[] = {0, 0x00FFDB36u, 0x00F84DFFu, 0x00B9FF46u, 0x0000CCFFu};
-    obs_data_set_int(settings, "shape", shapes[preset]);
-    obs_data_set_int(settings, "animation", animations[preset]);
-    obs_data_set_int(settings, "primary", c1[preset]);
-    obs_data_set_int(settings, "secondary", c2[preset]);
-    obs_data_set_double(settings, "scale", preset == 2 ? 0.75 : 0.81);
-    obs_data_set_double(settings, "roundness", preset == 4 ? 0.08 : 0.15);
-    obs_data_set_double(settings, "border_width", preset == 2 ? 5.0 : 4.0);
-    obs_data_set_double(settings, "glow_strength", preset == 4 ? 0.78 : 0.65);
-    obs_data_set_int(settings, "segments", preset == 2 ? 10 : 0);
+    nm_preset preset;
+    if (!nm_get_preset((int)obs_data_get_int(settings, "preset"), &preset))
+        return false;
+    obs_data_set_int(settings, "shape", preset.shape);
+    obs_data_set_int(settings, "animation", preset.animation);
+    obs_data_set_int(settings, "primary", preset.primary);
+    obs_data_set_int(settings, "secondary", preset.secondary);
+    obs_data_set_double(settings, "scale", preset.scale);
+    obs_data_set_double(settings, "roundness", preset.roundness);
+    obs_data_set_double(settings, "border_width", preset.border_width);
+    obs_data_set_double(settings, "glow_strength", preset.glow_strength);
+    obs_data_set_int(settings, "segments", preset.segments);
+    return true;
+}
+
+/* A preset is an operation, not a lock on the editable controls. */
+static bool nm_custom_changed(obs_properties_t *props, obs_property_t *property,
+                              obs_data_t *settings)
+{
+    (void)props; (void)property;
+    if (obs_data_get_int(settings, "preset") == 0) return false;
+    obs_data_set_int(settings, "preset", 0);
     return true;
 }
 
@@ -142,25 +143,29 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(shape, obs_module_text("Shape.Ellipse"), NM_SHAPE_ELLIPSE);
     obs_property_list_add_int(shape, obs_module_text("Shape.Hexagon"), NM_SHAPE_HEXAGON);
     obs_property_list_add_int(shape, obs_module_text("Shape.Diamond"), NM_SHAPE_DIAMOND);
+    obs_property_set_modified_callback(shape, nm_custom_changed);
 
-    obs_properties_add_float_slider(props, "scale", obs_module_text("Scale"), 0.30, 0.96, 0.01);
-    obs_properties_add_float_slider(props, "roundness", obs_module_text("Roundness"), 0.0, 1.0, 0.01);
-    obs_properties_add_float_slider(props, "feather", obs_module_text("Feather"), 0.5, 30.0, 0.5);
-    obs_properties_add_bool(props, "border_enabled", obs_module_text("Border.Enabled"));
-    obs_properties_add_float_slider(props, "border_width", obs_module_text("Border.Width"), 0.5, 32.0, 0.5);
-    obs_properties_add_color(props, "primary", obs_module_text("Color.Primary"));
-    obs_properties_add_color(props, "secondary", obs_module_text("Color.Secondary"));
-    obs_properties_add_bool(props, "glow_enabled", obs_module_text("Glow.Enabled"));
-    obs_properties_add_float_slider(props, "glow_radius", obs_module_text("Glow.Radius"), 1.0, 80.0, 1.0);
-    obs_properties_add_float_slider(props, "glow_strength", obs_module_text("Glow.Strength"), 0.0, 1.0, 0.01);
+#define NM_CUSTOM(expr) obs_property_set_modified_callback((expr), nm_custom_changed)
+    NM_CUSTOM(obs_properties_add_float_slider(props, "scale", obs_module_text("Scale"), 0.30, 0.96, 0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(props, "roundness", obs_module_text("Roundness"), 0.0, 1.0, 0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(props, "feather", obs_module_text("Feather"), 0.5, 30.0, 0.5));
+    NM_CUSTOM(obs_properties_add_bool(props, "border_enabled", obs_module_text("Border.Enabled")));
+    NM_CUSTOM(obs_properties_add_float_slider(props, "border_width", obs_module_text("Border.Width"), 0.5, 32.0, 0.5));
+    NM_CUSTOM(obs_properties_add_color(props, "primary", obs_module_text("Color.Primary")));
+    NM_CUSTOM(obs_properties_add_color(props, "secondary", obs_module_text("Color.Secondary")));
+    NM_CUSTOM(obs_properties_add_bool(props, "glow_enabled", obs_module_text("Glow.Enabled")));
+    NM_CUSTOM(obs_properties_add_float_slider(props, "glow_radius", obs_module_text("Glow.Radius"), 1.0, 80.0, 1.0));
+    NM_CUSTOM(obs_properties_add_float_slider(props, "glow_strength", obs_module_text("Glow.Strength"), 0.0, 1.0, 0.01));
 
     obs_property_t *animation = obs_properties_add_list(props, "animation", obs_module_text("Animation"),
                                                          OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
     obs_property_list_add_int(animation, obs_module_text("Animation.Static"), NM_ANIM_STATIC);
     obs_property_list_add_int(animation, obs_module_text("Animation.Pulse"), NM_ANIM_PULSE);
     obs_property_list_add_int(animation, obs_module_text("Animation.Flow"), NM_ANIM_FLOW);
-    obs_properties_add_float_slider(props, "speed", obs_module_text("Speed"), 0.0, 5.0, 0.05);
-    obs_properties_add_int_slider(props, "segments", obs_module_text("Segments"), 0, 48, 1);
+    obs_property_set_modified_callback(animation, nm_custom_changed);
+    NM_CUSTOM(obs_properties_add_float_slider(props, "speed", obs_module_text("Speed"), 0.0, 5.0, 0.05));
+    NM_CUSTOM(obs_properties_add_int_slider(props, "segments", obs_module_text("Segments"), 0, 48, 1));
+#undef NM_CUSTOM
     return props;
 }
 
@@ -173,7 +178,14 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
     obs_enter_graphics();
     if (path) f->effect = gs_effect_create_from_file(path, &error);
     if (f->effect) {
-#define NM_PARAM(field, name) f->field = gs_effect_get_param_by_name(f->effect, name)
+        bool valid = true;
+#define NM_PARAM(field, name) do { \
+        f->field = gs_effect_get_param_by_name(f->effect, name); \
+        if (!f->field) { \
+            blog(LOG_ERROR, "[NeonMask Studio] missing uniform: %s", name); \
+            valid = false; \
+        } \
+    } while (0)
         NM_PARAM(uv_size, "uv_size");
         NM_PARAM(half_size, "half_size");
         NM_PARAM(corner_radius, "corner_radius");
@@ -191,9 +203,14 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         NM_PARAM(border_enabled, "border_enabled");
         NM_PARAM(glow_enabled, "glow_enabled");
 #undef NM_PARAM
+        if (!valid) {
+            gs_effect_destroy(f->effect);
+            f->effect = NULL;
+        }
     }
     obs_leave_graphics();
-    if (!f->effect) blog(LOG_ERROR, "[NeonMask Studio] shader load failed: %s", error ? error : "file missing");
+    if (!f->effect) blog(LOG_ERROR, "[NeonMask Studio] effect unavailable; filter will bypass. %s",
+                         error ? error : "Check shader path and uniforms");
     bfree(error);
     bfree(path);
     nm_update(f, settings);
@@ -228,18 +245,28 @@ static void nm_render(void *data, gs_effect_t *unused)
         obs_source_skip_video_filter(f->context);
         return;
     }
-    const uint32_t width = obs_source_get_width(target);
-    const uint32_t height = obs_source_get_height(target);
+    /* Match the texrender dimensions used by libobs's filter capture. */
+    const uint32_t width = obs_source_get_base_width(target);
+    const uint32_t height = obs_source_get_base_height(target);
     if (!width || !height) {
         obs_source_skip_video_filter(f->context);
         return;
     }
     const nm_geometry g = nm_make_geometry(width, height, f->scale, f->roundness);
     const float rx = fminf(g.half_width, g.half_height);
-    struct vec2 dimensions = {g.width, g.height};
-    struct vec2 halfsize = {f->shape_id == NM_SHAPE_CIRCLE ? rx : g.half_width,
-                            f->shape_id == NM_SHAPE_CIRCLE ? rx : g.half_height};
-    if (!obs_source_process_filter_begin(f->context, GS_RGBA, OBS_ALLOW_DIRECT_RENDERING)) return;
+    struct vec2 dimensions;
+    struct vec2 halfsize;
+    struct vec4 primary;
+    struct vec4 secondary;
+    vec2_set(&dimensions, g.width, g.height);
+    vec2_set(&halfsize, f->shape_id == NM_SHAPE_CIRCLE ? rx : g.half_width,
+             f->shape_id == NM_SHAPE_CIRCLE ? rx : g.half_height);
+    /* Native OBS color properties are RGBA-packed. The filter's SRGB path
+     * expects linear RGB uniform values; the BGRA helper is not applicable. */
+    vec4_from_rgba_srgb(&primary, f->primary);
+    vec4_from_rgba_srgb(&secondary, f->secondary);
+    /* Disable direct bypass: the shader relies on captured premultiplied RGB. */
+    if (!obs_source_process_filter_begin(f->context, GS_RGBA, OBS_NO_DIRECT_RENDERING)) return;
     gs_effect_set_vec2(f->uv_size, &dimensions);
     gs_effect_set_vec2(f->half_size, &halfsize);
     gs_effect_set_float(f->corner_radius, g.radius);
@@ -248,8 +275,8 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_float(f->feather, f->feather_px);
     gs_effect_set_float(f->glow_radius, f->glow_px);
     gs_effect_set_float(f->glow_strength, f->glow_amount);
-    gs_effect_set_color(f->color_a, f->primary);
-    gs_effect_set_color(f->color_b, f->secondary);
+    gs_effect_set_vec4(f->color_a, &primary);
+    gs_effect_set_vec4(f->color_b, &secondary);
     gs_effect_set_float(f->elapsed_time, f->time);
     gs_effect_set_float(f->speed, f->animation_speed);
     gs_effect_set_int(f->animation, f->animation_id);
