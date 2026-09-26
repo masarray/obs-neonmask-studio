@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   windows-plugin:
-    name: OBS 31.1.1 Windows x64 plugin
+    name: OBS 31.1.1 Windows x64 plugin + D3D11 smoke
     runs-on: windows-2022
     timeout-minutes: 60
     defaults:
@@ -57,11 +57,14 @@ jobs:
             "-DOBS_VERSION_OVERRIDE=31.1.1" "-DENABLE_UI=OFF" "-DENABLE_SCRIPTING=OFF" `
             "-DENABLE_FRONTEND=OFF" "-DENABLE_PLUGINS=OFF"
           if ($LASTEXITCODE -ne 0) { throw "OBS SDK configuration failed" }
-          cmake --build .deps/obs-build --config Release --target obs-frontend-api --parallel 4
+          cmake --build .deps/obs-build --config Release --target obs-frontend-api libobs-d3d11 --parallel 4
           if ($LASTEXITCODE -ne 0) { throw "OBS core/SDK build failed" }
           cmake --install .deps/obs-build --config Release --component Development --prefix $sdk
           if ($LASTEXITCODE -ne 0) { throw "libobs SDK staging failed" }
           if (!(Test-Path "$sdk/cmake/libobsConfig.cmake")) { throw "Missing installed libobsConfig.cmake" }
+          $graphicsModule = ".deps/obs-build/rundir/Release/bin/64bit/libobs-d3d11.dll"
+          if (!(Test-Path $graphicsModule)) { throw "Missing built OBS D3D11 graphics module" }
+          Copy-Item -LiteralPath $graphicsModule -Destination "$sdk/bin/64bit/libobs-d3d11.dll" -Force
       - name: Configure and compile NeonMask for Windows x64
         run: |
           $ErrorActionPreference = "Stop"
@@ -69,12 +72,21 @@ jobs:
           $dep = (Resolve-Path ".deps/obs-deps-x64").Path
           cmake -S . -B build-win -G "Visual Studio 17 2022" -A x64 `
             "-DCMAKE_PREFIX_PATH=$sdk;$dep" "-Dlibobs_DIR=$sdk/cmake" `
-            -DNEONMASK_BUILD_PLUGIN=ON -DNEONMASK_BUILD_TESTS=ON
+            -DNEONMASK_BUILD_PLUGIN=ON -DNEONMASK_BUILD_TESTS=ON -DNEONMASK_BUILD_SHADER_SMOKE=ON
           if ($LASTEXITCODE -ne 0) { throw "NeonMask configuration failed" }
           cmake --build build-win --config Release --parallel 4
           if ($LASTEXITCODE -ne 0) { throw "NeonMask build failed" }
+          # obs.dll imports FFmpeg and other native binaries from the pinned OBS deps.
+          # A bare SDK folder is sufficient for linking but not for starting libobs.
+          $env:PATH = "$sdk/bin/64bit;$dep/bin;$dep/bin/64bit;$env:PATH"
+          Write-Host "SDK runtime DLLs:"
+          Get-ChildItem "$sdk/bin/64bit" -Filter *.dll | Select-Object -ExpandProperty Name
+          Write-Host "OBS dependency DLLs:"
+          Get-ChildItem "$dep/bin" -Filter *.dll | Select-Object -ExpandProperty Name
+          $env:NEONMASK_GRAPHICS_MODULE = "$sdk/bin/64bit/libobs-d3d11.dll"
+          $env:NEONMASK_LIBOBS_DATA_DIR = (Resolve-Path ".deps/obs-studio-31.1.1/libobs/data").Path
           ctest --test-dir build-win -C Release --output-on-failure
-          if ($LASTEXITCODE -ne 0) { throw "NeonMask tests failed" }
+          if ($LASTEXITCODE -ne 0) { throw "NeonMask tests (including D3D11 shader smoke) failed" }
       - name: Stage and verify portable plugin files
         run: |
           $ErrorActionPreference = "Stop"
