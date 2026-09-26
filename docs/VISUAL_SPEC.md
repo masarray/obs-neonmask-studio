@@ -27,6 +27,52 @@ a recorded human review against the intended reference family. A shape with
 only a single ordinary colored outline is not a completed premium design.
 Any missing family must be called *planned*, not represented as shipped.
 
+## Artistic direction: authored identity, not generic outlines
+
+Maintainer clarification: **beauty, futuristic feel, artistry and modern
+fancy linework** are the product. This is a geometric mask + frame;
+there is **no background-removal or portrait-segmentation requirement**.
+Keep the original video visible inside the mask and transparent outside
+the geometric silhouette. Manual subject X/Y pan/zoom is simply a framing
+transform, never a cutout detector.
+
+Each advertised design family needs a coherent visual composition with
+a deliberate silhouette and a recognizable **signature motif**. Use
+controlled asymmetry, arc-length-placed highlights, selective gaps,
+corner geometry, tapered or varying-width accents and rhythm between
+bright core and quieter supporting tracks where appropriate. A family
+must remain recognizable in static mode and at 320 × 180. Keep a
+continuous or intentionally interrupted visual anchor so a luminous
+frame does not look like a random collection of disconnected lines.
+Decorations support the frame without obscuring the subject.
+
+An ordinary uniform neon stroke with a broad blur, plus changed color,
+glow intensity or preset name, is **not** a new artistic family. An
+identical frame with randomly added sparks is also insufficient.
+For each family, write down its actual contour/ornament grammar and
+motion signature; compare actual OBS captures with the corresponding
+concept-board tile before calling it complete.
+
+Examples of intended motifs:
+- **Cyber Rounded / Neon Flow:** precise corner cuts, two-tone core,
+  selectively layered companion track and localized moving flare.
+- **Reactor Ring:** circular double-track rhythm, segmented luminous arcs,
+  restrained rotating hot spot and a deliberate seam.
+- **Tech HUD / Game UI:** anchored corner brackets, calibrated gaps,
+  small futuristic detail accents and clear negative space.
+- **Streamer / Chat:** stylized silhouette or explicit decorative tail,
+  purposeful dots and graceful corner transitions.
+- **Electric:** sparse bounded edge arcs, opt-in and visually composed,
+  not uncontrolled whole-frame noise.
+- **Emerald Hex / Diamond / Polygon:** crisp balanced joints and
+  contour-aware color/light placement; no stretched strokes.
+
+Do not introduce background removal, auto-face tracking or segmentation
+into the reference-to-delivery matrix. Image, gradient, SVG and OBS-source
+mask providers remain separate **mask-geometry capabilities**, not
+background removal, and remain later work after the authored procedural
+frame collection passes visual acceptance.
+
 ## Visual rules
 
 The visible face is the subject; the luminous frame supports it. Keep the center clear, avoid tinting skin, use a sharp core with a softer exterior halo, and keep rim spacing intentional. Glow should remain attractive over black, white and moving game footage. No opaque black rectangle around transparent content.
@@ -138,4 +184,4 @@ Quantitative targets at 1:1 source pixels:
 
 These are proposed gates; establish reference captures per supported backend before claiming a pass. Antialiasing differences need a documented tolerance, not unconditional pixel identity across drivers.
 
-Human review also checks visual balance, skin-color preservation, whether the core/mid glow/outer bloom are distinguishable at 320 × 180, presence and trajectory of the flow hot spot, purposeful separation of graphic tracks, compression/downscale appearance, electric flicker and whether the face remains the focus. Store preset, input fixture identity, OBS/backend/version, resolution and deterministic animation times with each capture. Never label the concept board as an actual plugin screenshot.
+Human review also checks visual balance, skin-color preservation, whether the core/mid glow/outer bloom are distinguishable at 320 × 180, presence and trajectory of the flow hot spot, purposeful separation of graphic tracks, compression/downscale appearance, electric flicker and whether the face remains the focus. Review the signature motif, intentional color placement, selective highlights, rhythm of solid/gapped lines, restrained asymmetry and recognizability without motion. Reject generic recolors or a single uniformly bright outline presented as a new premium family. Store preset, input fixture identity, OBS/backend/version, resolution and deterministic animation times with each capture. Never label the concept board as an actual plugin screenshot.
