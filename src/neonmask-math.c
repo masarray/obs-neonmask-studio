@@ -1,10 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "neonmask-math.h"
 #include <math.h>
+#include <float.h>
 
 float nm_clamp(float value, float min_value, float max_value)
 {
-    if (!isfinite(value)) return min_value;
+    /* Comparison also rejects NaN/Inf and avoids non-portable C isfinite. */
+    if (!(value >= -FLT_MAX && value <= FLT_MAX)) return min_value;
     return fminf(max_value, fmaxf(min_value, value));
 }
 
