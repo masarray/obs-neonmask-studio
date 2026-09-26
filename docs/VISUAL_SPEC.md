@@ -203,3 +203,22 @@ Do not advertise a named new visual family from a recolored common rim.
 Evaluate the Phase-B build side by side with the supplied proposal using
 the exact same owned source and scene layout. Capture Static/Flow/Pulse,
 dark/light scene, size/downscale, and a mask shifted near canvas edges.
+
+
+## Phase C first hero: Cyber Rounded
+
+Design grammar: preserve the sharp luminous base, separate broken outer
+support track and subtler inner guide, paired short horizontal/vertical
+corner traces, corner glints, intentional negative space, and an optional
+bright local highlight running around the *rounded contour's actual lengths*.
+In Static mode the corner traces and deliberate gaps must still communicate
+an authored, futuristic frame. The mask and subject transform remain those
+from Phase A; cosmetic tracks never redefine the portrait silhouette.
+
+This implementation does **not** claim pixel-identical reproduction of the
+marketing board. The Cyber recipe is opt-in (selected Cyber preset or manual
+Signature Frame Detailing control). It requires actual Windows OBS comparison
+against the supplied proposal on light/dark and 320×180 scenes, including
+cropping near edges and skin-color preservation. Other proposed style
+families are not rebranded copies of Cyber; they need distinct geometry and
+their own visual proof.
