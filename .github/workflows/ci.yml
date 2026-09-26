@@ -3,17 +3,34 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   geometry:
-    runs-on: ubuntu-24.04
+    name: Headless tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Configure headless tests
         run: cmake -S . -B build-test -DNEONMASK_BUILD_PLUGIN=OFF -DNEONMASK_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+      - name: Build Release
+        run: cmake --build build-test --config Release --parallel
+      - name: Test Release
+        run: ctest --test-dir build-test -C Release --output-on-failure
+  undefined-behavior:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure UBSan
+        run: cmake -S . -B build-sanitize -DNEONMASK_BUILD_PLUGIN=OFF -DNEONMASK_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-fsanitize=undefined -fno-sanitize-recover=all" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=undefined"
       - name: Build
-        run: cmake --build build-test --parallel
+        run: cmake --build build-sanitize --parallel
       - name: Test
-        run: ctest --test-dir build-test --output-on-failure
+        run: ctest --test-dir build-sanitize --output-on-failure
   linux-plugin:
     runs-on: ubuntu-24.04
     steps:
@@ -30,6 +47,12 @@ jobs:
         run: ctest --test-dir build --output-on-failure
       - name: Stage plugin
         run: cmake --install build --prefix package
+      - name: Verify staged files
+        run: |
+          test -f package/share/obs/obs-plugins/obs-neonmask/shaders/neon-mask.effect
+          test -f package/share/obs/obs-plugins/obs-neonmask/locale/en-US.ini
+          test -f package/share/obs/obs-plugins/obs-neonmask/locale/id-ID.ini
+          find package -name 'obs-neonmask.so' | grep -q .
       - name: Upload Linux package
         uses: actions/upload-artifact@v4
         with:

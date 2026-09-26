@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "neonmask-presets.h"
-#include "neonmask-math.h"
 
 /* Single source of truth for the built-in designs. Color values are OBS RGBA
  * property integers (0x00BBGGRR), not shader float4/BGRA packed colors. */
