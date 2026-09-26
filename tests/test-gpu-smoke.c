@@ -42,7 +42,7 @@ int main(int argc, char **argv)
         dstr_free(&data_dir);
         char *effect_file = obs_find_data_file("default.effect");
         if (!effect_file) {
-            fprintf(stderr, "FAIL: cannot find libobs default.effect in %s\\n", libobs_data);
+            fprintf(stderr, "FAIL: cannot find libobs default.effect in %s\n", libobs_data);
             obs_shutdown();
             return 2;
         }
