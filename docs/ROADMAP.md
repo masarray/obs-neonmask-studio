@@ -1,6 +1,6 @@
 # Delivery roadmap and evidence ledger
 
-Snapshot: 2026-09-26. Main inspected at `039169cf1b30c9e20a17b9393e0b5de5c708c008`.
+Snapshot: 2026-09-26. Main after PR #6: `e4d01b56528ca27f07c10d8caf48f7565e7b5abc`.
 This file owns delivery status; [PRODUCT_SPEC.md](PRODUCT_SPEC.md) owns requirements.
 Update the ledger in the same change that advances implementation or verification.
 
@@ -13,12 +13,12 @@ Update the ledger in the same change that advances implementation or verificatio
 | Neon | Dual color, analytic glow, pulse/flow, four styles, four presets | Concept-board parity not established |
 | State | Clamping and preset table; editable properties | Versioned schema, complete migration and atomic handoff design not implemented |
 | Safety | Shader load/uniform checks; bypass; effect cleanup | Fault injection, resource accounting and soak pending |
-| CI | Headless/platform builds, OpenGL compile smoke, Windows preview workflow | Workflow existence is not runtime certification |
+| CI | Headless/platform builds, OpenGL and Windows D3D11 compile smokes, Windows preview ZIP | Final OBS frontend/pixel checks and benchmarks remain pending |
 | Assets/workers | No custom image/SVG/live-mask provider | Bounded service is a future requirement |
 | Performance | Procedural one-effect design | No hardware budget evidence recorded |
 | Padding | Existing source canvas only | Large glow can clip; safe-fit/expanded-output validation pending |
 
-At inspection, [PR #6](https://github.com/masarray/obs-neonmask-studio/pull/6) is open for D3D11 shader compilation smoke; its Windows job is in progress. Re-check current state before working on that slice. It does not establish pixel correctness even after passing. Avoid duplicating this work.
+[PR #6](https://github.com/masarray/obs-neonmask-studio/pull/6) merged after Windows D3D11 shader compilation smoke passed: [workflow run 36236980372](https://github.com/masarray/obs-neonmask-studio/actions/runs/36236980372), head SHA `80cfce3569f0ef7187109b29c9d6f26f21dd67d0`, preview artifact ID `10904645446`. This certifies a backend compiler/device check, not rendered pixels, frontend use, performance or other OBS versions.
 
 ## Milestones, in dependency order
 
@@ -37,7 +37,7 @@ Performance work is continuous through M0–M5. Stable procedural release can sh
 
 ## Immediate work queue
 
-1. Re-check PR #6/main and obtain the exact Windows preview artifact; record what backend smoke actually proves.
+1. Install the verified Windows preview in OBS Studio 31.1.1 portable and record the OBS log, final output captures and renderer; reproduce and fix any loading/visual defects.
 2. Render deterministic fixtures through the real OBS composition path. Focus on semi-transparent input, color packing, small sources, maximum glow and filter order.
 3. Establish GPU/CPU/memory baseline on named Windows hardware. Do not claim “lighter than Advanced Masks” without a like-for-like mask-only comparison plus separate neon overhead.
 4. Extract canonical validation/config from the filter while preserving all current settings and enum IDs. Add regression tests for invalid values and older scenes.
