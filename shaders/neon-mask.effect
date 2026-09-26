@@ -31,10 +31,10 @@ struct VertData {
     float2 uv : TEXCOORD0;
 };
 
-VertData mainTransform(VertData v)
+VertData mainTransform(VertData v_in)
 {
-    v.pos = mul(float4(v.pos.xyz, 1.0), ViewProj);
-    return v;
+    v_in.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+    return v_in;
 }
 
 float roundedBoxDistance(float2 p, float2 bounds, float radius)
@@ -72,12 +72,12 @@ float shapeDistance(float2 p)
                               min(corner_radius, min(half_size.x, half_size.y)));
 }
 
-float4 drawNeonMask(VertData v) : TARGET
+float4 drawNeonMask(VertData v_in) : TARGET
 {
     const float TAU = 6.28318530718;
-    float2 p = v.uv * uv_size - uv_size * 0.5;
+    float2 p = v_in.uv * uv_size - uv_size * 0.5;
     float d = shapeDistance(p);
-    float4 src = image.Sample(image_sampler, v.uv);
+    float4 src = image.Sample(image_sampler, v_in.uv);
     float mask = 1.0 - smoothstep(-max(feather, 0.5), max(feather, 0.5), d);
     float baseA = src.a * mask;
     // OBS's non-direct filter texrender contains premultiplied RGB.

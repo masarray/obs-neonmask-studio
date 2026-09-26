@@ -17,6 +17,10 @@ assert uniforms["color_a"] == uniforms["color_b"] == "float4"
 assert uniforms["uv_size"] == uniforms["half_size"] == "float2"
 assert shader.count("technique Draw") == 1
 assert shader.count("float4 drawNeonMask(") == 1
+assert "VertData mainTransform(VertData v_in)" in shader
+assert "float4 drawNeonMask(VertData v_in)" in shader
+assert "vertex_shader = mainTransform(v_in)" in shader
+assert "pixel_shader = drawNeonMask(v_in)" in shader
 assert shader.count("{") == shader.count("}")
 assert "OBS_NO_DIRECT_RENDERING" in host, "Premultiplied input contract requires capture"
 assert "OBS_ALLOW_DIRECT_RENDERING" not in host
