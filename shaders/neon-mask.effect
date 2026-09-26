@@ -17,6 +17,10 @@ uniform int style_id;
 uniform float feather;
 uniform float glow_radius;
 uniform float glow_strength;
+uniform float mid_glow_strength;
+uniform float bloom_strength;
+uniform float hotspot_strength;
+uniform float hotspot_size;
 uniform float4 color_a;
 uniform float4 color_b;
 uniform float color_phase;
@@ -124,19 +128,16 @@ float4 drawNeonMask(VertData v_in) : TARGET
     float3 premul = src.rgb * mask;
     float outA = baseA;
 
-    // Both the core and halo are composited over the masked source in
-    // premultiplied space; final output is straight alpha as expected by OBS.
+    // Phase B: three light scales on the ONE mask SDF. Keep the sharp base
+    // rim visible in Static/Pulse/Flow; only bloom breathes and only a local
+    // accent travels. Input RGB above is already premultiplied by libobs.
     if (border_enabled != 0) {
         float angle = atan2(p.y, p.x);
         float mixAmount = saturate(0.5 + 0.5 * sin(angle + TAU * color_phase));
         float3 neon = lerp(color_a.rgb, color_b.rgb, mixAmount);
-        float activity = 1.0;
-        if (animation_id == 1) {
-            activity = 0.72 + 0.28 * sin(TAU * pulse_phase);
-        } else if (animation_id == 2) {
-            float travel = cos(angle - TAU * flow_phase);
-            activity = 0.52 + 0.48 * pow(saturate(0.5 + 0.5 * travel), 12.0);
-        }
+        float3 outerColor = lerp(neon, color_b.rgb, 0.28);
+        float3 midColor = lerp(neon, float3(1.0, 1.0, 1.0), 0.15);
+        float3 fineColor = lerp(neon, float3(1.0, 1.0, 1.0), 0.72);
 
         float segmentAlpha = 1.0;
         if (segment_count > 1) {
@@ -144,45 +145,101 @@ float4 drawNeonMask(VertData v_in) : TARGET
             segmentAlpha = smoothstep(0.015, 0.08, phase) *
                            (1.0 - smoothstep(0.82, 0.98, phase));
         }
-        float band = 1.0 - smoothstep(max(0.0, border_width * 0.5 - 0.75),
-                                      border_width * 0.5 + 0.75, abs(d));
-        float coreA = saturate(band * activity * segmentAlpha);
-        float haloA = 0.0;
-        if (glow_enabled != 0 && glow_strength > 0.0) {
-            float gap = max(0.0, abs(d) - border_width * 0.5);
-            float radius2 = max(1.0, glow_radius * glow_radius);
-            float side = d > 0.0 ? 1.0 : 0.24;
-            haloA = saturate(glow_strength * activity * segmentAlpha * side *
-                             exp2(-3.0 * gap * gap / radius2));
+
+        // Flow starts from a beautiful static frame; the hotspot is additive
+        // instead of dimming the remaining 360 degrees of its core.
+        // Angular routing is provisional until contour-length flow is built.
+        float hot = 0.0;
+        if (animation_id == 2 && hotspot_strength > 0.0) {
+            float turnDelta = frac(angle / TAU + 1.0 - flow_phase + 0.5) - 0.5;
+            float width2 = max(0.0016, hotspot_size * hotspot_size);
+            hot = exp2(-2.0 * turnDelta * turnDelta / width2);
         }
-        // The same SDF supplies concentric rims: no second geometry pass,
-        // no texture upload and no radial image stretching on resized facecams.
+        float breath = 1.0;
+        if (animation_id == 1)
+            breath = 0.84 + 0.16 * sin(TAU * pulse_phase);
+
+        float halfCore = max(0.25, border_width * 0.5);
+        float band = 1.0 - smoothstep(max(0.0, halfCore - 0.75),
+                                      halfCore + 0.75, abs(d));
+        float coreA = saturate(band * segmentAlpha * 0.95);
+        float fineA = saturate((1.0 - smoothstep(0.0,
+                         max(0.85, border_width * 0.24), abs(d))) *
+                         segmentAlpha * 0.46);
+
+        // Separate mid glow and broad bloom: independently adjustable light
+        // envelopes, soft exterior and restrained inward image spill.
+        // All terms stay bounded; no full-frame blur or GPU readback.
+        float midA = 0.0;
+        float outerA = 0.0;
+        if (glow_enabled != 0 && glow_strength > 0.0) {
+            float gap = max(0.0, abs(d) - halfCore);
+            float midRadius = max(2.0, glow_radius * 0.36);
+            float outerRadius = max(1.0, glow_radius);
+            float side = d > 0.0 ? 1.0 : 0.13;
+            float glowGate = 0.52 + 0.48 * segmentAlpha;
+            midA = saturate(glow_strength * mid_glow_strength * 0.58 *
+                            side * breath * glowGate *
+                            exp2(-3.0 * gap * gap / (midRadius * midRadius)));
+            outerA = saturate(glow_strength * bloom_strength * 0.46 *
+                              side * breath * glowGate *
+                              exp2(-2.0 * gap * gap / (outerRadius * outerRadius)));
+            // Traveling brightness grows locally without switching off the
+            // base frame or flashing the whole portrait.
+            midA = saturate(midA * (1.0 + 0.65 * hot * hotspot_strength));
+            outerA = saturate(outerA * (1.0 + 0.38 * hot * hotspot_strength));
+        }
+
+        // Visual grammar: narrow supporting tracks and anchored corner glints
+        // reuse this contour. No decorative layer can change mask coverage.
         float rimA = 0.0;
+        float glintA = 0.0;
         if (style_id == 1 || style_id == 2) {
-            float spacing = border_width * 0.5 + 3.0;
-            float outerRim = 1.0 - smoothstep(0.35, 1.30, abs(d - spacing));
-            float innerRim = 1.0 - smoothstep(0.35, 1.30, abs(d + spacing));
+            float spacing = halfCore + 3.0;
+            float outerRim = 1.0 - smoothstep(0.30, 1.15, abs(d - spacing));
+            float innerRim = 1.0 - smoothstep(0.30, 1.15, abs(d + spacing));
             float rimGate = 1.0;
             if (style_id == 2) {
                 float dash = frac((angle / TAU + 0.5) * 16.0);
                 rimGate = smoothstep(0.015, 0.07, dash) *
                           (1.0 - smoothstep(0.75, 0.92, dash));
             }
-            rimA = saturate((outerRim * 0.52 + innerRim * 0.32) *
-                            activity * rimGate);
+            rimA = saturate((outerRim * 0.58 + innerRim * 0.30) * rimGate);
+            if (shape_id == 0 || shape_id == 5) {
+                float2 q = abs(rotatePoint(p, shape_rotation)) /
+                           max(half_size, float2(1.0, 1.0));
+                float cornerZone = smoothstep(0.72, 0.92, q.x) *
+                                   smoothstep(0.72, 0.92, q.y);
+                glintA = saturate(outerRim * cornerZone * 0.58);
+            }
         } else if (style_id == 3) {
-            // Editorial/minimal style: precise core with restrained bloom.
-            coreA *= 0.68;
-            haloA *= 0.42;
+            coreA *= 0.80;
+            fineA *= 0.62;
+            midA *= 0.65;
+            outerA *= 0.53;
         }
 
+        // Premultiplied 'over', from broadest envelope to fine bright line.
+        // The final conversion to straight alpha below is required by OBS.
         float3 rimColor = lerp(color_b.rgb, color_a.rgb, 0.35);
-        premul = neon * haloA + premul * (1.0 - haloA);
-        outA = haloA + outA * (1.0 - haloA);
+        premul = outerColor * outerA + premul * (1.0 - outerA);
+        outA = outerA + outA * (1.0 - outerA);
+        premul = midColor * midA + premul * (1.0 - midA);
+        outA = midA + outA * (1.0 - midA);
         premul = rimColor * rimA + premul * (1.0 - rimA);
         outA = rimA + outA * (1.0 - rimA);
+        premul = fineColor * glintA + premul * (1.0 - glintA);
+        outA = glintA + outA * (1.0 - glintA);
         premul = neon * coreA + premul * (1.0 - coreA);
         outA = coreA + outA * (1.0 - coreA);
+        premul = fineColor * fineA + premul * (1.0 - fineA);
+        outA = fineA + outA * (1.0 - fineA);
+
+        float hotspotA = saturate(hot * hotspot_strength * band *
+                                  segmentAlpha * 0.84);
+        float3 hotspotColor = lerp(neon, float3(1.0, 1.0, 1.0), 0.90);
+        premul = hotspotColor * hotspotA + premul * (1.0 - hotspotA);
+        outA = hotspotA + outA * (1.0 - hotspotA);
     }
     // The final effect outputs straight alpha for OBS's SRC_ALPHA blend stage.
     float3 straight = outA > 0.00001 ? premul / outA : float3(0.0, 0.0, 0.0);
