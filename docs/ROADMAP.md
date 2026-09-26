@@ -73,6 +73,8 @@ Do not start a new roadmap in another file. New architectural choices append or 
 
 ## M1 animation continuity (implementation and evidence limits)
 
+The same M1 correction distinguishes an explicit saved `schema_version` from an OBS default via `obs_data_has_user_value`. Without this, the default `1` would hide legacy v0 scenes; the libobs smoke now tests that API contract. Actual scene import/restart evidence remains pending.
+
 The procedural renderer now uses pure-C `neonmask-motion.*`: bounded double-precision
 phase for color gradient, pulse, and traveling accent, uploaded as float turns.
 This fixes the exact-hour `fmodf(time, 3600)` jump and preserves phase when a
