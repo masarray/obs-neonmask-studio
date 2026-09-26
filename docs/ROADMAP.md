@@ -13,7 +13,7 @@ Update the ledger in the same change that advances implementation or verificatio
 | Neon | Dual color, analytic glow, pulse/flow, four styles and presets; independent bounded double-precision phase accumulators | Actual eight-hour OBS soak and final rendered pixels pending |
 | State | Canonical pure-C config snapshot, schema v1, v0 legacy marker migration, complete preset values | OBS callback handoff/lifecycle concurrency still needs runtime evidence; future schema/import UI not exposed |
 | Safety | Shader load/uniform checks; bypass; effect cleanup | Fault injection, resource accounting and soak pending |
-| CI | Headless/platform builds, OpenGL and Windows D3D11 compile smokes, Windows preview ZIP; M0 synthetic fixture generator and build provenance in preview pipeline | Final OBS frontend/pixel checks and benchmarks remain pending |
+| CI | Headless/platform builds, OpenGL and Windows D3D11 compile smokes, Windows preview ZIP; M0 synthetic fixture generator and build provenance in preview pipeline | Direct GPU effect pixel fixtures cover only part of G4; final OBS source/filter-chain captures and benchmarks remain pending |
 | Assets/workers | No custom image/SVG/live-mask provider | Bounded service is a future requirement |
 | Performance | Procedural one-effect design | No hardware budget evidence recorded |
 | Padding | Existing source canvas only | Large glow can clip; safe-fit/expanded-output validation pending |
@@ -53,11 +53,26 @@ separately from the installable plugin ZIP and records the exact checked-out
 commit, workflow run, OBS 31.1.1 SDK and both ZIP checksums. The headless
 matrix verifies PNG structure, CRC, dimensions, RGBA and alpha categories.
 
-This removes test-input ambiguity; it does **not** establish G4 output-pixel
-correctness or G5 OBS frontend/lifecycle behavior. Those still require real
+This removes test-input ambiguity. The shader smoke now renders three small
+synthetic textures directly to an actual GPU target and reads alpha/color pixels
+(opaque center, premultiplied half-alpha center, outside-mask transparency, and
+border-only rim). It is **partial G4**: not the final OBS composition, not an
+image-source/crop/filter-chain test, and not G5 OBS frontend/lifecycle evidence. Those still require real
 captured OBS output and logs on Windows as specified in
 [M0_VISUAL_TEST.md](M0_VISUAL_TEST.md). G6 hardware timing and eight-hour soak
 are not claimed.
+
+## M0 partial GPU pixel gate
+
+`tests/test-gpu-smoke.c` uses libobs to compile and **draw** the shipped effect
+with a tiny synthetic texture, stage its output, and compare sampled pixels
+under both Linux/OpenGL and Windows/D3D11 workflows. Runtime readback occurs
+only in the CI executable; the shipping filter has no GPU-to-CPU readback.
+The selected samples assert a transparent outside corner, a preserved opaque
+red center, a premultiplied half-alpha center, and a neon rim with fully
+transparent source. This is a targeted shader-level acceptance gate, not a
+substitute for the final OBS canvas screenshots and filter-chain evidence
+required by G4/G5 or the GPU performance report required by G6.
 
 ## Definition of done for a work item
 

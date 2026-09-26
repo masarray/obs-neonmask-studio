@@ -40,7 +40,7 @@ Fixed Low/Balanced/High modes may be introduced after measurements. Reduce optio
 | G6 Performance/soak | Budget report, lifecycle stress and memory checks on declared hardware | Universal absence of crashes |
 | G7 Release | Exact artifact provenance, install/restart/rollback checks and known limitations | Support for untested platforms |
 
-Current scripts cover parts of G1–G3 only; inspect run results rather than inferring success from script presence. The motion suite advances G1 by simulating eight hours of 60 fps ticks, but it does **not** satisfy the eight-hour OBS runtime/driver/memory soak in G6. Follow [GPU_SMOKE.md](GPU_SMOKE.md) and [WINDOWS_PREVIEW.md](WINDOWS_PREVIEW.md) for setup.
+Automated suites cover G1–G3 and a **partial G4 direct-effect pixel fixture**: real OpenGL/D3D11 framebuffer readback samples opaque, premultiplied half-alpha and border-only inputs. This does not exercise the OBS source/filter chain or final canvas output. Inspect run results rather than inferring success from script presence. The motion suite advances G1 by simulating eight hours of 60 fps ticks, but it does **not** satisfy the eight-hour OBS runtime/driver/memory soak in G6. Follow [GPU_SMOKE.md](GPU_SMOKE.md) and [WINDOWS_PREVIEW.md](WINDOWS_PREVIEW.md) for setup.
 
 ## Reliability and failure matrix
 
