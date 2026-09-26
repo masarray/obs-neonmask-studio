@@ -1,0 +1,94 @@
+name: Windows native plugin
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: neonmask-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-plugin:
+    name: OBS 31.1.1 / Windows x64
+    runs-on: windows-2022
+    timeout-minutes: 45
+    env:
+      OBS_VERSION: "31.1.1"
+      OBS_DEPS_VERSION: "2025-07-11"
+      OBS_SOURCE_SHA256: "2c8427c10b55ac6d68008df2e9a3e82f4647aaad18f105e30d4713c2de678ccf"
+      OBS_DEPS_SHA256: "c8c642c1070dc31ce9a0f1e4cef5bb992f4bff4882255788b5da12129e85caa7"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned OBS SDK sources and dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force .deps | Out-Null
+          $obsZip = Join-Path $PWD ".deps/obs-studio.zip"
+          $depsZip = Join-Path $PWD ".deps/obs-deps.zip"
+          Invoke-WebRequest -Uri "https://github.com/obsproject/obs-studio/archive/refs/tags/$env:OBS_VERSION.zip" -OutFile $obsZip
+          if ((Get-FileHash $obsZip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $env:OBS_SOURCE_SHA256) { throw "OBS source archive SHA256 mismatch" }
+          Invoke-WebRequest -Uri "https://github.com/obsproject/obs-deps/releases/download/$env:OBS_DEPS_VERSION/windows-deps-$env:OBS_DEPS_VERSION-x64.zip" -OutFile $depsZip
+          if ((Get-FileHash $depsZip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $env:OBS_DEPS_SHA256) { throw "OBS dependencies archive SHA256 mismatch" }
+          Expand-Archive -Path $obsZip -DestinationPath .deps -Force
+          New-Item -ItemType Directory -Force ".deps/obs-deps-$env:OBS_DEPS_VERSION-x64" | Out-Null
+          Expand-Archive -Path $depsZip -DestinationPath ".deps/obs-deps-$env:OBS_DEPS_VERSION-x64" -Force
+      - name: Build libobs Development SDK
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $source = (Resolve-Path ".deps/obs-studio-$env:OBS_VERSION").Path
+          $deps = (Resolve-Path ".deps/obs-deps-$env:OBS_DEPS_VERSION-x64").Path
+          $build = Join-Path $PWD ".deps/obs-build"
+          $sdk = Join-Path $PWD ".deps/obs-sdk"
+          cmake -S $source -B $build -G "Visual Studio 17 2022" -A x64 -DOBS_CMAKE_VERSION:STRING=3.0.0 -DOBS_VERSION_OVERRIDE:STRING=$env:OBS_VERSION -DENABLE_FRONTEND:BOOL=OFF -DENABLE_CORE_MODULES:BOOL=OFF -DENABLE_SCRIPTING:BOOL=OFF "-DCMAKE_PREFIX_PATH=$deps"
+          if ($LASTEXITCODE -ne 0) { throw "OBS SDK configure failed" }
+          cmake --build $build --target libobs --config Release --parallel
+          if ($LASTEXITCODE -ne 0) { throw "libobs build failed" }
+          cmake --install $build --component Development --config Release --prefix $sdk
+          if ($LASTEXITCODE -ne 0) { throw "libobs Development install failed" }
+          $config = Get-ChildItem -Path $sdk -Recurse -Filter "libobsConfig.cmake" | Select-Object -First 1
+          if (-not $config) { throw "libobsConfig.cmake not found in staged SDK" }
+          "LIBOBS_DIR=$($config.Directory.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Configure NeonMask against pinned libobs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $sdk = (Resolve-Path ".deps/obs-sdk").Path
+          $deps = (Resolve-Path ".deps/obs-deps-$env:OBS_DEPS_VERSION-x64").Path
+          if (-not $env:LIBOBS_DIR) { throw "LIBOBS_DIR was not exported" }
+          cmake -S . -B build-win -G "Visual Studio 17 2022" -A x64 -DNEONMASK_BUILD_PLUGIN:BOOL=ON -DNEONMASK_BUILD_TESTS:BOOL=ON "-Dlibobs_DIR=$env:LIBOBS_DIR" "-DCMAKE_PREFIX_PATH=$sdk;$deps"
+          if ($LASTEXITCODE -ne 0) { throw "NeonMask configure failed" }
+      - name: Build and test Release
+        shell: pwsh
+        run: |
+          cmake --build build-win --config Release --parallel
+          if ($LASTEXITCODE -ne 0) { throw "NeonMask build failed" }
+          ctest --test-dir build-win -C Release --output-on-failure
+          if ($LASTEXITCODE -ne 0) { throw "NeonMask tests failed" }
+      - name: Stage portable OBS plugin
+        shell: pwsh
+        run: |
+          $package = Join-Path $PWD "package"
+          cmake --install build-win --config Release --prefix $package
+          if ($LASTEXITCODE -ne 0) { throw "NeonMask install failed" }
+          $required = @(
+            (Join-Path $package "obs-plugins/64bit/obs-neonmask.dll"),
+            (Join-Path $package "data/obs-plugins/obs-neonmask/shaders/neon-mask.effect"),
+            (Join-Path $package "data/obs-plugins/obs-neonmask/locale/en-US.ini"),
+            (Join-Path $package "data/obs-plugins/obs-neonmask/locale/id-ID.ini")
+          )
+          foreach ($file in $required) { if (-not (Test-Path $file)) { throw "Missing staged artifact: $file" } }
+          Compress-Archive -Path "$package/*" -DestinationPath "obs-neonmask-studio-windows-x64.zip" -Force
+      - name: Upload portable Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs-neonmask-studio-windows-x64
+          path: |
+            obs-neonmask-studio-windows-x64.zip
+            package/
+          if-no-files-found: error
+          retention-days: 14
