@@ -15,6 +15,8 @@ Status: incremental target architecture anchored to [PRODUCT_SPEC.md](PRODUCT_SP
 | 007 | Fixed quality initially; opt-in adaptive quality later | Predictable streaming appearance; profile before adding a controller |
 | 008 | Reject arbitrary shaders and remote asset fetching | Keep import behavior deterministic and supportable |
 | 009 | No universal crash-proof claim | A native plugin shares the OBS process; a worker thread is not crash isolation |
+| 010 | Separate mask placement from source-image reframing | Users need independent X/Y face centering; preserve old centered scenes and avoid stretched source sampling |
+| 011 | Premium light hierarchy is a visual contract, not a fixed number of GPU passes | Distinct sharp core, mid glow, outer bloom and optional traveling accent share the canonical contour; justify extra passes only with measured evidence |
 
 ## Modules and dependency direction
 
@@ -45,6 +47,48 @@ Reject NaN/infinity, invalid dimensions and integer overflow before allocation o
 
 OBS callback scheduling must be checked against the pinned SDK before assuming serialization. Prefer the host's documented update scheduling for video data. For any genuine cross-thread producer, publish a complete snapshot with a lifetime-safe handoff; an atomic pointer alone does not solve reclamation. No blocking lock or destruction of a large payload in the render callback.
 
+## Framing contract: independent shape and image transforms
+
+The current implementation centers the mask in the captured source and
+samples the unmodified source UV. Replace that coupled assumption
+incrementally. Define a source-pixel coordinate system with origin at
+the captured source center, +X right and +Y down. Keep **four distinct**
+validated concepts in the complete config snapshot:
+
+- Mask center offset X/Y in source pixels; moves clipping, core, bloom and
+  all contour-anchored ornaments *together*.
+- Mask half-width/half-height (or independent normalized width/height), with
+  circle invariance and explicit ellipse behavior.
+- Subject pan X/Y in source pixels; changes source UV sampling without
+  moving the shape contour. Positive subject pan X/Y moves the visible
+  subject right/down inside a fixed mask.
+- Uniform subject zoom around the source/subject anchor; never apply
+  nonuniform UV scaling to fit different aspect ratios.
+
+Default pan and offsets are zero; default dimensions/zoom reproduce the
+current centered scene as closely as the existing renderer allows. New
+keys must have additive defaults and a tested v0/v1 scene migration. Do
+not change the source ID or existing shape/style enum numeric values.
+Properties use compact OBS-native X/Y numeric/slider controls and a
+Reset Framing operation; keep mask and subject groups distinguishable.
+
+The shader uses one canonical mask coordinate to evaluate coverage/distance
+for all contour effects and a separately transformed UV for sampling the
+source. Outside [0,1] UV, explicitly output zero source RGBA *before*
+mask composition (not a clamped border pixel). Preserve premultiplied
+alpha handling; guard zero sizes/NaN and define fit limits. Do not silently
+move the mask or distort/reframe the source to fit the halo. Compute
+translated bounds as part of safe-fit and communicate any insufficient
+margin. Distinguish the OBS scene transform from filter-local coordinates.
+CPU geometry and GPU uniforms must use the same validated transform.
+
+Initial implementation should prioritize independent X/Y + uniform zoom,
+followed by independent mask width/height and safe-fit. Test an off-center
+subject at 16:9, 4:3, 1:1 and portrait, source resizing, filter order,
+reset, preset changes and scene-restart preservation. Source UV does not
+magically expose video outside the actual captured source; user pan is
+limited to the provided pixels, or reveals intentional transparency.
+
 ## Geometry, contours and padding
 
 Define geometry in source pixels: center, half extents, rotation, corner parameters and transform. A mask provider yields coverage and a distance/contour representation. Border width is in source pixels; document that scene scaling scales the resulting border. Screen-pixel-invariant borders are a separate feature.
@@ -58,6 +102,35 @@ Safe-fit design: compute the entire effect envelope, including outer rim offset,
 When an effect cannot fit, offer a predictable fit adjustment or report the limit. Do not silently stretch video. Preserve existing scene behavior via an explicit legacy/safe-fit migration choice.
 
 Expanded padding is a later experiment: distinguish input dimensions, output dimensions, source UV transform and scene anchor; explicitly zero out samples outside the original input so clamp sampling cannot smear the webcam edge. Test crop/filter order, transform bounds and transitions. A linked companion source is a fallback design with lifecycle/scene-sync costs, not a free optimization.
+
+## Premium neon layering and animation contract
+
+Image #9 is the binding target direction for the shipped families. Keep a
+single contour-distance authority but represent the perceived light as
+separate independently controllable contributions: (1) sharp core, (2)
+near/mid rim glow, (3) broad outer bloom, (4) optional secondary track
+and sparse local highlights. A strong global halo slider that simply
+brightens the same uniform outline does not satisfy this contract.
+Provide bounded parameters for intensity/width/falloff and preserve
+skin-color/alpha. Do not assume adding bright pixels globally produces
+a premium look.
+
+In Flow mode, the existing angle-based activity is only a temporary
+preview; travel must use contour-relative arc length for noncircular
+shapes, with a stable base outline and a localized hot spot whose width
+and contrast can be controlled. Pulse preferentially modulates bloom
+while preserving core visibility. Support a static/reduced-motion
+appearance that retains the same layered identity. Keep already
+implemented bounded phase accumulators and no one-hour jump.
+
+First attempt a coherent analytic implementation inside the existing
+composition pass. If actual dark/light/full-size/320 × 180 OBS captures
+show it cannot achieve the target, evaluate a bounded additional
+graphics pass/render target with explicit ownership, alpha format and
+hardware cost; do not prohibit it solely to preserve an unproven
+"one-pass = premium" assumption. Conversely, do not introduce
+multipass bloom or worker threads without measured necessity.
+Quality and safe-fit gates cover every active layer and glint.
 
 ## Render and color contract
 
