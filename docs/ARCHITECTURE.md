@@ -206,3 +206,23 @@ bounded extra pass instead of silently accepting generic visual quality.
 The glow envelope is bounded but can still be clipped by the original
 source canvas near its edges; safe-fit/expanded-output is a separately
 validated follow-up, not falsely marked complete here.
+
+
+## ADR 014 — opt-in contour-space signature ornaments (Phase C1/C2)
+
+A signature ornament is a recipe layered over the existing canonical SDF:
+it may add signed-distance support tracks, intentional gaps, corner-bracket
+capsules and glow, but MUST NOT modify `baseA`, clipping or the underlying
+subject UV sampling. Introduce `ornament_mode` with ID 0 = legacy appearance
+and ID 1 = Cyber Rounded. Existing shape/style/preset IDs and schema v2 are
+unchanged. The first Cyber recipe uses normalized rounded-contour arc length
+(straights + quarter-circle arcs) for track rhythm and Flow phase. Other
+shapes retain their existing angular motion until corresponding authored
+recipes are implemented. This avoids a claim of universal path animation.
+
+The SVG/vector source strategy is an *authoring direction*, not a runtime
+parser or asset dependency in this PR. The first path grammar is analytic,
+GPU-evaluated and aligns to `half_size`, `corner_radius`,
+`shape_rotation` and `mask_offset`. Pixel-stage effects compose with
+premultiplied-over then return straight-alpha as before. Explicit settings
+and complete preset recipes preserve backwards-compatible scene identity.
