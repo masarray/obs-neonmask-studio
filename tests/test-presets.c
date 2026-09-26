@@ -26,7 +26,12 @@ int main(void)
         check("scale range", p.scale >= 0.30 && p.scale <= 0.96);
         check("roundness range", p.roundness >= 0.0 && p.roundness <= 1.0);
         check("width range", p.border_width >= 0.5 && p.border_width <= 32.0);
+        check("feather range", p.feather >= 0.5 && p.feather <= 30.0);
+        check("glow radius range", p.glow_radius >= 1.0 && p.glow_radius <= 80.0);
         check("glow range", p.glow_strength >= 0.0 && p.glow_strength <= 1.0);
+        check("speed range", p.speed >= 0.0 && p.speed <= 5.0);
+        check("border enabled", p.border_enabled);
+        check("glow enabled", p.glow_enabled);
         check("segments range", p.segments >= 0 && p.segments <= 48);
         check("border style range", p.style >= NM_STYLE_CLASSIC && p.style <= NM_STYLE_MINIMAL);
     }

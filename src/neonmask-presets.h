@@ -32,9 +32,14 @@ typedef struct nm_preset {
     double scale;
     double roundness;
     double border_width;
+    double feather;
+    double glow_radius;
     double glow_strength;
+    double speed;
     int segments;
     int style;
+    bool border_enabled;
+    bool glow_enabled;
 } nm_preset;
 
 /* IDs 1..4; 0 is Custom, not an editable preset. */
