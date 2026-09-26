@@ -12,7 +12,8 @@
 #include <graphics/vec4.h>
 
 static const char *const uniforms[] = {
-    "uv_size", "half_size", "corner_radius", "shape_id", "border_width",
+    "uv_size", "half_size", "mask_offset", "subject_pan", "subject_zoom",
+    "shape_rotation", "polygon_sides", "corner_radius", "shape_id", "border_width",
     "feather", "glow_radius", "glow_strength", "color_a", "color_b",
     "color_phase", "pulse_phase", "flow_phase", "animation_id", "segment_count",
     "border_enabled", "glow_enabled", "style_id", "image", "ViewProj"
@@ -49,12 +50,19 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
 
     struct vec2 dims;
     struct vec2 extents;
+    struct vec2 zero2;
     struct vec4 magenta;
     vec2_set(&dims, (float)W, (float)H);
     vec2_set(&extents, 24.0f, 24.0f);
+    vec2_set(&zero2, 0.0f, 0.0f);
     vec4_set(&magenta, 1.0f, 0.0f, 1.0f, 1.0f);
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "uv_size"), &dims);
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "half_size"), &extents);
+    gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "mask_offset"), &zero2);
+    gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "subject_pan"), &zero2);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "subject_zoom"), 1.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_rotation"), 0.0f);
+    gs_effect_set_int(gs_effect_get_param_by_name(effect, "polygon_sides"), 8);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "corner_radius"), 5.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "shape_id"), 0);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "border_width"), 4.0f);
