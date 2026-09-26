@@ -49,6 +49,30 @@ int main(void)
     near("ellipse x outer", nm_sd_ellipse_approx(100, 0, 80, 40), 20.0f, 0.001f);
     near("ellipse y outer", nm_sd_ellipse_approx(0, 60, 80, 40), 20.0f, 0.001f);
     check("ellipse invalid radii", nm_sd_ellipse_approx(0, 0, 0, 40) > 100000.0f);
+    nm_geometry framed = nm_make_geometry_framed(1920, 1080, 0.8f, 0.25f, 0.5f, 1.25f);
+    near("independent width factor", framed.half_width, 384.0f, 0.01f);
+    near("independent height factor", framed.half_height, 540.0f, 0.01f);
+    near("framed corner", framed.radius, 96.0f, 0.01f);
+    nm_point center = nm_mask_point(0.5f, 0.5f, 1920, 1080, 90, -45);
+    near("mask center relative X", center.x, -90.0f, 0.01f);
+    near("mask center relative Y", center.y, 45.0f, 0.01f);
+    nm_point uv = nm_source_uv(0.5f, 0.5f, 1920, 1080, 96, -54, 1.0f);
+    near("pan X shifts content right", uv.x, 0.45f, 0.0001f);
+    near("pan Y shifts content down", uv.y, 0.55f, 0.0001f);
+    nm_point zoom = nm_source_uv(1.0f, 0.5f, 1920, 1080, 0, 0, 2.0f);
+    near("uniform zoom X", zoom.x, 0.75f, 0.0001f);
+    near("uniform zoom Y", zoom.y, 0.5f, 0.0001f);
+    check("off-source transparent contract", !nm_uv_inside(nm_source_uv(1, 0.5f, 1920, 1080, 0, 0, 0.5f)));
+    check("inside-source contract", nm_uv_inside(nm_source_uv(0.5f, 0.5f, 1920, 1080, 0, 0, 1.0f)));
+    check("invalid UV is outside", !nm_uv_inside((nm_point){NAN, 0.5f}));
+    near("triangle top tip", nm_sd_regular_polygon(0,-50,50,50,3,0), 0, 0.001f);
+    check("triangle interior", nm_sd_regular_polygon(0,0,50,50,3,0) < -10.0f);
+    check("triangle exterior", nm_sd_regular_polygon(0,65,50,50,3,0) > 10.0f);
+    check("hexagon interior", nm_sd_regular_polygon(0,0,50,50,6,0) < -10.0f);
+    check("hexagon exterior", nm_sd_regular_polygon(55,0,50,50,6,0) > 4.0f);
+    near("octagon vertex", nm_sd_regular_polygon(50*cosf(-3.14159265f/2+3.14159265f/8),
+                 30*sinf(-3.14159265f/2+3.14159265f/8),50,30,8,0),0,0.001f);
+    check("polygon invalid sides", nm_sd_regular_polygon(0,0,50,50,13,0)>1e5f);
     check("color packed R,G,B", nm_obs_rgba(255, 49, 221) == 0x00DD31FFu);
     check("color channels clamped", nm_obs_rgba(256, 511, 258) == 0x0002FF00u);
     if (failures) {

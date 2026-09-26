@@ -31,7 +31,22 @@ int main(void)
     check("default style", cfg.style_id == NM_STYLE_DOUBLE);
     check("default border enabled", cfg.show_border);
     check("default glow enabled", cfg.show_glow);
+    check("neutral old scene mask position", cfg.mask_x == 0.0f && cfg.mask_y == 0.0f);
+    check("neutral old scene subject pan", cfg.subject_x == 0.0f && cfg.subject_y == 0.0f);
+    near("neutral old scene mask width", cfg.mask_width, 1.0f);
+    near("neutral old scene mask height", cfg.mask_height, 1.0f);
+    near("neutral old scene subject zoom", cfg.subject_zoom, 1.0f);
+    check("default polygon sides", cfg.polygon_sides == 8);
 
+    cfg.mask_x = INFINITY;
+    cfg.mask_y = -5000.0f;
+    cfg.mask_width = 0.01f;
+    cfg.mask_height = 5.0f;
+    cfg.subject_x = NAN;
+    cfg.subject_y = 5000.0f;
+    cfg.subject_zoom = 0.0f;
+    cfg.polygon_sides = 99;
+    cfg.polygon_rotation = INFINITY;
     cfg.scale = -FLT_MAX;
     cfg.roundness = INFINITY;
     cfg.border_px = -10.0f;
@@ -47,6 +62,15 @@ int main(void)
     cfg.secondary = 0x000A0B0Cu;
     nm_config_validate(&cfg);
 
+    near("mask x invalid", cfg.mask_x, -4096.0f);
+    near("mask y range", cfg.mask_y, -4096.0f);
+    near("mask width range", cfg.mask_width, 0.25f);
+    near("mask height range", cfg.mask_height, 1.25f);
+    near("subject x NaN", cfg.subject_x, -4096.0f);
+    near("subject y range", cfg.subject_y, 4096.0f);
+    near("subject zoom range", cfg.subject_zoom, 0.5f);
+    check("polygon sides range", cfg.polygon_sides == 12);
+    near("rotation invalid", cfg.polygon_rotation, -180.0f);
     near("scale clamp", cfg.scale, 0.30f);
     near("roundness inf fallback", cfg.roundness, 0.0f);
     near("border clamp", cfg.border_px, 0.5f);
@@ -57,10 +81,20 @@ int main(void)
     check("shape fallback", cfg.shape_id == NM_SHAPE_ROUNDED);
     check("animation fallback", cfg.animation_id == NM_ANIM_STATIC);
     check("style fallback", cfg.style_id == NM_STYLE_CLASSIC);
+    cfg.shape_id = NM_SHAPE_POLYGON;
+    nm_config_validate(&cfg);
+    check("new shape enum retained", cfg.shape_id == NM_SHAPE_POLYGON);
     check("segments clamp", cfg.segment_count == 48);
     check("primary forced opaque", (cfg.primary & 0xFF000000u) == 0xFF000000u);
     check("secondary forced opaque", (cfg.secondary & 0xFF000000u) == 0xFF000000u);
 
+    cfg.mask_x = 57.0f;
+    cfg.mask_y = -30.0f;
+    cfg.subject_x = 99.0f;
+    cfg.subject_y = -41.0f;
+    cfg.subject_zoom = 1.7f;
+    cfg.mask_width = 0.7f;
+    cfg.mask_height = 1.1f;
     cfg.feather_px = 29.0f;
     cfg.glow_px = 70.0f;
     cfg.animation_speed = 4.0f;
@@ -74,8 +108,16 @@ int main(void)
     near("preset speed complete", cfg.animation_speed, 0.65f);
     check("preset restores border", cfg.show_border);
     check("preset restores glow", cfg.show_glow);
+    near("preset retains mask X", cfg.mask_x, 57.0f);
+    near("preset retains mask Y", cfg.mask_y, -30.0f);
+    near("preset retains subject pan X", cfg.subject_x, 99.0f);
+    near("preset retains subject pan Y", cfg.subject_y, -41.0f);
+    near("preset retains subject zoom", cfg.subject_zoom, 1.7f);
+    near("preset retains custom width", cfg.mask_width, 0.7f);
+    near("preset retains custom height", cfg.mask_height, 1.1f);
 
     check("legacy schema supported", nm_config_schema_supported(0));
+    check("v1 legacy schema supported", nm_config_schema_supported(1));
     check("current schema supported", nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION));
     check("future schema rejected", !nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION + 1));
 
