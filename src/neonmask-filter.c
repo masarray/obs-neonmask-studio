@@ -262,7 +262,7 @@ static void nm_render(void *data, gs_effect_t *unused)
     vec2_set(&halfsize, f->shape_id == NM_SHAPE_CIRCLE ? rx : g.half_width,
              f->shape_id == NM_SHAPE_CIRCLE ? rx : g.half_height);
     /* Native OBS color properties are RGBA-packed. The filter's SRGB path
-     * expects linear RGB uniform values, unlike gs_effect_set_color (BGRA). */
+     * expects linear RGB uniform values; the BGRA helper is not applicable. */
     vec4_from_rgba_srgb(&primary, f->primary);
     vec4_from_rgba_srgb(&secondary, f->secondary);
     /* Disable direct bypass: the shader relies on captured premultiplied RGB. */
