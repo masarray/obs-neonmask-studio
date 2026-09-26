@@ -71,7 +71,7 @@ float regularPolygonDistance(float2 p, float2 bounds, int sides, float rotation)
 {
     float2 q = rotatePoint(p, rotation) / max(bounds, float2(0.001, 0.001));
     float a = atan2(q.y, q.x);
-    float sector = 6.28318530718 / max((float)sides, 3.0);
+    float sector = 6.28318530718 / max(float(sides), 3.0);
     float edge = cos(floor(0.5 + a / sector) * sector - a) * length(q) - 1.0;
     return edge * min(bounds.x, bounds.y);
 }
