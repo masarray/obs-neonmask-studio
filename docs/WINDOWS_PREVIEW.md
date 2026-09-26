@@ -14,4 +14,6 @@ Extract contents of the inner ZIP into the root of an OBS Studio portable instal
 
 The binary is unsigned and open source. No admin access or signing certificate is needed for a portable test.
 
-Successful CI proves compilation/linking, headless tests, and archive layout. It does NOT prove actual OBS Windows frontend loading, D3D11 shader compilation, visual fidelity, alpha behavior, or frame-time performance. Run-time checks remain mandatory before stable release.
+Successful CI proves compilation/linking, headless tests, archive layout, and shader compilation on the real libobs D3D11 backend of the Windows CI runner. It does NOT prove actual OBS Windows frontend filter interaction, correct final pixels, alpha behavior, filter chaining, or frame-time performance. Those runtime gates remain mandatory before stable release. See [GPU smoke details](GPU_SMOKE.md).
+
+Verified preview example: [PR #6 Windows/D3D11 run](https://github.com/masarray/obs-neonmask-studio/actions/runs/36236980372) (head SHA 80cfce3569f0ef7187109b29c9d6f26f21dd67d0). Artifact ID 10904645446, uploaded after all four CTests passed, including D3D11 shader compilation. Artifact retention is 14 days; use the latest successful main run thereafter.
