@@ -8,7 +8,10 @@ enum nm_shape {
     NM_SHAPE_CIRCLE = 1,
     NM_SHAPE_ELLIPSE = 2,
     NM_SHAPE_HEXAGON = 3,
-    NM_SHAPE_DIAMOND = 4
+    NM_SHAPE_DIAMOND = 4,
+    NM_SHAPE_RECTANGLE = 5,
+    NM_SHAPE_TRIANGLE = 6,
+    NM_SHAPE_POLYGON = 7
 };
 
 enum nm_animation {
