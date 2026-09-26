@@ -20,6 +20,29 @@ Update the ledger in the same change that advances implementation or verificatio
 
 [PR #6](https://github.com/masarray/obs-neonmask-studio/pull/6) merged after Windows D3D11 shader compilation smoke passed: [workflow run 36236980372](https://github.com/masarray/obs-neonmask-studio/actions/runs/36236980372), head SHA `80cfce3569f0ef7187109b29c9d6f26f21dd67d0`, preview artifact ID `10904645446`. This certifies a backend compiler/device check, not rendered pixels, frontend use, performance or other OBS versions.
 
+## Actual user OBS feedback — September 26 (design-gap record)
+
+User screenshots #1–#8 demonstrate that the filter loads and displays the
+five shipped shapes and four presets in OBS. This is useful preliminary
+frontend evidence, **not** complete G4/G5 (the exact artifact SHA, host
+version, test matrix and video/performance data have not been recorded).
+Relative to user concept board image #9, the pictured outputs still
+lack independent facepan X/Y, the multi-scale premium luminous appearance,
+clearly distinguishable secondary tracks and pronounced localized animation.
+
+**North star is unchanged:** achieve the intended image #9 visual families
+in actual OBS, not just ship all names from the concept board. The revised
+[PRODUCT_SPEC.md](PRODUCT_SPEC.md) and [VISUAL_SPEC.md](VISUAL_SPEC.md) make
+visual acceptance explicit; [QUALITY_GATES.md](QUALITY_GATES.md) owns real
+capture evidence. Do not claim current screenshots match the board.
+
+Current code-level diagnosis: the config exposes only a uniform mask scale
+and no independent pan/center/zoom; the shader evaluates a centered SDF,
+samples unchanged UV and mostly combines core + one analytic halo with
+angle-derived color/flow. The image #9 target calls for independent
+framing, luminous hierarchy and contour-aware details. This is a
+prioritized implementation gap, not a reason for a rewrite.
+
 ## Milestones, in dependency order
 
 Work in small vertical slices: implementation + relevant automated test + runnable artifact + evidence. These milestones refine the earlier README phase list; old “Phase 2” wording is historical.
@@ -28,20 +51,48 @@ Work in small vertical slices: implementation + relevant automated test + runnab
 | --- | --- | --- |
 | M0 — reproducible baseline | Reconcile PR #6, record exact preview artifact, select reference GPUs; document actual Windows loading and captures | G1–G3 and initial G4/G5 evidence; list failures before adding features |
 | M1 — correctness and lifecycle | Canonical config validation/migrations; resource ownership; fault handling; alpha/color fixtures; long-session motion fix if tests expose it | G4/G5 pass for current shapes, baseline performance and memory report |
-| M2 — polished procedural core | Safe-fit envelope, precision shapes including triangle/polygon, transforms, perimeter-based dashes/flow, compact grouped controls | Existing and new shapes pass visual matrix; four refined presets within budget |
-| M3 — signature visual collection | Capped layers, corner ornaments, ring, streamer/chat frame, optional electric; reduced motion; preset serialization | Reference-family captures, import validation, max-preset benchmarks |
+| M2 — polished procedural core | **First** mask X/Y, subject pan X/Y and uniform zoom; then independent width/height and safe-fit; precision shapes/triangle/polygon and contour-length flow follow; compact grouped controls | Off-center source reframes without contour shift or stretch; existing and new shapes pass visual matrix; four premium refined presets within budget |
+| M3 — signature visual collection | Premium sharp core + mid glow + broad bloom + traveling hotspot ahead of cosmetic preset proliferation; then capped layers/corner ornaments/ring/streamer/chat/optional electric, reduced motion and preset serialization | Actual OBS image #9 family comparison, static/motion captures, import validation and max-preset benchmarks |
 | M4 — broader masks | Image/gradient first; then SVG and live sources through bounded providers/jobs/cache | Cancellation/race/input limits and per-provider cost/failure gates |
 | M5 — stable distribution | Eight-hour soak, compatibility matrix, native packaging, artifact provenance, install/upgrade/rollback guide | G1–G7 pass on every advertised platform |
 
 Performance work is continuous through M0–M5. Stable procedural release can ship after M3 and M5 without waiting for all M4 providers, provided scope is explicitly documented. This avoids delaying a useful product for complete upstream parity.
 
+## Next-preview implementation order (vertical PRs)
+
+1. **Framing / X-Y first (MASK-04):** separate mask center X/Y from subject
+   pan X/Y and uniform zoom; keep default centered and preserve existing
+   scene settings and preset IDs. Add OBS controls, pure-C geometry tests,
+   shader uniform tests and a Windows preview artifact. Prove with an
+   off-center subject; do not hide a pan under global scene transform.
+2. **Premium neon fundamentals (NEON-01/05):** refine crisp core, mid
+   glow and outer bloom, independent contrast/falloff and localized
+   visible flow/pulse while leaving inner image clear. Test direct GPU
+   pixels and real OBS captures, including 320 × 180. Keep a polished
+   static appearance. Profile before adding a render pass.
+3. **Safe-fit and geometry:** account for all translated light/ornament
+   bounds; no source-edge smear or unwanted outer clipping. Add
+   independent shape dimensions, precision contour and arc-length
+   motion in reviewable slices.
+4. **Signature design recipes:** double/triple rim, moving ring, bright
+   corner accents/HUD, Streamer/Chat then optional bounded Electric.
+   No new advertised premium preset without an actual OBS capture.
+5. **Reliability and release:** source/restart/legacy-scene tests,
+   real performance measurements and eight-hour soak; honor G1–G7.
+   Image/gradient/SVG/live-mask providers remain later M4 work.
+
+Each runtime slice must update this ledger with its commit, CI jobs,
+downloadable GitHub artifact, actual OBS screenshots/clips where available,
+measured performance if applicable and explicit pending gates. Existing
+default/preset save compatibility is an acceptance condition, not optional.
+
 ## Immediate work queue
 
-1. Use the [M0 visual test procedure](M0_VISUAL_TEST.md) and its separate synthetic fixture pack with the pinned Windows preview in OBS Studio 31.1.1 portable; record exact artifact metadata, OBS log, final output captures and renderer; reproduce and fix any loading/visual defects.
+1. Preserve the user screenshots #1–#8 as initial functional feedback; obtain OBS log, version, artifact SHA and full-output captures to complete formal G4/G5. Use [M0 visual test procedure](M0_VISUAL_TEST.md).
 2. Render deterministic fixtures through the real OBS composition path. Focus on semi-transparent input, color packing, small sources, maximum glow, filter order, and static/flow frames at deterministic times.
 3. Establish GPU/CPU/memory baseline on named Windows hardware. Do not claim “lighter than Advanced Masks” without a like-for-like mask-only comparison plus separate neon overhead.
 4. ✅ Canonical validation/config extracted without changing existing setting keys or enum IDs; schema v1 treats missing-version scenes as v0, rejects future schemas, and has invalid-value/complete-preset regression tests. Next: verify saved v0/v1 scene fixtures in OBS and the callback handoff assumptions.
-5. Implement safe-fit bounds and perimeter mapping as separate reviewable slices; update screenshots and budgets.
+5. Implement the next-preview X/Y mask placement and independent subject pan/zoom before safe-fit/perimeter mapping; compare with image #9 family anatomy and update screenshots/budgets.
 6. M1 motion slice: replace the former 3600-second clock reset with independent bounded phases. Cross-platform tests simulate 8 hours of ticks, but do not establish the G6 eight-hour OBS runtime soak. Add signature ornaments only after geometry/pixel validation.
 
 ## M0 reproducible visual test inputs (automation, not runtime evidence)
