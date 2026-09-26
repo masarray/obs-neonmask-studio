@@ -14,6 +14,11 @@ struct nm_filter {
     gs_effect_t *effect;
     gs_eparam_t *uv_size;
     gs_eparam_t *half_size;
+    gs_eparam_t *mask_offset;
+    gs_eparam_t *subject_pan;
+    gs_eparam_t *subject_zoom;
+    gs_eparam_t *shape_rotation;
+    gs_eparam_t *polygon_sides;
     gs_eparam_t *corner_radius;
     gs_eparam_t *shape;
     gs_eparam_t *border_width;
@@ -58,9 +63,21 @@ static void nm_update(void *data, obs_data_t *settings)
         return;
     }
 
+    const float legacy_scale = (float)obs_data_get_double(settings, "scale");
+    const bool legacy_framing = schema < 2u;
+
     nm_config next = {
         .schema_version = NM_CONFIG_SCHEMA_VERSION,
-        .scale = (float)obs_data_get_double(settings, "scale"),
+        .scale = legacy_scale,
+        .mask_width = legacy_framing ? legacy_scale : (float)obs_data_get_double(settings, "mask_width"),
+        .mask_height = legacy_framing ? legacy_scale : (float)obs_data_get_double(settings, "mask_height"),
+        .mask_x_px = legacy_framing ? 0.0f : (float)obs_data_get_double(settings, "mask_x"),
+        .mask_y_px = legacy_framing ? 0.0f : (float)obs_data_get_double(settings, "mask_y"),
+        .subject_pan_x_px = legacy_framing ? 0.0f : (float)obs_data_get_double(settings, "subject_pan_x"),
+        .subject_pan_y_px = legacy_framing ? 0.0f : (float)obs_data_get_double(settings, "subject_pan_y"),
+        .subject_zoom = legacy_framing ? 1.0f : (float)obs_data_get_double(settings, "subject_zoom"),
+        .shape_rotation_deg = legacy_framing ? 0.0f : (float)obs_data_get_double(settings, "shape_rotation"),
+        .polygon_sides = legacy_framing ? 8 : (int)obs_data_get_int(settings, "polygon_sides"),
         .roundness = (float)obs_data_get_double(settings, "roundness"),
         .border_px = (float)obs_data_get_double(settings, "border_width"),
         .feather_px = (float)obs_data_get_double(settings, "feather"),
@@ -79,10 +96,20 @@ static void nm_update(void *data, obs_data_t *settings)
     nm_config_validate(&next);
     f->config = next;
 
-    /* Missing-version scenes are the v0 schema. Add the marker without
-     * changing any existing key or enum identity. */
-    if (schema == 0)
+    /* v0/v1 used one uniform scale. Migrate once to independent dimensions
+     * while keeping all old keys and enum values intact. */
+    if (legacy_framing) {
+        obs_data_set_double(settings, "mask_width", next.mask_width);
+        obs_data_set_double(settings, "mask_height", next.mask_height);
+        obs_data_set_double(settings, "mask_x", 0.0);
+        obs_data_set_double(settings, "mask_y", 0.0);
+        obs_data_set_double(settings, "subject_pan_x", 0.0);
+        obs_data_set_double(settings, "subject_pan_y", 0.0);
+        obs_data_set_double(settings, "subject_zoom", 1.0);
+        obs_data_set_double(settings, "shape_rotation", 0.0);
+        obs_data_set_int(settings, "polygon_sides", 8);
         obs_data_set_int(settings, "schema_version", NM_CONFIG_SCHEMA_VERSION);
+    }
 }
 
 static void nm_defaults(obs_data_t *settings)
@@ -94,6 +121,15 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_int(settings, "preset", 0);
     obs_data_set_default_int(settings, "shape", cfg.shape_id);
     obs_data_set_default_double(settings, "scale", cfg.scale);
+    obs_data_set_default_double(settings, "mask_width", cfg.mask_width);
+    obs_data_set_default_double(settings, "mask_height", cfg.mask_height);
+    obs_data_set_default_double(settings, "mask_x", cfg.mask_x_px);
+    obs_data_set_default_double(settings, "mask_y", cfg.mask_y_px);
+    obs_data_set_default_double(settings, "subject_pan_x", cfg.subject_pan_x_px);
+    obs_data_set_default_double(settings, "subject_pan_y", cfg.subject_pan_y_px);
+    obs_data_set_default_double(settings, "subject_zoom", cfg.subject_zoom);
+    obs_data_set_default_double(settings, "shape_rotation", cfg.shape_rotation_deg);
+    obs_data_set_default_int(settings, "polygon_sides", cfg.polygon_sides);
     obs_data_set_default_double(settings, "roundness", cfg.roundness);
     obs_data_set_default_double(settings, "border_width", cfg.border_px);
     obs_data_set_default_double(settings, "feather", cfg.feather_px);
@@ -127,6 +163,8 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_int(settings, "primary", cfg.primary & 0x00FFFFFFu);
     obs_data_set_int(settings, "secondary", cfg.secondary & 0x00FFFFFFu);
     obs_data_set_double(settings, "scale", cfg.scale);
+    obs_data_set_double(settings, "mask_width", cfg.scale);
+    obs_data_set_double(settings, "mask_height", cfg.scale);
     obs_data_set_double(settings, "roundness", cfg.roundness);
     obs_data_set_double(settings, "border_width", cfg.border_px);
     obs_data_set_double(settings, "feather", cfg.feather_px);
@@ -150,6 +188,25 @@ static bool nm_custom_changed(obs_properties_t *props, obs_property_t *property,
     return true;
 }
 
+static bool nm_reset_framing(obs_properties_t *props, obs_property_t *property, void *data)
+{
+    (void)props;
+    (void)property;
+    struct nm_filter *f = data;
+    if (!f || !f->context) return false;
+
+    obs_data_t *settings = obs_source_get_settings(f->context);
+    if (!settings) return false;
+    obs_data_set_double(settings, "mask_x", 0.0);
+    obs_data_set_double(settings, "mask_y", 0.0);
+    obs_data_set_double(settings, "subject_pan_x", 0.0);
+    obs_data_set_double(settings, "subject_pan_y", 0.0);
+    obs_data_set_double(settings, "subject_zoom", 1.0);
+    obs_source_update(f->context, settings);
+    obs_data_release(settings);
+    return true;
+}
+
 static obs_properties_t *nm_properties(void *data)
 {
     (void)data;
@@ -170,10 +227,28 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(shape, obs_module_text("Shape.Ellipse"), NM_SHAPE_ELLIPSE);
     obs_property_list_add_int(shape, obs_module_text("Shape.Hexagon"), NM_SHAPE_HEXAGON);
     obs_property_list_add_int(shape, obs_module_text("Shape.Diamond"), NM_SHAPE_DIAMOND);
+    obs_property_list_add_int(shape, obs_module_text("Shape.Rectangle"), NM_SHAPE_RECTANGLE);
+    obs_property_list_add_int(shape, obs_module_text("Shape.Triangle"), NM_SHAPE_TRIANGLE);
+    obs_property_list_add_int(shape, obs_module_text("Shape.Polygon"), NM_SHAPE_POLYGON);
     obs_property_set_modified_callback(shape, nm_custom_changed);
 
 #define NM_CUSTOM(expr) obs_property_set_modified_callback((expr), nm_custom_changed)
-    NM_CUSTOM(obs_properties_add_float_slider(props, "scale", obs_module_text("Scale"), 0.30, 0.96, 0.01));
+    obs_properties_t *mask_group = obs_properties_create();
+    NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_width", obs_module_text("Mask.Width"), 0.10, 0.98, 0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_height", obs_module_text("Mask.Height"), 0.10, 0.98, 0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_x", obs_module_text("Mask.PositionX"), -4096.0, 4096.0, 1.0));
+    NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_y", obs_module_text("Mask.PositionY"), -4096.0, 4096.0, 1.0));
+    NM_CUSTOM(obs_properties_add_float_slider(mask_group, "shape_rotation", obs_module_text("Mask.Rotation"), -180.0, 180.0, 1.0));
+    NM_CUSTOM(obs_properties_add_int_slider(mask_group, "polygon_sides", obs_module_text("Mask.PolygonSides"), 5, 12, 1));
+    obs_properties_add_group(props, "mask_geometry", obs_module_text("Group.MaskGeometry"), OBS_GROUP_NORMAL, mask_group);
+
+    obs_properties_t *subject_group = obs_properties_create();
+    NM_CUSTOM(obs_properties_add_float_slider(subject_group, "subject_pan_x", obs_module_text("Subject.PanX"), -4096.0, 4096.0, 1.0));
+    NM_CUSTOM(obs_properties_add_float_slider(subject_group, "subject_pan_y", obs_module_text("Subject.PanY"), -4096.0, 4096.0, 1.0));
+    NM_CUSTOM(obs_properties_add_float_slider(subject_group, "subject_zoom", obs_module_text("Subject.Zoom"), 0.25, 4.0, 0.01));
+    obs_properties_add_button2(subject_group, "reset_framing", obs_module_text("Subject.ResetFraming"), nm_reset_framing, data);
+    obs_properties_add_group(props, "subject_framing", obs_module_text("Group.SubjectFraming"), OBS_GROUP_NORMAL, subject_group);
+
     NM_CUSTOM(obs_properties_add_float_slider(props, "roundness", obs_module_text("Roundness"), 0.0, 1.0, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(props, "feather", obs_module_text("Feather"), 0.5, 30.0, 0.5));
     NM_CUSTOM(obs_properties_add_bool(props, "border_enabled", obs_module_text("Border.Enabled")));
@@ -223,6 +298,11 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
     } while (0)
         NM_PARAM(uv_size, "uv_size");
         NM_PARAM(half_size, "half_size");
+        NM_PARAM(mask_offset, "mask_offset");
+        NM_PARAM(subject_pan, "subject_pan");
+        NM_PARAM(subject_zoom, "subject_zoom");
+        NM_PARAM(shape_rotation, "shape_rotation");
+        NM_PARAM(polygon_sides, "polygon_sides");
         NM_PARAM(corner_radius, "corner_radius");
         NM_PARAM(shape, "shape_id");
         NM_PARAM(border_width, "border_width");
@@ -287,15 +367,21 @@ static void nm_render(void *data, gs_effect_t *unused)
         obs_source_skip_video_filter(f->context);
         return;
     }
-    const nm_geometry g = nm_make_geometry(width, height, f->config.scale, f->config.roundness);
-    const float rx = fminf(g.half_width, g.half_height);
+    const float half_width = 0.5f * (float)width * f->config.mask_width;
+    const float half_height = 0.5f * (float)height * f->config.mask_height;
+    const float rx = fminf(half_width, half_height);
+    const float corner_radius = f->config.roundness * fminf(half_width, half_height);
     struct vec2 dimensions;
     struct vec2 halfsize;
+    struct vec2 mask_offset;
+    struct vec2 subject_pan;
     struct vec4 primary;
     struct vec4 secondary;
-    vec2_set(&dimensions, g.width, g.height);
-    vec2_set(&halfsize, f->config.shape_id == NM_SHAPE_CIRCLE ? rx : g.half_width,
-             f->config.shape_id == NM_SHAPE_CIRCLE ? rx : g.half_height);
+    vec2_set(&dimensions, (float)width, (float)height);
+    vec2_set(&halfsize, f->config.shape_id == NM_SHAPE_CIRCLE ? rx : half_width,
+             f->config.shape_id == NM_SHAPE_CIRCLE ? rx : half_height);
+    vec2_set(&mask_offset, f->config.mask_x_px, f->config.mask_y_px);
+    vec2_set(&subject_pan, f->config.subject_pan_x_px, f->config.subject_pan_y_px);
     /* Native OBS color properties are RGBA-packed. The filter's SRGB path
      * expects linear RGB uniform values; the BGRA helper is not applicable. */
     vec4_from_rgba_srgb(&primary, f->config.primary);
@@ -304,7 +390,12 @@ static void nm_render(void *data, gs_effect_t *unused)
     if (!obs_source_process_filter_begin(f->context, GS_RGBA, OBS_NO_DIRECT_RENDERING)) return;
     gs_effect_set_vec2(f->uv_size, &dimensions);
     gs_effect_set_vec2(f->half_size, &halfsize);
-    gs_effect_set_float(f->corner_radius, g.radius);
+    gs_effect_set_vec2(f->mask_offset, &mask_offset);
+    gs_effect_set_vec2(f->subject_pan, &subject_pan);
+    gs_effect_set_float(f->subject_zoom, f->config.subject_zoom);
+    gs_effect_set_float(f->shape_rotation, f->config.shape_rotation_deg * 0.01745329251994329577f);
+    gs_effect_set_int(f->polygon_sides, f->config.polygon_sides);
+    gs_effect_set_float(f->corner_radius, corner_radius);
     gs_effect_set_int(f->shape, f->config.shape_id);
     gs_effect_set_float(f->border_width, f->config.border_px);
     gs_effect_set_int(f->style, f->config.style_id);
