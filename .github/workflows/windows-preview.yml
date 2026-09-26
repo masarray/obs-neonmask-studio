@@ -57,8 +57,8 @@ jobs:
             "-DOBS_VERSION_OVERRIDE=31.1.1" "-DENABLE_UI=OFF" "-DENABLE_SCRIPTING=OFF" `
             "-DENABLE_FRONTEND=OFF" "-DENABLE_PLUGINS=OFF"
           if ($LASTEXITCODE -ne 0) { throw "OBS SDK configuration failed" }
-          cmake --build .deps/obs-build --config Release --target libobs --parallel 4
-          if ($LASTEXITCODE -ne 0) { throw "libobs build failed" }
+          cmake --build .deps/obs-build --config Release --target obs-frontend-api --parallel 4
+          if ($LASTEXITCODE -ne 0) { throw "OBS core/SDK build failed" }
           cmake --install .deps/obs-build --config Release --component Development --prefix $sdk
           if ($LASTEXITCODE -ne 0) { throw "libobs SDK staging failed" }
           if (!(Test-Path "$sdk/cmake/libobsConfig.cmake")) { throw "Missing installed libobsConfig.cmake" }
