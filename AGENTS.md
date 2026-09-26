@@ -4,6 +4,7 @@ Read [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md), [docs/ARCHITECTURE.md](docs/A
 
 - Inspect current main and open work before editing. Preserve the latest verified baseline and avoid duplicating active PRs.
 - Treat the user's concept board (image #9 in September 26 feedback) as the binding visual north star; user OBS screenshots #1–#8 document current gaps, not parity. Read VISUAL_SPEC's premium-frame anatomy and framing contract before altering shaders, geometry, presets or UX. Never relabel a plain rim as a completed premium family.
+- Product identity is *art-directed geometric masks and beautiful futuristic luminous frames*: no background removal, AI portrait segmentation or auto-face tracking. X/Y subject pan/zoom is manual video reframing inside the mask, not subject extraction. Each advertised visual family needs its own intentional contour/ornament motif; color/glow/width variations of a generic line do not count as new designs.
 - Prioritize independent mask X/Y and subject pan/zoom, then distinct sharp core/mid-glow/outer bloom and visible localized motion, then safe-fit/contour ornaments. Require actual OBS stills/clips, not concept artwork or CI compilation, for visual completion claims.
 - Keep changes cohesive. Preserve the native C11/libobs architecture unless a documented decision justifies a change.
 - Keep source IDs, setting keys and enum numeric values compatible; provide migrations for intentional schema changes.
