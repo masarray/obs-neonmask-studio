@@ -23,6 +23,10 @@ void nm_config_defaults(nm_config *cfg)
         .feather_px = 0.85f,
         .glow_px = 18.0f,
         .glow_amount = 0.65f,
+        .mid_glow_strength = 0.75f,
+        .bloom_strength = 0.92f,
+        .hotspot_strength = 0.95f,
+        .hotspot_size = 0.10f,
         .animation_speed = 0.65f,
         .primary = 0xFFDD31FFu,
         .secondary = 0xFFFFDB36u,
@@ -58,6 +62,10 @@ void nm_config_validate(nm_config *cfg)
     cfg->feather_px = nm_clamp(cfg->feather_px, 0.5f, 30.0f);
     cfg->glow_px = nm_clamp(cfg->glow_px, 1.0f, 80.0f);
     cfg->glow_amount = nm_clamp(cfg->glow_amount, 0.0f, 1.0f);
+    cfg->mid_glow_strength = nm_clamp(cfg->mid_glow_strength, 0.0f, 1.0f);
+    cfg->bloom_strength = nm_clamp(cfg->bloom_strength, 0.0f, 1.0f);
+    cfg->hotspot_strength = nm_clamp(cfg->hotspot_strength, 0.0f, 1.0f);
+    cfg->hotspot_size = nm_clamp(cfg->hotspot_size, 0.04f, 0.25f);
     cfg->animation_speed = nm_clamp(cfg->animation_speed, 0.0f, 5.0f);
 
     cfg->primary |= 0xFF000000u;
@@ -92,6 +100,10 @@ bool nm_config_apply_preset(nm_config *cfg, int preset_id)
     cfg->feather_px = (float)preset.feather;
     cfg->glow_px = (float)preset.glow_radius;
     cfg->glow_amount = (float)preset.glow_strength;
+    cfg->mid_glow_strength = (float)preset.mid_glow;
+    cfg->bloom_strength = (float)preset.bloom_strength;
+    cfg->hotspot_strength = (float)preset.hotspot_strength;
+    cfg->hotspot_size = (float)preset.hotspot_size;
     cfg->animation_speed = (float)preset.speed;
     cfg->segment_count = preset.segments;
     cfg->style_id = preset.style;
