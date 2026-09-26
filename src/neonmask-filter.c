@@ -1,19 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "neonmask-filter.h"
 #include "neonmask-math.h"
+#include "neonmask-presets.h"
 #include <math.h>
 #include <graphics/vec2.h>
 #include <graphics/vec4.h>
 #include <util/bmem.h>
-
-#define NM_SHAPE_ROUNDED 0
-#define NM_SHAPE_CIRCLE 1
-#define NM_SHAPE_ELLIPSE 2
-#define NM_SHAPE_HEXAGON 3
-#define NM_SHAPE_DIAMOND 4
-#define NM_ANIM_STATIC 0
-#define NM_ANIM_PULSE 1
-#define NM_ANIM_FLOW 2
 
 struct nm_filter {
     obs_source_t *context;
@@ -83,18 +75,20 @@ static void nm_update(void *data, obs_data_t *settings)
 static void nm_defaults(obs_data_t *settings)
 {
     obs_data_set_default_int(settings, "preset", 0);
-    obs_data_set_default_int(settings, "shape", NM_SHAPE_ROUNDED);
-    obs_data_set_default_double(settings, "scale", 0.81);
-    obs_data_set_default_double(settings, "roundness", 0.15);
-    obs_data_set_default_double(settings, "border_width", 4.0);
+    nm_preset initial;
+    if (!nm_get_preset(1, &initial)) return;
+    obs_data_set_default_int(settings, "shape", initial.shape);
+    obs_data_set_default_double(settings, "scale", initial.scale);
+    obs_data_set_default_double(settings, "roundness", initial.roundness);
+    obs_data_set_default_double(settings, "border_width", initial.border_width);
     obs_data_set_default_double(settings, "feather", 0.85);
     obs_data_set_default_double(settings, "glow_radius", 18.0);
-    obs_data_set_default_double(settings, "glow_strength", 0.65);
-    obs_data_set_default_int(settings, "primary", nm_obs_rgba(255, 49, 221));
-    obs_data_set_default_int(settings, "secondary", nm_obs_rgba(54, 219, 255));
-    obs_data_set_default_int(settings, "animation", NM_ANIM_FLOW);
+    obs_data_set_default_double(settings, "glow_strength", initial.glow_strength);
+    obs_data_set_default_int(settings, "primary", initial.primary);
+    obs_data_set_default_int(settings, "secondary", initial.secondary);
+    obs_data_set_default_int(settings, "animation", initial.animation);
     obs_data_set_default_double(settings, "speed", 0.65);
-    obs_data_set_default_int(settings, "segments", 0);
+    obs_data_set_default_int(settings, "segments", initial.segments);
     obs_data_set_default_bool(settings, "border_enabled", true);
     obs_data_set_default_bool(settings, "glow_enabled", true);
 }
@@ -104,21 +98,18 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
                               obs_data_t *settings)
 {
     (void)props; (void)property;
-    const int preset = (int)obs_data_get_int(settings, "preset");
-    if (preset <= 0 || preset > 4) return false;
-    const int shapes[] = {0, NM_SHAPE_ROUNDED, NM_SHAPE_CIRCLE, NM_SHAPE_HEXAGON, NM_SHAPE_ROUNDED};
-    const int animations[] = {0, NM_ANIM_FLOW, NM_ANIM_FLOW, NM_ANIM_PULSE, NM_ANIM_STATIC};
-    const uint32_t c1[] = {0, 0x00DD31FFu, 0x00FF8B44u, 0x007FFF40u, 0x00236BFFu};
-    const uint32_t c2[] = {0, 0x00FFDB36u, 0x00F84DFFu, 0x00B9FF46u, 0x0000CCFFu};
-    obs_data_set_int(settings, "shape", shapes[preset]);
-    obs_data_set_int(settings, "animation", animations[preset]);
-    obs_data_set_int(settings, "primary", c1[preset]);
-    obs_data_set_int(settings, "secondary", c2[preset]);
-    obs_data_set_double(settings, "scale", preset == 2 ? 0.75 : 0.81);
-    obs_data_set_double(settings, "roundness", preset == 4 ? 0.08 : 0.15);
-    obs_data_set_double(settings, "border_width", preset == 2 ? 5.0 : 4.0);
-    obs_data_set_double(settings, "glow_strength", preset == 4 ? 0.78 : 0.65);
-    obs_data_set_int(settings, "segments", preset == 2 ? 10 : 0);
+    nm_preset preset;
+    if (!nm_get_preset((int)obs_data_get_int(settings, "preset"), &preset))
+        return false;
+    obs_data_set_int(settings, "shape", preset.shape);
+    obs_data_set_int(settings, "animation", preset.animation);
+    obs_data_set_int(settings, "primary", preset.primary);
+    obs_data_set_int(settings, "secondary", preset.secondary);
+    obs_data_set_double(settings, "scale", preset.scale);
+    obs_data_set_double(settings, "roundness", preset.roundness);
+    obs_data_set_double(settings, "border_width", preset.border_width);
+    obs_data_set_double(settings, "glow_strength", preset.glow_strength);
+    obs_data_set_int(settings, "segments", preset.segments);
     return true;
 }
 
