@@ -26,6 +26,10 @@ struct nm_filter {
     gs_eparam_t *feather;
     gs_eparam_t *glow_radius;
     gs_eparam_t *glow_strength;
+    gs_eparam_t *mid_glow_strength;
+    gs_eparam_t *bloom_strength;
+    gs_eparam_t *hotspot_strength;
+    gs_eparam_t *hotspot_size;
     gs_eparam_t *color_a;
     gs_eparam_t *color_b;
     gs_eparam_t *color_phase;
@@ -83,6 +87,10 @@ static void nm_update(void *data, obs_data_t *settings)
         .feather_px = (float)obs_data_get_double(settings, "feather"),
         .glow_px = (float)obs_data_get_double(settings, "glow_radius"),
         .glow_amount = (float)obs_data_get_double(settings, "glow_strength"),
+        .mid_glow_strength = (float)obs_data_get_double(settings, "mid_glow_strength"),
+        .bloom_strength = (float)obs_data_get_double(settings, "bloom_strength"),
+        .hotspot_strength = (float)obs_data_get_double(settings, "hotspot_strength"),
+        .hotspot_size = (float)obs_data_get_double(settings, "hotspot_size"),
         .animation_speed = (float)obs_data_get_double(settings, "speed"),
         .primary = (uint32_t)obs_data_get_int(settings, "primary"),
         .secondary = (uint32_t)obs_data_get_int(settings, "secondary"),
@@ -135,6 +143,10 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_double(settings, "feather", cfg.feather_px);
     obs_data_set_default_double(settings, "glow_radius", cfg.glow_px);
     obs_data_set_default_double(settings, "glow_strength", cfg.glow_amount);
+    obs_data_set_default_double(settings, "mid_glow_strength", cfg.mid_glow_strength);
+    obs_data_set_default_double(settings, "bloom_strength", cfg.bloom_strength);
+    obs_data_set_default_double(settings, "hotspot_strength", cfg.hotspot_strength);
+    obs_data_set_default_double(settings, "hotspot_size", cfg.hotspot_size);
     obs_data_set_default_int(settings, "primary", cfg.primary & 0x00FFFFFFu);
     obs_data_set_default_int(settings, "secondary", cfg.secondary & 0x00FFFFFFu);
     obs_data_set_default_int(settings, "animation", cfg.animation_id);
@@ -170,6 +182,10 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_double(settings, "feather", cfg.feather_px);
     obs_data_set_double(settings, "glow_radius", cfg.glow_px);
     obs_data_set_double(settings, "glow_strength", cfg.glow_amount);
+    obs_data_set_double(settings, "mid_glow_strength", cfg.mid_glow_strength);
+    obs_data_set_double(settings, "bloom_strength", cfg.bloom_strength);
+    obs_data_set_double(settings, "hotspot_strength", cfg.hotspot_strength);
+    obs_data_set_double(settings, "hotspot_size", cfg.hotspot_size);
     obs_data_set_double(settings, "speed", cfg.animation_speed);
     obs_data_set_int(settings, "segments", cfg.segment_count);
     obs_data_set_int(settings, "style", cfg.style_id);
@@ -265,6 +281,12 @@ static obs_properties_t *nm_properties(void *data)
     NM_CUSTOM(obs_properties_add_bool(props, "glow_enabled", obs_module_text("Glow.Enabled")));
     NM_CUSTOM(obs_properties_add_float_slider(props, "glow_radius", obs_module_text("Glow.Radius"), 1.0, 80.0, 1.0));
     NM_CUSTOM(obs_properties_add_float_slider(props, "glow_strength", obs_module_text("Glow.Strength"), 0.0, 1.0, 0.01));
+    obs_properties_t *light_group = obs_properties_create();
+    NM_CUSTOM(obs_properties_add_float_slider(light_group, "mid_glow_strength", obs_module_text("Glow.MidStrength"), 0.0, 1.0, 0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(light_group, "bloom_strength", obs_module_text("Glow.BloomStrength"), 0.0, 1.0, 0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(light_group, "hotspot_strength", obs_module_text("Glow.HotspotStrength"), 0.0, 1.0, 0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(light_group, "hotspot_size", obs_module_text("Glow.HotspotSize"), 0.04, 0.25, 0.01));
+    obs_properties_add_group(props, "premium_lighting", obs_module_text("Group.PremiumLighting"), OBS_GROUP_NORMAL, light_group);
 
     obs_property_t *animation = obs_properties_add_list(props, "animation", obs_module_text("Animation"),
                                                          OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
@@ -310,6 +332,10 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         NM_PARAM(feather, "feather");
         NM_PARAM(glow_radius, "glow_radius");
         NM_PARAM(glow_strength, "glow_strength");
+        NM_PARAM(mid_glow_strength, "mid_glow_strength");
+        NM_PARAM(bloom_strength, "bloom_strength");
+        NM_PARAM(hotspot_strength, "hotspot_strength");
+        NM_PARAM(hotspot_size, "hotspot_size");
         NM_PARAM(color_a, "color_a");
         NM_PARAM(color_b, "color_b");
         NM_PARAM(color_phase, "color_phase");
@@ -402,6 +428,10 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_float(f->feather, f->config.feather_px);
     gs_effect_set_float(f->glow_radius, f->config.glow_px);
     gs_effect_set_float(f->glow_strength, f->config.glow_amount);
+    gs_effect_set_float(f->mid_glow_strength, f->config.mid_glow_strength);
+    gs_effect_set_float(f->bloom_strength, f->config.bloom_strength);
+    gs_effect_set_float(f->hotspot_strength, f->config.hotspot_strength);
+    gs_effect_set_float(f->hotspot_size, f->config.hotspot_size);
     gs_effect_set_vec4(f->color_a, &primary);
     gs_effect_set_vec4(f->color_b, &secondary);
     gs_effect_set_float(f->color_phase, (float)f->motion.color_turns);
