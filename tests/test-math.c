@@ -1,13 +1,14 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "neonmask-math.h"
 #include <math.h>
+#include <float.h>
 #include <stdio.h>
 
 static int failures;
 
 static void near(const char *name, float got, float expected, float tolerance)
 {
-    if (!isfinite(got) || fabsf(got - expected) > tolerance) {
+    if (!(got >= -FLT_MAX && got <= FLT_MAX) || fabsf(got - expected) > tolerance) {
         fprintf(stderr, "FAIL %s: got %f expected %f (tolerance %f)\n",
                 name, got, expected, tolerance);
         failures++;
