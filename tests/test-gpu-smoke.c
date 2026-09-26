@@ -4,6 +4,8 @@
 #include <obs.h>
 #include <graphics/graphics.h>
 #include <util/bmem.h>
+#include <util/dstr.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -28,7 +30,24 @@ int main(int argc, char **argv)
     /* The CI SDK is staged outside an installed OBS directory. Add the real
      * libobs base effects before initializing the graphics subsystem. */
     const char *libobs_data = getenv("NEONMASK_LIBOBS_DATA_DIR");
-    if (libobs_data && *libobs_data) obs_add_data_path(libobs_data);
+    if (libobs_data && *libobs_data) {
+        /* libobs check_path concatenates the directory and basename directly;
+         * a trailing separator is therefore part of this API contract. */
+        struct dstr data_dir = {0};
+        dstr_init_copy(&data_dir, libobs_data);
+        size_t n = strlen(libobs_data);
+        if (libobs_data[n - 1] != '/' && libobs_data[n - 1] != '\\')
+            dstr_cat(&data_dir, "/");
+        obs_add_data_path(data_dir.array);
+        dstr_free(&data_dir);
+        char *effect_file = obs_find_data_file("default.effect");
+        if (!effect_file) {
+            fprintf(stderr, "FAIL: cannot find libobs default.effect in %s\\n", libobs_data);
+            obs_shutdown();
+            return 2;
+        }
+        bfree(effect_file);
+    }
 
     struct obs_video_info video = {0};
     /* Windows CI selects its built Direct3D 11 module; Linux defaults to OpenGL. */
