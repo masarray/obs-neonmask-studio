@@ -28,6 +28,7 @@ Keep the current file names while extracting cohesive responsibilities. Avoid a 
 | Render backend | Effect bindings, pass selection, graphics resources | Validated config/geometry, libobs graphics |
 | Mask providers (later) | Analytic coverage or cached field texture | Geometry; bounded asset data |
 | Ornament evaluator | Contour-relative rims, ticks, dashes and motion | Geometry; cannot redefine mask coverage |
+| Motion state (neonmask-motion.*) | Independent bounded color/pulse/flow phases, static freeze, speed transitions | Pure C math/config enums; no graphics |
 | Asset service (later) | Decode/rasterize, generation tracking, cache | CPU-only jobs; no borrowed OBS pointers |
 
 Dependency rule: core math/config must remain testable without OBS. Effects have an explicit host/uniform contract. Add modules when implementing their first real feature.
@@ -66,7 +67,7 @@ Preserve the existing intended captured premultiplied-input → masked premultip
 
 Re-use effects, uniforms, textures and render targets. Compile only on controlled initialization/rebuild; validate technique and all required uniforms before publishing a resource set. No file I/O, decode, synchronous readback, recurring allocation or shader compilation in steady-state rendering. Diagnostic readback belongs in tests or explicit profiling only.
 
-Static mode freezes all motion, including color phase; speed changes must be continuous. Use bounded phase accumulation or stable time mapping with a defined wrap. Long sessions must not produce float jitter or a visible one-hour reset. Inactive sources should not keep asset work running; do not bypass OBS visibility semantics when Studio Mode previews still need rendering.
+Static mode freezes all motion, including color phase; speed changes must be continuous. The M1 implementation uses three independent bounded phase accumulators (double-precision turns, converted to float only for shader upload), rather than wrapping one shader clock at an arbitrary hour. A simulated eight-hour tick test covers continuity but does not replace an OBS eight-hour soak. Inactive sources should not keep asset work running; do not bypass OBS visibility semantics when Studio Mode previews still need rendering.
 
 ## Worker service, introduced only with assets
 
