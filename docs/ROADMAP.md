@@ -183,8 +183,10 @@ space and output OBS-compatible straight alpha. No segmentation, no CPU
 video readback, no new rendering pass or worker.
 
 The config remains schema v2: the four added fields have explicit OBS defaults
-and preset snapshots; old saved framing/pan/zoom and preset IDs are not
-rewritten. Tests now target mid-only versus broad-bloom falloff, the disabled
+and complete preset snapshots. Missing light values are pinned as explicit
+user values on first update so subsequent default revisions cannot silently
+rewrite saved scenes; existing explicit values and saved framing/pan/zoom are
+not touched. Old preset/shape IDs remain stable. Tests now target mid-only versus broad-bloom falloff, the disabled
 glow path and an east/west local hotspot using the actual OpenGL/D3D11 effect.
 
 **Evidence boundary:** passing shader/device/pixel checks is not an OBS
