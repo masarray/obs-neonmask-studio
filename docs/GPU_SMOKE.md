@@ -16,3 +16,5 @@ cmake -S . -B build-gpu -DNEONMASK_BUILD_SHADER_SMOKE=ON
 cmake --build build-gpu
 LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a ctest --test-dir build-gpu -R neonmask-gpu-smoke --output-on-failure
 ```
+
+Windows CI uses NEONMASK_GRAPHICS_MODULE to select the built OBS Direct3D 11 renderer. This is a real shader compiler/device initialization check on the Windows GitHub runner; a full OBS frontend filter interaction and pixel-diff visual test remain separate gates.
