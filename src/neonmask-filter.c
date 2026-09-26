@@ -3,6 +3,7 @@
 #include "neonmask-math.h"
 #include "neonmask-presets.h"
 #include "neonmask-config.h"
+#include "neonmask-motion.h"
 #include <math.h>
 #include <graphics/vec2.h>
 #include <graphics/vec4.h>
@@ -22,14 +23,15 @@ struct nm_filter {
     gs_eparam_t *glow_strength;
     gs_eparam_t *color_a;
     gs_eparam_t *color_b;
-    gs_eparam_t *elapsed_time;
-    gs_eparam_t *speed;
+    gs_eparam_t *color_phase;
+    gs_eparam_t *pulse_phase;
+    gs_eparam_t *flow_phase;
     gs_eparam_t *animation;
     gs_eparam_t *segments;
     gs_eparam_t *border_enabled;
     gs_eparam_t *glow_enabled;
     nm_config config;
-    float time;
+    nm_motion motion;
 };
 
 static const char *nm_get_name(void *unused)
@@ -41,7 +43,11 @@ static const char *nm_get_name(void *unused)
 static void nm_update(void *data, obs_data_t *settings)
 {
     struct nm_filter *f = data;
-    const uint32_t schema = (uint32_t)obs_data_get_int(settings, "schema_version");
+    /* OBS returns a default value for an unset field. Inspect the explicit
+     * user value or a legacy v0 scene is mistaken for schema v1. */
+    const uint32_t schema = obs_data_has_user_value(settings, "schema_version")
+                                ? (uint32_t)obs_data_get_int(settings, "schema_version")
+                                : 0u;
 
     /* Future scene/import data must not reinterpret known fields. Keep the
      * last validated snapshot rather than partially applying unknown state. */
@@ -226,8 +232,9 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         NM_PARAM(glow_strength, "glow_strength");
         NM_PARAM(color_a, "color_a");
         NM_PARAM(color_b, "color_b");
-        NM_PARAM(elapsed_time, "elapsed_time");
-        NM_PARAM(speed, "animation_speed");
+        NM_PARAM(color_phase, "color_phase");
+        NM_PARAM(pulse_phase, "pulse_phase");
+        NM_PARAM(flow_phase, "flow_phase");
         NM_PARAM(animation, "animation_id");
         NM_PARAM(segments, "segment_count");
         NM_PARAM(border_enabled, "border_enabled");
@@ -261,9 +268,7 @@ static void nm_tick(void *data, float seconds)
 {
     struct nm_filter *f = data;
     if (!f) return;
-    if (f->config.animation_id != NM_ANIM_STATIC) {
-        f->time = fmodf(f->time + nm_clamp(seconds, 0.0f, 1.0f), 3600.0f);
-    }
+    nm_motion_tick(&f->motion, seconds, f->config.animation_speed, f->config.animation_id);
 }
 
 static void nm_render(void *data, gs_effect_t *unused)
@@ -308,8 +313,9 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_float(f->glow_strength, f->config.glow_amount);
     gs_effect_set_vec4(f->color_a, &primary);
     gs_effect_set_vec4(f->color_b, &secondary);
-    gs_effect_set_float(f->elapsed_time, f->time);
-    gs_effect_set_float(f->speed, f->config.animation_speed);
+    gs_effect_set_float(f->color_phase, (float)f->motion.color_turns);
+    gs_effect_set_float(f->pulse_phase, (float)f->motion.pulse_turns);
+    gs_effect_set_float(f->flow_phase, (float)f->motion.flow_turns);
     gs_effect_set_int(f->animation, f->config.animation_id);
     gs_effect_set_int(f->segments, f->config.segment_count);
     gs_effect_set_int(f->border_enabled, f->config.show_border ? 1 : 0);

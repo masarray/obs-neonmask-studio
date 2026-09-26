@@ -28,6 +28,7 @@ Keep the current file names while extracting cohesive responsibilities. Avoid a 
 | Render backend | Effect bindings, pass selection, graphics resources | Validated config/geometry, libobs graphics |
 | Mask providers (later) | Analytic coverage or cached field texture | Geometry; bounded asset data |
 | Ornament evaluator | Contour-relative rims, ticks, dashes and motion | Geometry; cannot redefine mask coverage |
+| Motion state (neonmask-motion.*) | Independent bounded color/pulse/flow phases, static freeze, speed transitions | Pure C math/config enums; no graphics |
 | Asset service (later) | Decode/rasterize, generation tracking, cache | CPU-only jobs; no borrowed OBS pointers |
 
 Dependency rule: core math/config must remain testable without OBS. Effects have an explicit host/uniform contract. Add modules when implementing their first real feature.
@@ -38,7 +39,7 @@ Canonical means an authoritative representation, not a special optimization tech
 
 Settings flow: OBS settings → schema check/migrate → validate all fields → complete config snapshot → derived geometry/render parameters. `neonmask-config.*` now owns validation/defaults and `schema_version = 1`; missing-version scenes are legacy v0. Presets write complete values and updates replace the filter snapshot only after validation. Rendering reads that snapshot and never parses user files.
 
-The config schema owns field name, type, unit, default, valid range and enum identity. Use one schema table where practical for host validation/UI bounds; test GPU enum and uniform agreement. Keep current keys and enum numeric values stable. `schema_version` is now present: missing-version scenes are accepted as v0 and marked v1 without reinterpreting existing enum IDs; unsupported future versions keep the last validated state. Save explicit user values so changed preset defaults do not rewrite old scenes; scene-fixture runtime verification remains required.
+The config schema owns field name, type, unit, default, valid range and enum identity. Use one schema table where practical for host validation/UI bounds; test GPU enum and uniform agreement. Keep current keys and enum numeric values stable. `schema_version` is now present: missing-version scenes are detected with `obs_data_has_user_value` (not default-value lookup), accepted as v0, and marked v1 without reinterpreting existing enum IDs; unsupported future versions keep the last validated state. Save explicit user values so changed preset defaults do not rewrite old scenes; scene-fixture runtime verification remains required.
 
 Reject NaN/infinity, invalid dimensions and integer overflow before allocation or shader upload. Clamp ordinary out-of-range controls consistently; report invalid imported data. Colors, feather and border units must be explicit. Defaults and preset application must cover every intended field, including speed/glow toggles, without accidental dependence on the previous preset.
 
@@ -66,7 +67,7 @@ Preserve the existing intended captured premultiplied-input → masked premultip
 
 Re-use effects, uniforms, textures and render targets. Compile only on controlled initialization/rebuild; validate technique and all required uniforms before publishing a resource set. No file I/O, decode, synchronous readback, recurring allocation or shader compilation in steady-state rendering. Diagnostic readback belongs in tests or explicit profiling only.
 
-Static mode freezes all motion, including color phase; speed changes must be continuous. Use bounded phase accumulation or stable time mapping with a defined wrap. Long sessions must not produce float jitter or a visible one-hour reset. Inactive sources should not keep asset work running; do not bypass OBS visibility semantics when Studio Mode previews still need rendering.
+Static mode freezes all motion, including color phase; speed changes must be continuous. The M1 implementation uses three independent bounded phase accumulators (double-precision turns, converted to float only for shader upload), rather than wrapping one shader clock at an arbitrary hour. A simulated eight-hour tick test covers continuity but does not replace an OBS eight-hour soak. Inactive sources should not keep asset work running; do not bypass OBS visibility semantics when Studio Mode previews still need rendering.
 
 ## Worker service, introduced only with assets
 

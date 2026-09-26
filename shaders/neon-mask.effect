@@ -14,8 +14,9 @@ uniform float glow_radius;
 uniform float glow_strength;
 uniform float4 color_a;
 uniform float4 color_b;
-uniform float elapsed_time;
-uniform float animation_speed;
+uniform float color_phase;
+uniform float pulse_phase;
+uniform float flow_phase;
 uniform int animation_id;
 uniform int segment_count;
 uniform int border_enabled;
@@ -90,13 +91,13 @@ float4 drawNeonMask(VertData v_in) : TARGET
     // premultiplied space; final output is straight alpha as expected by OBS.
     if (border_enabled != 0) {
         float angle = atan2(p.y, p.x);
-        float mixAmount = saturate(0.5 + 0.5 * sin(angle + elapsed_time * 0.15 * animation_speed));
+        float mixAmount = saturate(0.5 + 0.5 * sin(angle + TAU * color_phase));
         float3 neon = lerp(color_a.rgb, color_b.rgb, mixAmount);
         float activity = 1.0;
         if (animation_id == 1) {
-            activity = 0.72 + 0.28 * sin(elapsed_time * TAU * animation_speed);
+            activity = 0.72 + 0.28 * sin(TAU * pulse_phase);
         } else if (animation_id == 2) {
-            float travel = cos(angle - elapsed_time * TAU * animation_speed * 0.20);
+            float travel = cos(angle - TAU * flow_phase);
             activity = 0.52 + 0.48 * pow(saturate(0.5 + 0.5 * travel), 12.0);
         }
 
