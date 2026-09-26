@@ -51,27 +51,23 @@ int main(void)
     check("ellipse invalid radii", nm_sd_ellipse_approx(0, 0, 0, 40) > 100000.0f);
     check("color packed R,G,B", nm_obs_rgba(255, 49, 221) == 0x00DD31FFu);
     check("color channels clamped", nm_obs_rgba(256, 511, 258) == 0x0002FF00u);
+
+    float u = 0.0f, v = 0.0f;
+    check("center framing inside", nm_subject_sample_uv(1920, 1080, 0, 0, 0, 0, 1, &u, &v));
+    near("center u", u, 0.5f, 0.0001f);
+    near("center v", v, 0.5f, 0.0001f);
+    check("positive pan remains inside", nm_subject_sample_uv(1920, 1080, 100, 50, 100, 50, 1, &u, &v));
+    near("positive pan moves subject right", u, 0.5f, 0.0001f);
+    near("positive pan moves subject down", v, 0.5f, 0.0001f);
+    check("uniform zoom inside", nm_subject_sample_uv(1920, 1080, 400, 200, 0, 0, 2, &u, &v));
+    near("zoom u", u, (200.0f + 960.0f) / 1920.0f, 0.0001f);
+    near("zoom v", v, (100.0f + 540.0f) / 1080.0f, 0.0001f);
+    check("out of source rejected", !nm_subject_sample_uv(640, 360, 319, 0, -500, 0, 1, &u, &v));
+    check("bad dimensions rejected", !nm_subject_sample_uv(0, 360, 0, 0, 0, 0, 1, &u, &v));
     if (failures) {
         fprintf(stderr, "FAIL: %d geometry/color checks\n", failures);
         return 1;
     }
     puts("PASS: geometry/color checks (Release-safe)");
     return 0;
-}
-
-
-bool nm_subject_sample_uv(float source_width, float source_height,
-                          float output_x, float output_y,
-                          float pan_x, float pan_y, float zoom,
-                          float *u, float *v)
-{
-    if (!u || !v || source_width <= 0.0f || source_height <= 0.0f)
-        return false;
-
-    zoom = nm_clamp(zoom, 0.25f, 4.0f);
-    const float sample_x = (output_x - pan_x) / zoom;
-    const float sample_y = (output_y - pan_y) / zoom;
-    *u = (sample_x + source_width * 0.5f) / source_width;
-    *v = (sample_y + source_height * 0.5f) / source_height;
-    return *u >= 0.0f && *u <= 1.0f && *v >= 0.0f && *v <= 1.0f;
 }
