@@ -20,10 +20,10 @@ int main(void)
     check("null output invalid", !nm_get_preset(1, NULL));
     for (int id = 1; id <= 4; ++id) {
         check("known preset", nm_get_preset(id, &p));
-        check("valid shape", p.shape >= NM_SHAPE_ROUNDED && p.shape <= NM_SHAPE_DIAMOND);
+        check("valid shape", p.shape >= NM_SHAPE_ROUNDED && p.shape <= NM_SHAPE_POLYGON);
         check("valid animation", p.animation >= NM_ANIM_STATIC && p.animation <= NM_ANIM_FLOW);
         check("nonzero colors", p.primary != p.secondary && p.primary != 0 && p.secondary != 0);
-        check("scale range", p.scale >= 0.30 && p.scale <= 0.96);
+        check("scale range", p.scale >= 0.10 && p.scale <= 0.98);
         check("roundness range", p.roundness >= 0.0 && p.roundness <= 1.0);
         check("width range", p.border_width >= 0.5 && p.border_width <= 32.0);
         check("feather range", p.feather >= 0.5 && p.feather <= 30.0);

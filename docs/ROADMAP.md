@@ -9,9 +9,9 @@ Update the ledger in the same change that advances implementation or verificatio
 | Area | Observed implementation | Evidence gap |
 | --- | --- | --- |
 | Native filter | C11/libobs callbacks in src/neonmask-filter.c | Frontend/lifecycle tests pending |
-| Geometry | Five shapes, approximate distances, source-size coordinates | Precision and corner/ellipse visual validation pending |
+| Geometry | Proposal Phase-A set implemented: rounded rectangle, circle, oval, hexagon, diamond, rectangle, triangle and configurable polygon; mask X/Y and independent width/height | Actual OBS shape/framing captures, safe-fit and precision/corner validation pending |
 | Neon | Dual color, analytic glow, pulse/flow, four styles and presets; independent bounded double-precision phase accumulators | Actual eight-hour OBS soak and final rendered pixels pending |
-| State | Canonical pure-C config snapshot, schema v1, v0 legacy marker migration, complete preset values | OBS callback handoff/lifecycle concurrency still needs runtime evidence; future schema/import UI not exposed |
+| State | Canonical pure-C config snapshot, schema v2; v0/v1 uniform-scale framing migrates additively to centered width/height + pan/zoom defaults | OBS callback handoff/lifecycle concurrency still needs runtime evidence; future schema/import UI not exposed |
 | Safety | Shader load/uniform checks; bypass; effect cleanup | Fault injection, resource accounting and soak pending |
 | CI | Headless/platform builds, OpenGL and Windows D3D11 compile smokes, Windows preview ZIP; M0 synthetic fixture generator and build provenance in preview pipeline | Direct GPU effect pixel fixtures cover only part of G4; final OBS source/filter-chain captures and benchmarks remain pending |
 | Assets/workers | No custom image/SVG/live-mask provider | Bounded service is a future requirement |
@@ -36,12 +36,7 @@ in actual OBS, not just ship all names from the concept board. The revised
 visual acceptance explicit; [QUALITY_GATES.md](QUALITY_GATES.md) owns real
 capture evidence. Do not claim current screenshots match the board.
 
-Current code-level diagnosis: the config exposes only a uniform mask scale
-and no independent pan/center/zoom; the shader evaluates a centered SDF,
-samples unchanged UV and mostly combines core + one analytic halo with
-angle-derived color/flow. The image #9 target calls for independent
-framing, luminous hierarchy and contour-aware details. This is a
-prioritized implementation gap, not a reason for a rewrite.
+Phase-A implementation now separates mask center/size from source sampling: mask X/Y, independent width/height, manual subject pan X/Y and uniform zoom feed distinct GPU transforms; out-of-source UV is explicitly transparent. Rectangle, triangle and configurable polygon append new shape IDs while the five legacy IDs remain unchanged. This is **implemented code awaiting artifact/actual OBS visual verification**, not a completed G4/G5 claim. Premium light hierarchy and contour-aware ornament/motion remain the next visual gaps.
 
 ## Milestones, in dependency order
 
@@ -115,7 +110,7 @@ default/preset save compatibility is an acceptance condition, not optional.
 2. Render deterministic fixtures through the real OBS composition path. Focus on semi-transparent input, color packing, small sources, maximum glow, filter order, and static/flow frames at deterministic times.
 3. Establish GPU/CPU/memory baseline on named Windows hardware. Do not claim “lighter than Advanced Masks” without a like-for-like mask-only comparison plus separate neon overhead.
 4. ✅ Canonical validation/config extracted without changing existing setting keys or enum IDs; schema v1 treats missing-version scenes as v0, rejects future schemas, and has invalid-value/complete-preset regression tests. Next: verify saved v0/v1 scene fixtures in OBS and the callback handoff assumptions.
-5. Implement the next-preview X/Y mask placement and independent subject pan/zoom before safe-fit/perimeter mapping; compare with image #9 family anatomy and update screenshots/budgets.
+5. ✅ Phase-A code implements mask X/Y, independent width/height, subject pan X/Y, uniform zoom, reset framing, rectangle/triangle/polygon and schema-v2 migration. Next: validate the Windows artifact in actual OBS with the off-center fixture, all eight proposal shapes, restart/resize/filter-order cases, then continue premium neon.
 6. M1 motion slice: replace the former 3600-second clock reset with independent bounded phases. Cross-platform tests simulate 8 hours of ticks, but do not establish the G6 eight-hour OBS runtime soak. Add signature ornaments only after geometry/pixel validation.
 
 ## M0 reproducible visual test inputs (automation, not runtime evidence)

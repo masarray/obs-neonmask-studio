@@ -5,11 +5,21 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define NM_CONFIG_SCHEMA_VERSION 1u
+#define NM_CONFIG_SCHEMA_VERSION 2u
 
 typedef struct nm_config {
     uint32_t schema_version;
+    /* Legacy uniform size is retained for v0/v1 migration. */
     float scale;
+    float mask_width;
+    float mask_height;
+    float mask_x_px;
+    float mask_y_px;
+    float subject_pan_x_px;
+    float subject_pan_y_px;
+    float subject_zoom;
+    float shape_rotation_deg;
+    int polygon_sides;
     float roundness;
     float border_px;
     float feather_px;

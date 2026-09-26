@@ -9,6 +9,15 @@ void nm_config_defaults(nm_config *cfg)
     *cfg = (nm_config){
         .schema_version = NM_CONFIG_SCHEMA_VERSION,
         .scale = 0.81f,
+        .mask_width = 0.81f,
+        .mask_height = 0.81f,
+        .mask_x_px = 0.0f,
+        .mask_y_px = 0.0f,
+        .subject_pan_x_px = 0.0f,
+        .subject_pan_y_px = 0.0f,
+        .subject_zoom = 1.0f,
+        .shape_rotation_deg = 0.0f,
+        .polygon_sides = 8,
         .roundness = 0.15f,
         .border_px = 4.0f,
         .feather_px = 0.85f,
@@ -33,7 +42,17 @@ void nm_config_validate(nm_config *cfg)
     if (!cfg) return;
 
     cfg->schema_version = NM_CONFIG_SCHEMA_VERSION;
-    cfg->scale = nm_clamp(cfg->scale, 0.30f, 0.96f);
+    cfg->scale = nm_clamp(cfg->scale, 0.10f, 0.98f);
+    cfg->mask_width = nm_clamp(cfg->mask_width, 0.10f, 0.98f);
+    cfg->mask_height = nm_clamp(cfg->mask_height, 0.10f, 0.98f);
+    cfg->mask_x_px = nm_clamp(cfg->mask_x_px, -4096.0f, 4096.0f);
+    cfg->mask_y_px = nm_clamp(cfg->mask_y_px, -4096.0f, 4096.0f);
+    cfg->subject_pan_x_px = nm_clamp(cfg->subject_pan_x_px, -4096.0f, 4096.0f);
+    cfg->subject_pan_y_px = nm_clamp(cfg->subject_pan_y_px, -4096.0f, 4096.0f);
+    cfg->subject_zoom = nm_clamp(cfg->subject_zoom, 0.25f, 4.0f);
+    cfg->shape_rotation_deg = nm_clamp(cfg->shape_rotation_deg, -180.0f, 180.0f);
+    if (cfg->polygon_sides < 5) cfg->polygon_sides = 5;
+    if (cfg->polygon_sides > 12) cfg->polygon_sides = 12;
     cfg->roundness = nm_clamp(cfg->roundness, 0.0f, 1.0f);
     cfg->border_px = nm_clamp(cfg->border_px, 0.5f, 32.0f);
     cfg->feather_px = nm_clamp(cfg->feather_px, 0.5f, 30.0f);
@@ -44,7 +63,7 @@ void nm_config_validate(nm_config *cfg)
     cfg->primary |= 0xFF000000u;
     cfg->secondary |= 0xFF000000u;
 
-    if (cfg->shape_id < NM_SHAPE_ROUNDED || cfg->shape_id > NM_SHAPE_DIAMOND)
+    if (cfg->shape_id < NM_SHAPE_ROUNDED || cfg->shape_id > NM_SHAPE_POLYGON)
         cfg->shape_id = NM_SHAPE_ROUNDED;
     if (cfg->animation_id < NM_ANIM_STATIC || cfg->animation_id > NM_ANIM_FLOW)
         cfg->animation_id = NM_ANIM_STATIC;

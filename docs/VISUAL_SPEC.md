@@ -110,7 +110,7 @@ global brightness that washes out the image, does not meet this anatomy.
 
 ## Reframing and fit visual behavior
 
-Expose **mask center X/Y** and **subject pan X/Y** separately. The mask
+Phase-A code exposes **mask center X/Y** and **subject pan X/Y** separately, plus independent mask width/height and uniform zoom. These remain pending actual OBS acceptance until the corresponding artifact is tested. The mask
 coordinates control the shape, rim, glow and ornaments together; subject
 pan changes where captured webcam pixels appear *within* the mask without
 moving the frame itself. Subject zoom uses a uniform scale and does not
@@ -132,10 +132,10 @@ filter pixel controls are source-relative, not screen/canvas coordinates.
 
 | Reference example | Design recipe | Baseline and planned gap |
 | --- | --- | --- |
-| Rounded rectangle / rectangle | Continuous thin core, softly rounded or sharp corners | Rounded exists; named rectangle and precision controls in M2 |
-| Circle / oval | Consistent stroke around circular/elliptic facecam | Exists approximately; ellipse precision in M2 |
+| Rounded rectangle / rectangle | Continuous thin core, softly rounded or sharp corners | Both shape IDs implemented in Phase A; actual OBS precision/reference capture pending |
+| Circle / oval | Consistent stroke around circular/elliptic facecam | Both implemented; label aligned to proposal; actual OBS ellipse precision pending |
 | Hexagon / diamond | Crisp sci-fi silhouette with stable corner joins | Exists approximately; validate corners in M2 |
-| Triangle / polygon | Parameterized sides with optional rounded joins | New in M2 |
+| Triangle / polygon | Parameterized sides with optional rounded joins | Triangle + regular polygon (5–12 sides) implemented in Phase A; rounded joins/visual parity still pending |
 | Neon Flow | Bright traveling accent over dim continuous rim | Angular preview exists; perimeter travel in M2 |
 | Rotating Ring | Circular segmented track with coherent rotation | Formal preset and seam validation in M3 |
 | Pulse Glow | Slow breathing halo with visible stable core | Pulse exists; restrained amplitude and long-session checks in M2 |

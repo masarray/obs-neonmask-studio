@@ -12,7 +12,8 @@
 #include <graphics/vec4.h>
 
 static const char *const uniforms[] = {
-    "uv_size", "half_size", "corner_radius", "shape_id", "border_width",
+    "uv_size", "half_size", "mask_offset", "subject_pan", "subject_zoom",
+    "shape_rotation", "polygon_sides", "corner_radius", "shape_id", "border_width",
     "feather", "glow_radius", "glow_strength", "color_a", "color_b",
     "color_phase", "pulse_phase", "flow_phase", "animation_id", "segment_count",
     "border_enabled", "glow_enabled", "style_id", "image", "ViewProj"
@@ -26,8 +27,10 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
 {
     enum { W = 64, H = 64 };
     uint8_t pixels[W * H * 4];
-    const uint8_t red = variant == 0 ? 255 : variant == 1 ? 128 : 0;
-    const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 : 0;
+    const uint8_t red = variant == 0 ? 255 : variant == 1 ? 128 :
+                        (variant == 3 || variant == 4 ? 255 : 0);
+    const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
+                          (variant == 3 || variant == 4 ? 255 : 0);
     for (size_t i = 0; i < W * H; ++i) {
         pixels[4 * i + 0] = red;   /* premultiplied red */
         pixels[4 * i + 1] = 0;
@@ -49,12 +52,23 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
 
     struct vec2 dims;
     struct vec2 extents;
+    struct vec2 zero2;
     struct vec4 magenta;
     vec2_set(&dims, (float)W, (float)H);
     vec2_set(&extents, 24.0f, 24.0f);
+    vec2_set(&zero2, 0.0f, 0.0f);
+    struct vec2 mask_shift;
+    struct vec2 subject_shift;
+    vec2_set(&mask_shift, variant == 4 ? 28.0f : 0.0f, 0.0f);
+    vec2_set(&subject_shift, variant == 3 ? 96.0f : 0.0f, 0.0f);
     vec4_set(&magenta, 1.0f, 0.0f, 1.0f, 1.0f);
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "uv_size"), &dims);
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "half_size"), &extents);
+    gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "mask_offset"), &mask_shift);
+    gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "subject_pan"), &subject_shift);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "subject_zoom"), 1.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_rotation"), 0.0f);
+    gs_effect_set_int(gs_effect_get_param_by_name(effect, "polygon_sides"), 8);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "corner_radius"), 5.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "shape_id"), 0);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "border_width"), 4.0f);
@@ -120,6 +134,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *center = mapped + 32u * stride + 32u * 4u;
     const uint8_t *corner = mapped + 1u * stride + 1u * 4u;
     const uint8_t *rim = mapped + 32u * stride + 55u * 4u;
+    const uint8_t *shifted_center = mapped + 32u * stride + 60u * 4u;
 
 
     /* The black/transparent corner proves the mask is not an opaque box.
@@ -129,7 +144,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                 variant, corner[0], corner[1], corner[2], corner[3]);
         failed = 1;
     }
-    if (variant != 2) {
+    if (variant == 0 || variant == 1) {
         const int expected_alpha = variant == 0 ? 255 : 128;
         if (center[0] < 240 || center[1] > 15 || center[2] > 15 ||
             abs((int)center[3] - expected_alpha) > 3) {
@@ -137,10 +152,21 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                     variant, center[0], center[1], center[2], center[3]);
             failed = 1;
         }
-    } else if (rim[0] < 180 || rim[1] > 30 || rim[2] < 180 || rim[3] < 180) {
+    } else if (variant == 2 && (rim[0] < 180 || rim[1] > 30 || rim[2] < 180 || rim[3] < 180)) {
         fprintf(stderr, "FAIL: GPU border-only rim RGBA=(%u,%u,%u,%u)\n",
                 rim[0], rim[1], rim[2], rim[3]);
         failed = 1;
+    } else if (variant == 3 && (center[0] > 2 || center[1] > 2 || center[2] > 2 || center[3] > 2)) {
+        fprintf(stderr, "FAIL: subject pan must sample transparent outside source, got (%u,%u,%u,%u)\n",
+                center[0], center[1], center[2], center[3]);
+        failed = 1;
+    } else if (variant == 4) {
+        if (center[3] > 2 || shifted_center[0] < 240 || shifted_center[3] < 250) {
+            fprintf(stderr, "FAIL: mask translation center=(%u,%u,%u,%u), shifted=(%u,%u,%u,%u)\n",
+                    center[0], center[1], center[2], center[3],
+                    shifted_center[0], shifted_center[1], shifted_center[2], shifted_center[3]);
+            failed = 1;
+        }
     }
 
     gs_stagesurface_unmap(stage);
@@ -242,7 +268,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 3; ++variant)
+            for (int variant = 0; variant < 5; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
