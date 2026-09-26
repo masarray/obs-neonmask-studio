@@ -17,6 +17,13 @@ enum nm_animation {
     NM_ANIM_FLOW = 2
 };
 
+enum nm_border_style {
+    NM_STYLE_CLASSIC = 0,
+    NM_STYLE_DOUBLE = 1,
+    NM_STYLE_HUD = 2,
+    NM_STYLE_MINIMAL = 3
+};
+
 typedef struct nm_preset {
     int shape;
     int animation;
@@ -27,6 +34,7 @@ typedef struct nm_preset {
     double border_width;
     double glow_strength;
     int segments;
+    int style;
 } nm_preset;
 
 /* IDs 1..4; 0 is Custom, not an editable preset. */

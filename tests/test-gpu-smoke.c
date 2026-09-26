@@ -10,7 +10,7 @@ static const char *const uniforms[] = {
     "uv_size", "half_size", "corner_radius", "shape_id", "border_width",
     "feather", "glow_radius", "glow_strength", "color_a", "color_b",
     "elapsed_time", "animation_speed", "animation_id", "segment_count",
-    "border_enabled", "glow_enabled", "image", "ViewProj"
+    "border_enabled", "glow_enabled", "style_id", "image", "ViewProj"
 };
 
 int main(int argc, char **argv)

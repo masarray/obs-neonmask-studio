@@ -8,6 +8,7 @@ uniform float2 half_size;
 uniform float corner_radius;
 uniform int shape_id;
 uniform float border_width;
+uniform int style_id;
 uniform float feather;
 uniform float glow_radius;
 uniform float glow_strength;
@@ -116,8 +117,32 @@ float4 drawNeonMask(VertData v_in) : TARGET
             haloA = saturate(glow_strength * activity * segmentAlpha * side *
                              exp2(-3.0 * gap * gap / radius2));
         }
+        // The same SDF supplies concentric rims: no second geometry pass,
+        // no texture upload and no radial image stretching on resized facecams.
+        float rimA = 0.0;
+        if (style_id == 1 || style_id == 2) {
+            float spacing = border_width * 0.5 + 3.0;
+            float outerRim = 1.0 - smoothstep(0.35, 1.30, abs(d - spacing));
+            float innerRim = 1.0 - smoothstep(0.35, 1.30, abs(d + spacing));
+            float rimGate = 1.0;
+            if (style_id == 2) {
+                float dash = frac((angle / TAU + 0.5) * 16.0);
+                rimGate = smoothstep(0.015, 0.07, dash) *
+                          (1.0 - smoothstep(0.75, 0.92, dash));
+            }
+            rimA = saturate((outerRim * 0.52 + innerRim * 0.32) *
+                            activity * rimGate);
+        } else if (style_id == 3) {
+            // Editorial/minimal style: precise core with restrained bloom.
+            coreA *= 0.68;
+            haloA *= 0.42;
+        }
+
+        float3 rimColor = lerp(color_b.rgb, color_a.rgb, 0.35);
         premul = neon * haloA + premul * (1.0 - haloA);
         outA = haloA + outA * (1.0 - haloA);
+        premul = rimColor * rimA + premul * (1.0 - rimA);
+        outA = rimA + outA * (1.0 - rimA);
         premul = neon * coreA + premul * (1.0 - coreA);
         outA = coreA + outA * (1.0 - coreA);
     }
