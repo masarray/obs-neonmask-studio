@@ -23,6 +23,9 @@ struct nm_filter {
     gs_eparam_t *shape;
     gs_eparam_t *border_width;
     gs_eparam_t *style;
+    gs_eparam_t *ornament_mode;
+    gs_eparam_t *art_intensity;
+    gs_eparam_t *art_gap;
     gs_eparam_t *feather;
     gs_eparam_t *glow_radius;
     gs_eparam_t *glow_strength;
@@ -98,6 +101,9 @@ static void nm_update(void *data, obs_data_t *settings)
         .animation_id = (int)obs_data_get_int(settings, "animation"),
         .segment_count = (int)obs_data_get_int(settings, "segments"),
         .style_id = (int)obs_data_get_int(settings, "style"),
+        .ornament_mode = (int)obs_data_get_int(settings, "ornament_mode"),
+        .art_intensity = (float)obs_data_get_double(settings, "art_intensity"),
+        .art_gap = (float)obs_data_get_double(settings, "art_gap"),
         .show_border = obs_data_get_bool(settings, "border_enabled"),
         .show_glow = obs_data_get_bool(settings, "glow_enabled"),
     };
@@ -115,6 +121,15 @@ static void nm_update(void *data, obs_data_t *settings)
         obs_data_set_double(settings, "hotspot_strength", next.hotspot_strength);
     if (!obs_data_has_user_value(settings, "hotspot_size"))
         obs_data_set_double(settings, "hotspot_size", next.hotspot_size);
+
+    /* Existing scenes had no authored ornaments. Pin the old appearance
+     * explicitly instead of silently adopting a new default in a future build. */
+    if (!obs_data_has_user_value(settings, "ornament_mode"))
+        obs_data_set_int(settings, "ornament_mode", next.ornament_mode);
+    if (!obs_data_has_user_value(settings, "art_intensity"))
+        obs_data_set_double(settings, "art_intensity", next.art_intensity);
+    if (!obs_data_has_user_value(settings, "art_gap"))
+        obs_data_set_double(settings, "art_gap", next.art_gap);
 
     /* v0/v1 used one uniform scale. Migrate once to independent dimensions
      * while keeping all old keys and enum values intact. */
@@ -165,6 +180,9 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_double(settings, "speed", cfg.animation_speed);
     obs_data_set_default_int(settings, "segments", cfg.segment_count);
     obs_data_set_default_int(settings, "style", cfg.style_id);
+    obs_data_set_default_int(settings, "ornament_mode", cfg.ornament_mode);
+    obs_data_set_default_double(settings, "art_intensity", cfg.art_intensity);
+    obs_data_set_default_double(settings, "art_gap", cfg.art_gap);
     obs_data_set_default_bool(settings, "border_enabled", cfg.show_border);
     obs_data_set_default_bool(settings, "glow_enabled", cfg.show_glow);
 }
@@ -201,6 +219,9 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_double(settings, "speed", cfg.animation_speed);
     obs_data_set_int(settings, "segments", cfg.segment_count);
     obs_data_set_int(settings, "style", cfg.style_id);
+    obs_data_set_int(settings, "ornament_mode", cfg.ornament_mode);
+    obs_data_set_double(settings, "art_intensity", cfg.art_intensity);
+    obs_data_set_double(settings, "art_gap", cfg.art_gap);
     obs_data_set_bool(settings, "border_enabled", cfg.show_border);
     obs_data_set_bool(settings, "glow_enabled", cfg.show_glow);
     return true;
@@ -288,6 +309,18 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(style, obs_module_text("Border.Style.Hud"), NM_STYLE_HUD);
     obs_property_list_add_int(style, obs_module_text("Border.Style.Minimal"), NM_STYLE_MINIMAL);
     obs_property_set_modified_callback(style, nm_custom_changed);
+    obs_properties_t *art_group = obs_properties_create();
+    obs_property_t *ornament = obs_properties_add_list(art_group, "ornament_mode",
+                         obs_module_text("Art.Mode"), OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
+    obs_property_list_add_int(ornament, obs_module_text("Art.None"), NM_ORNAMENT_NONE);
+    obs_property_list_add_int(ornament, obs_module_text("Art.Cyber"), NM_ORNAMENT_CYBER);
+    obs_property_set_modified_callback(ornament, nm_custom_changed);
+    NM_CUSTOM(obs_properties_add_float_slider(art_group, "art_intensity",
+                         obs_module_text("Art.Intensity"), 0.0, 1.0, 0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(art_group, "art_gap",
+                         obs_module_text("Art.Gap"), 1.0, 16.0, 0.5));
+    obs_properties_add_group(props, "signature_art", obs_module_text("Art.Group"),
+                             OBS_GROUP_NORMAL, art_group);
     NM_CUSTOM(obs_properties_add_color(props, "primary", obs_module_text("Color.Primary")));
     NM_CUSTOM(obs_properties_add_color(props, "secondary", obs_module_text("Color.Secondary")));
     NM_CUSTOM(obs_properties_add_bool(props, "glow_enabled", obs_module_text("Glow.Enabled")));
@@ -341,6 +374,9 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         NM_PARAM(shape, "shape_id");
         NM_PARAM(border_width, "border_width");
         NM_PARAM(style, "style_id");
+        NM_PARAM(ornament_mode, "ornament_mode");
+        NM_PARAM(art_intensity, "art_intensity");
+        NM_PARAM(art_gap, "art_gap");
         NM_PARAM(feather, "feather");
         NM_PARAM(glow_radius, "glow_radius");
         NM_PARAM(glow_strength, "glow_strength");
@@ -437,6 +473,9 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_int(f->shape, f->config.shape_id);
     gs_effect_set_float(f->border_width, f->config.border_px);
     gs_effect_set_int(f->style, f->config.style_id);
+    gs_effect_set_int(f->ornament_mode, f->config.ornament_mode);
+    gs_effect_set_float(f->art_intensity, f->config.art_intensity);
+    gs_effect_set_float(f->art_gap, f->config.art_gap);
     gs_effect_set_float(f->feather, f->config.feather_px);
     gs_effect_set_float(f->glow_radius, f->config.glow_px);
     gs_effect_set_float(f->glow_strength, f->config.glow_amount);
