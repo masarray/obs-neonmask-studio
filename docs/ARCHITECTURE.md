@@ -17,6 +17,7 @@ Status: incremental target architecture anchored to [PRODUCT_SPEC.md](PRODUCT_SP
 | 009 | No universal crash-proof claim | A native plugin shares the OBS process; a worker thread is not crash isolation |
 | 010 | Separate mask placement from source-image reframing | Users need independent X/Y face centering; preserve old centered scenes and avoid stretched source sampling |
 | 011 | Premium light hierarchy is a visual contract, not a fixed number of GPU passes | Distinct sharp core, mid glow, outer bloom and optional traveling accent share the canonical contour; justify extra passes only with measured evidence |
+| 012 | Art-directed geometric frame; no background-removal dependency | Source image is clipped by chosen silhouette and remains intact within it; geometric contour, ornaments and lighting define the identity, not AI segmentation or random decorative overlays |
 
 ## Modules and dependency direction
 
@@ -102,6 +103,24 @@ Safe-fit design: compute the entire effect envelope, including outer rim offset,
 When an effect cannot fit, offer a predictable fit adjustment or report the limit. Do not silently stretch video. Preserve existing scene behavior via an explicit legacy/safe-fit migration choice.
 
 Expanded padding is a later experiment: distinguish input dimensions, output dimensions, source UV transform and scene anchor; explicitly zero out samples outside the original input so clamp sampling cannot smear the webcam edge. Test crop/filter order, transform bounds and transitions. A linked companion source is a fallback design with lifecycle/scene-sync costs, not a free optimization.
+
+## Style grammar and mask separation
+
+Use the same canonical SDF/contour for clipping and placement of the decorative
+frame. The source image transform and subject framing are independent from
+the mask/ornament transform. The source background is intentionally preserved
+inside the silhouette; do not introduce person segmentation or scene analysis
+into this renderer. The effect is geometry-based masking, **not background
+removal**.
+
+A named style is a bounded, reproducible recipe with explicit geometry,
+distance from contour, stroke weights, gaps, accent anchors, palette and
+light envelopes. Inner/outer rims and HUD/corner glints are evaluated against
+shared contour coordinates and remain aligned after X/Y, size, aspect or zoom
+changes. Keep ornament alpha independent from source mask coverage: cosmetic
+details cannot accidentally punch holes in the picture. Optimize and reuse
+the core shader, but an unproven one-pass goal cannot veto a visual effect
+whose measured cost fits the performance budget.
 
 ## Premium neon layering and animation contract
 
