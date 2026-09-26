@@ -185,3 +185,21 @@ Quantitative targets at 1:1 source pixels:
 These are proposed gates; establish reference captures per supported backend before claiming a pass. Antialiasing differences need a documented tolerance, not unconditional pixel identity across drivers.
 
 Human review also checks visual balance, skin-color preservation, whether the core/mid glow/outer bloom are distinguishable at 320 × 180, presence and trajectory of the flow hot spot, purposeful separation of graphic tracks, compression/downscale appearance, electric flicker and whether the face remains the focus. Review the signature motif, intentional color placement, selective highlights, rhythm of solid/gapped lines, restrained asymmetry and recognizability without motion. Reject generic recolors or a single uniformly bright outline presented as a new premium family. Store preset, input fixture identity, OBS/backend/version, resolution and deterministic animation times with each capture. Never label the concept board as an actual plugin screenshot.
+
+## Phase B — implemented light grammar versus proposal
+
+Current Phase-B implementation contains distinct sharp colored core,
+a fine white-biased centerline, compact mid glow, broader bloom, local
+white-biased Flow flare, and corner-weighted supporting track for the
+existing rounded/rectangle double-rim style. Static and Pulse retain
+the underlying luminous core. The new controls permit tuning envelope
+strength and hotspot width separately. Mask/framing remains geometric;
+no person/background removal is introduced.
+
+**Not yet accepted as proposal parity:** authored Streamer/Chat/Electric
+motifs, full contour-length motion, safe-fit for extreme mask translations,
+OBS dark/light and 320×180 actual capture review, and GPU-frame timing.
+Do not advertise a named new visual family from a recolored common rim.
+Evaluate the Phase-B build side by side with the supplied proposal using
+the exact same owned source and scene layout. Capture Static/Flow/Pulse,
+dark/light scene, size/downscale, and a mask shifted near canvas edges.
