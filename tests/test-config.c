@@ -39,6 +39,7 @@ int main(void)
     check("default polygon sides", cfg.polygon_sides == 8);
     check("default border enabled", cfg.show_border);
     check("default glow enabled", cfg.show_glow);
+    check("legacy custom art defaults off", cfg.ornament_mode == NM_ORNAMENT_NONE && cfg.art_intensity == 0.0f);
     check("premium defaults active", cfg.mid_glow_strength > 0.0f &&
           cfg.bloom_strength > 0.0f && cfg.hotspot_strength > 0.0f);
     check("premium hotspot range", cfg.hotspot_size >= 0.04f && cfg.hotspot_size <= 0.25f);
@@ -62,6 +63,9 @@ int main(void)
     cfg.bloom_strength = INFINITY;
     cfg.hotspot_strength = -999.0f;
     cfg.hotspot_size = 999.0f;
+    cfg.ornament_mode = 999;
+    cfg.art_gap = INFINITY;
+    cfg.art_intensity = NAN;
     cfg.animation_speed = 99.0f;
     cfg.shape_id = 999;
     cfg.animation_id = -99;
@@ -90,6 +94,9 @@ int main(void)
     near("bloom inf clamp", cfg.bloom_strength, 0.0f);
     near("hotspot strength clamp", cfg.hotspot_strength, 0.0f);
     near("hotspot size clamp", cfg.hotspot_size, 0.25f);
+    check("unknown art rejected", cfg.ornament_mode == NM_ORNAMENT_NONE);
+    near("art gap inf fallback", cfg.art_gap, 1.0f);
+    near("art intensity nan fallback", cfg.art_intensity, 0.0f);
     near("speed clamp", cfg.animation_speed, 5.0f);
     check("shape fallback", cfg.shape_id == NM_SHAPE_ROUNDED);
     cfg.shape_id = NM_SHAPE_POLYGON;
@@ -110,6 +117,9 @@ int main(void)
     cfg.bloom_strength = 0.0f;
     cfg.hotspot_strength = 0.0f;
     cfg.hotspot_size = 0.25f;
+    cfg.art_intensity = 1.0f;
+    cfg.art_gap = 16.0f;
+    cfg.ornament_mode = NM_ORNAMENT_CYBER;
     cfg.show_border = false;
     cfg.show_glow = false;
     check("apply preset", nm_config_apply_preset(&cfg, 2));
@@ -122,6 +132,10 @@ int main(void)
     near("preset bloom complete", cfg.bloom_strength, 0.90f);
     near("preset highlight complete", cfg.hotspot_strength, 0.92f);
     near("preset hotspot size complete", cfg.hotspot_size, 0.10f);
+    check("Reactor has no Cyber ornament", cfg.ornament_mode == NM_ORNAMENT_NONE);
+    near("Reactor art intensity complete", cfg.art_intensity, 0.0f);
+    near("Reactor art gap complete", cfg.art_gap, 2.0f);
+    check("Cyber preset applies authored ornament", nm_config_apply_preset(&cfg, 1) && cfg.ornament_mode == NM_ORNAMENT_CYBER && cfg.art_intensity > 0.8f);
     check("preset restores border", cfg.show_border);
     check("preset restores glow", cfg.show_glow);
 
