@@ -7,9 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
-assert len(names) == len(set(names)) == 27, f"Expected 27 unique bindings: {names!r}"
+assert len(names) == len(set(names)) == 30, f"Expected 30 unique bindings: {names!r}"
 uniforms = {name: kind for kind, name in re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader)}
-assert len(uniforms) == 29, f"Unexpected number of shader uniforms: {uniforms}"
+assert len(uniforms) == 32, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
     "Host/shader uniform drift: " + str(set(names) ^ (set(uniforms) - {"ViewProj", "image"}))
 )
@@ -18,7 +18,17 @@ assert uniforms["uv_size"] == uniforms["half_size"] == "float2"
 assert uniforms["mask_offset"] == uniforms["subject_pan"] == "float2"
 assert uniforms["subject_zoom"] == uniforms["shape_rotation"] == "float"
 assert uniforms["polygon_sides"] == "int"
-assert uniforms["style_id"] == "int"
+assert uniforms["style_id"] == uniforms["ornament_mode"] == "int"
+assert uniforms["art_intensity"] == uniforms["art_gap"] == "float"
+assert "roundedContourTurn" in shader
+assert "float gapGate" in shader and "float hbar" in shader and "float vbar" in shader
+assert "artBarA" in shader and "artBarGlowA" in shader
+assert "NM_ORNAMENT_CYBER" in host and "NM_ORNAMENT_NONE" in host
+for key in ("art_intensity", "art_gap"):
+    assert f'obs_data_has_user_value(settings, "{key}")' in host
+    assert f'obs_data_set_double(settings, "{key}", next.{key})' in host
+assert 'obs_data_has_user_value(settings, "ornament_mode")' in host
+assert 'obs_data_set_int(settings, "ornament_mode", next.ornament_mode)' in host
 for key in ("mid_glow_strength", "bloom_strength", "hotspot_strength", "hotspot_size"):
     assert uniforms[key] == "float", f"Missing premium light uniform {key}"
     assert f'NM_PARAM({key}, "{key}")' in host
