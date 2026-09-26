@@ -19,12 +19,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Configure headless tests
         run: cmake -S . -B build-test -DNEONMASK_BUILD_PLUGIN=OFF -DNEONMASK_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
       - name: Build Release
         run: cmake --build build-test --config Release --parallel
       - name: Test Release
         run: ctest --test-dir build-test -C Release --output-on-failure
+      - name: Verify owned visual test fixtures
+        run: python tools/generate_visual_fixtures.py --out build-test/visual-fixtures --verify
   undefined-behavior:
     runs-on: ubuntu-24.04
     steps:
