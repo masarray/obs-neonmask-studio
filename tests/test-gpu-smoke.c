@@ -25,6 +25,11 @@ int main(int argc, char **argv)
         return 2;
     }
 
+    /* The CI SDK is staged outside an installed OBS directory. Add the real
+     * libobs base effects before initializing the graphics subsystem. */
+    const char *libobs_data = getenv("NEONMASK_LIBOBS_DATA_DIR");
+    if (libobs_data && *libobs_data) obs_add_data_path(libobs_data);
+
     struct obs_video_info video = {0};
     /* Windows CI selects its built Direct3D 11 module; Linux defaults to OpenGL. */
     const char *module = getenv("NEONMASK_GRAPHICS_MODULE");
