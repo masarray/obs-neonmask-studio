@@ -1,0 +1,31 @@
+name: GPU shader smoke
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: neonmask-gpu-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  opengl:
+    name: OBS 30 OpenGL effect compile (Mesa)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      GALLIUM_DRIVER: llvmpipe
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OBS runtime, SDK and virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libobs-dev obs-studio xvfb libgl1-mesa-dri
+      - name: Configure real libobs smoke
+        run: cmake -S . -B build-gpu -DNEONMASK_BUILD_PLUGIN=ON -DNEONMASK_BUILD_TESTS=ON -DNEONMASK_BUILD_SHADER_SMOKE=ON -DCMAKE_BUILD_TYPE=Release
+      - name: Compile plugin and test executable
+        run: cmake --build build-gpu --parallel
+      - name: Compile effect on OpenGL GPU runtime
+        run: xvfb-run -a ctest --test-dir build-gpu -R '^neonmask-gpu-smoke$' --output-on-failure
