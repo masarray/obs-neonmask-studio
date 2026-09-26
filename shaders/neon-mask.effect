@@ -1,0 +1,132 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// One source-space signed-distance field drives mask, stroke and analytic halo.
+// No duplicate geometry or full-frame blur texture is required for this MVP.
+uniform float4x4 ViewProj;
+uniform texture2d image;
+uniform float2 uv_size;
+uniform float2 half_size;
+uniform float corner_radius;
+uniform int shape_id;
+uniform float border_width;
+uniform float feather;
+uniform float glow_radius;
+uniform float glow_strength;
+uniform float4 color_a;
+uniform float4 color_b;
+uniform float elapsed_time;
+uniform float animation_speed;
+uniform int animation_id;
+uniform int segment_count;
+uniform int border_enabled;
+uniform int glow_enabled;
+
+sampler_state image_sampler {
+    Filter = Linear;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+
+struct VertData {
+    float4 pos : POSITION;
+    float2 uv : TEXCOORD0;
+};
+
+VertData mainTransform(VertData v)
+{
+    v.pos = mul(float4(v.pos.xyz, 1.0), ViewProj);
+    return v;
+}
+
+float roundedBoxDistance(float2 p, float2 bounds, float radius)
+{
+    float2 q = abs(p) - (bounds - radius);
+    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
+}
+
+float ellipseDistance(float2 p, float2 r)
+{
+    // A close Euclidean-distance approximation; unlike UV scaling, this keeps
+    // an ellipse's neon width visually consistent near the silhouette.
+    float k0 = length(p / r);
+    if (k0 < 0.0001) return -min(r.x, r.y);
+    float k1 = length(p / (r * r));
+    return k0 * (k0 - 1.0) / max(k1, 0.00001);
+}
+
+float shapeDistance(float2 p)
+{
+    if (shape_id == 1) return length(p) - min(half_size.x, half_size.y);
+    if (shape_id == 2) return ellipseDistance(p, half_size);
+    if (shape_id == 3) {
+        float2 q = abs(p);
+        // Flat-top six-sided silhouette with pixel-space unit-length normals.
+        return max(q.y - half_size.y,
+                   0.8660254 * (q.x - half_size.x) + 0.5 * q.y);
+    }
+    if (shape_id == 4) {
+        float2 q = abs(p);
+        return (q.x * half_size.y + q.y * half_size.x -
+                half_size.x * half_size.y) / length(half_size);
+    }
+    return roundedBoxDistance(p, half_size,
+                              min(corner_radius, min(half_size.x, half_size.y)));
+}
+
+float4 drawNeonMask(VertData v) : TARGET
+{
+    const float TAU = 6.28318530718;
+    float2 p = v.uv * uv_size - uv_size * 0.5;
+    float d = shapeDistance(p);
+    float4 src = image.Sample(image_sampler, v.uv);
+    float mask = 1.0 - smoothstep(-max(feather, 0.5), max(feather, 0.5), d);
+    float baseA = src.a * mask;
+    float3 premul = src.rgb * baseA;
+    float outA = baseA;
+
+    // Both the core and halo are composited over the masked source in
+    // premultiplied space; final output is straight alpha as expected by OBS.
+    if (border_enabled != 0) {
+        float angle = atan2(p.y, p.x);
+        float mixAmount = saturate(0.5 + 0.5 * sin(angle + elapsed_time * 0.15 * animation_speed));
+        float3 neon = lerp(color_a.rgb, color_b.rgb, mixAmount);
+        float activity = 1.0;
+        if (animation_id == 1) {
+            activity = 0.72 + 0.28 * sin(elapsed_time * TAU * animation_speed);
+        } else if (animation_id == 2) {
+            float travel = cos(angle - elapsed_time * TAU * animation_speed * 0.20);
+            activity = 0.52 + 0.48 * pow(saturate(0.5 + 0.5 * travel), 12.0);
+        }
+
+        float segmentAlpha = 1.0;
+        if (segment_count > 1) {
+            float phase = frac((angle / TAU + 0.5) * segment_count);
+            segmentAlpha = smoothstep(0.015, 0.08, phase) *
+                           (1.0 - smoothstep(0.82, 0.98, phase));
+        }
+        float band = 1.0 - smoothstep(max(0.0, border_width * 0.5 - 0.75),
+                                      border_width * 0.5 + 0.75, abs(d));
+        float coreA = saturate(band * activity * segmentAlpha);
+        float haloA = 0.0;
+        if (glow_enabled != 0 && glow_strength > 0.0) {
+            float gap = max(0.0, abs(d) - border_width * 0.5);
+            float radius2 = max(1.0, glow_radius * glow_radius);
+            float side = d > 0.0 ? 1.0 : 0.24;
+            haloA = saturate(glow_strength * activity * segmentAlpha * side *
+                             exp2(-3.0 * gap * gap / radius2));
+        }
+        premul = neon * haloA + premul * (1.0 - haloA);
+        outA = haloA + outA * (1.0 - haloA);
+        premul = neon * coreA + premul * (1.0 - coreA);
+        outA = coreA + outA * (1.0 - coreA);
+    }
+    float3 straight = outA > 0.00001 ? premul / outA : float3(0.0, 0.0, 0.0);
+    return float4(straight, outA);
+}
+
+technique Draw
+{
+    pass {
+        vertex_shader = mainTransform(v_in);
+        pixel_shader = drawNeonMask(v_in);
+    }
+}

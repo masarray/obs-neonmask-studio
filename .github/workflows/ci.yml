@@ -1,0 +1,37 @@
+name: Build and test
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  geometry:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure headless tests
+        run: cmake -S . -B build-test -DNEONMASK_BUILD_PLUGIN=OFF -DNEONMASK_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build-test --parallel
+      - name: Test
+        run: ctest --test-dir build-test --output-on-failure
+  linux-plugin:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OBS SDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libobs-dev
+      - name: Configure
+        run: cmake -S . -B build -DNEONMASK_BUILD_PLUGIN=ON -DNEONMASK_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Stage plugin
+        run: cmake --install build --prefix package
+      - name: Upload Linux package
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs-neonmask-linux-x86_64
+          path: package/

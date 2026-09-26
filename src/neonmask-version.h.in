@@ -1,0 +1,2 @@
+#pragma once
+#define NEONMASK_VERSION "@PROJECT_VERSION@"
