@@ -31,6 +31,9 @@ assert "premul = outerColor * outerA" in shader
 assert "premul = midColor * midA" in shader
 assert "premul = fineColor * fineA" in shader
 assert "premul = hotspotColor * hotspotA" in shader
+for key in ("mid_glow_strength", "bloom_strength", "hotspot_strength", "hotspot_size"):
+    assert f'obs_data_has_user_value(settings, "{key}")' in host
+    assert f'obs_data_set_double(settings, "{key}", next.{key})' in host
 assert uniforms["color_phase"] == uniforms["pulse_phase"] == uniforms["flow_phase"] == "float"
 assert "elapsed_time" not in uniforms and "animation_speed" not in uniforms
 assert "fmodf(f->time" not in host
