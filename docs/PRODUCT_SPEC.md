@@ -11,6 +11,12 @@ Give streamers a beautiful facecam frame in under one minute: add one native OBS
 
 “Better than Advanced Masks” means measurable improvements in the selected facecam workflow, visual integration and cost. It is not a claim of complete feature parity or higher performance until measured. Build incrementally on the existing C11/libobs implementation.
 
+## Scope clarification — artistic mask and frame, not background removal
+
+The product is a **designed geometric mask and luminous frame** for webcam/video sources. It is **not** a person-segmentation, green-screen or background-removal product. The source image, including its background, remains visible inside the selected geometric silhouette; pixels outside that silhouette are clipped by the mask. No AI background detection, hair cutout, automatic face tracking or compositing tricks that silently replace the user's webcam background are required to reproduce the visual direction. Users may independently choose other OBS filters, but they are not prerequisites for NeonMask.
+
+The primary differentiation is art direction: distinctive contour-aware silhouettes, graphic linework, deliberate spacing and negative space, fine luminous cores, graduated mid-glow/bloom, complementary colors and expressive but restrained motion. A generic colored rounded rectangle, a thicker uniform outline or merely increasing a halo slider is **not** the intended premium result. Treat each signature style as a coherent design recipe, not a differently named parameter preset.
+
 ## Visual north star and user acceptance
 
 The **user-supplied concept board (image #9 in the 2026-09-26 OBS feedback) is the
@@ -37,8 +43,10 @@ included in the distributable plugin.
 The next tester-facing vertical slices prioritize (1) independently adjustable
 mask position and facecam subject pan/zoom, (2) premium multi-component neon
 and clearly visible optional motion with a stable sharp core, (3) safe-fit and
-contour geometry, and (4) actual OBS captures and performance evidence. Only
-then broaden the ornaments/shapes. Defaults and existing scenes remain
+contour geometry, and (4) a recognizable art-directed frame family with actual
+OBS captures and performance evidence. New mask providers, AI cutouts and generic
+shape proliferation are not substitutes for the visual goal. Only then broaden
+the ornamental vocabulary and shapes. Defaults and existing scenes remain
 compatible, and the facecam image remains the focus.
 
 ## Document authority
@@ -110,7 +118,8 @@ Study proven algorithms and integration patterns, then implement the smallest co
 
 Launch scope: local native filter, procedural shapes, curated neon designs, editable settings, reliable saving, safe degradation, Windows preview and measured SDR rendering. Linux/OpenGL provides a second validation backend. Native macOS and additional OBS versions only become supported after runtime/package evidence.
 
-Deferred: AI subject segmentation, cloud accounts, online preset marketplace, automatic face tracking, arbitrary user shaders, unlimited layers, browser UI, GPU-to-CPU video processing, and automatic in-process binary replacement. Audio reactivity is optional later and never a prerequisite for attractive motion. HDR is unverified until explicitly implemented and tested.
+Out of scope for the visual target: background removal, person/hair segmentation,
+AI cutouts and automatic face tracking. Deferred: cloud accounts, online preset marketplace, arbitrary user shaders, unlimited layers, browser UI, GPU-to-CPU video processing, and automatic in-process binary replacement. Audio reactivity is optional later and never a prerequisite for attractive motion. HDR is unverified until explicitly implemented and tested.
 
 M1 motion contract: static freezes every visual phase; speed zero freezes animation; changing speed preserves phase; no visible time-based reset at the one-hour boundary. A pure tick simulation verifies state integration, while G4 final pixels and G6 full OBS soak remain required before an animation reliability claim.
 
