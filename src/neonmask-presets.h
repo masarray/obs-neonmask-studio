@@ -43,6 +43,11 @@ typedef struct nm_preset {
     int style;
     bool border_enabled;
     bool glow_enabled;
+    /* Explicit complete light recipes; existing IDs and preceding fields stay stable. */
+    double mid_glow;
+    double bloom_strength;
+    double hotspot_strength;
+    double hotspot_size;
 } nm_preset;
 
 /* IDs 1..4; 0 is Custom, not an editable preset. */
