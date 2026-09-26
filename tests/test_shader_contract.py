@@ -8,7 +8,7 @@ host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
 assert len(names) == len(set(names)) == 16, f"Expected 16 unique bindings: {names!r}"
-uniforms = dict(re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([a-z_]+)\s*;", shader))
+uniforms = dict(re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader))
 assert len(uniforms) == 18, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
     "Host/shader uniform drift: " + str(set(names) ^ (set(uniforms) - {"ViewProj", "image"}))
