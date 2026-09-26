@@ -29,10 +29,27 @@ int main(void)
     check("schema current", cfg.schema_version == NM_CONFIG_SCHEMA_VERSION);
     check("default shape", cfg.shape_id == NM_SHAPE_ROUNDED);
     check("default style", cfg.style_id == NM_STYLE_DOUBLE);
+    near("default mask width", cfg.mask_width, 0.81f);
+    near("default mask height", cfg.mask_height, 0.81f);
+    near("default mask x", cfg.mask_x_px, 0.0f);
+    near("default mask y", cfg.mask_y_px, 0.0f);
+    near("default subject pan x", cfg.subject_pan_x_px, 0.0f);
+    near("default subject pan y", cfg.subject_pan_y_px, 0.0f);
+    near("default subject zoom", cfg.subject_zoom, 1.0f);
+    check("default polygon sides", cfg.polygon_sides == 8);
     check("default border enabled", cfg.show_border);
     check("default glow enabled", cfg.show_glow);
 
     cfg.scale = -FLT_MAX;
+    cfg.mask_width = -FLT_MAX;
+    cfg.mask_height = INFINITY;
+    cfg.mask_x_px = -99999.0f;
+    cfg.mask_y_px = 99999.0f;
+    cfg.subject_pan_x_px = NAN;
+    cfg.subject_pan_y_px = INFINITY;
+    cfg.subject_zoom = 99.0f;
+    cfg.shape_rotation_deg = -999.0f;
+    cfg.polygon_sides = 99;
     cfg.roundness = INFINITY;
     cfg.border_px = -10.0f;
     cfg.feather_px = NAN;
@@ -47,7 +64,16 @@ int main(void)
     cfg.secondary = 0x000A0B0Cu;
     nm_config_validate(&cfg);
 
-    near("scale clamp", cfg.scale, 0.30f);
+    near("scale clamp", cfg.scale, 0.10f);
+    near("mask width clamp", cfg.mask_width, 0.10f);
+    near("mask height inf fallback", cfg.mask_height, 0.10f);
+    near("mask x clamp", cfg.mask_x_px, -4096.0f);
+    near("mask y clamp", cfg.mask_y_px, 4096.0f);
+    near("subject pan x nan fallback", cfg.subject_pan_x_px, -4096.0f);
+    near("subject pan y inf fallback", cfg.subject_pan_y_px, -4096.0f);
+    near("subject zoom clamp", cfg.subject_zoom, 4.0f);
+    near("shape rotation clamp", cfg.shape_rotation_deg, -180.0f);
+    check("polygon sides clamp", cfg.polygon_sides == 12);
     near("roundness inf fallback", cfg.roundness, 0.0f);
     near("border clamp", cfg.border_px, 0.5f);
     near("feather nan fallback", cfg.feather_px, 0.5f);
@@ -55,6 +81,11 @@ int main(void)
     near("glow amount clamp", cfg.glow_amount, 0.0f);
     near("speed clamp", cfg.animation_speed, 5.0f);
     check("shape fallback", cfg.shape_id == NM_SHAPE_ROUNDED);
+    cfg.shape_id = NM_SHAPE_POLYGON;
+    cfg.polygon_sides = 5;
+    nm_config_validate(&cfg);
+    check("new polygon enum accepted", cfg.shape_id == NM_SHAPE_POLYGON);
+    check("polygon minimum accepted", cfg.polygon_sides == 5);
     check("animation fallback", cfg.animation_id == NM_ANIM_STATIC);
     check("style fallback", cfg.style_id == NM_STYLE_CLASSIC);
     check("segments clamp", cfg.segment_count == 48);
@@ -77,6 +108,7 @@ int main(void)
 
     check("legacy schema supported", nm_config_schema_supported(0));
     check("current schema supported", nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION));
+    check("legacy v1 schema supported", nm_config_schema_supported(1));
     check("future schema rejected", !nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION + 1));
 
     check("unknown preset rejected", !nm_config_apply_preset(&cfg, 99));
