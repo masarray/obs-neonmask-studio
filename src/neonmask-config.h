@@ -25,6 +25,10 @@ typedef struct nm_config {
     float feather_px;
     float glow_px;
     float glow_amount;
+    float mid_glow_strength;
+    float bloom_strength;
+    float hotspot_strength;
+    float hotspot_size;
     float animation_speed;
     uint32_t primary;
     uint32_t secondary;
