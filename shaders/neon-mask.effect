@@ -5,6 +5,11 @@ uniform float4x4 ViewProj;
 uniform texture2d image;
 uniform float2 uv_size;
 uniform float2 half_size;
+uniform float2 mask_offset;
+uniform float2 subject_pan;
+uniform float subject_zoom;
+uniform float shape_rotation;
+uniform int polygon_sides;
 uniform float corner_radius;
 uniform int shape_id;
 uniform float border_width;
@@ -55,6 +60,22 @@ float ellipseDistance(float2 p, float2 r)
     return k0 * (k0 - 1.0) / max(k1, 0.00001);
 }
 
+float2 rotatePoint(float2 p, float angle)
+{
+    float c = cos(angle);
+    float s = sin(angle);
+    return float2(c * p.x - s * p.y, s * p.x + c * p.y);
+}
+
+float regularPolygonDistance(float2 p, float2 bounds, int sides, float rotation)
+{
+    float2 q = rotatePoint(p, rotation) / max(bounds, float2(0.001, 0.001));
+    float a = atan2(q.y, q.x);
+    float sector = 6.28318530718 / max((float)sides, 3.0);
+    float edge = cos(floor(0.5 + a / sector) * sector - a) * length(q) - 1.0;
+    return edge * min(bounds.x, bounds.y);
+}
+
 float shapeDistance(float2 p)
 {
     if (shape_id == 1) return length(p) - min(half_size.x, half_size.y);
@@ -66,20 +87,36 @@ float shapeDistance(float2 p)
                    0.8660254 * (q.x - half_size.x) + 0.5 * q.y);
     }
     if (shape_id == 4) {
-        float2 q = abs(p);
+        float2 q = abs(rotatePoint(p, shape_rotation));
         return (q.x * half_size.y + q.y * half_size.x -
                 half_size.x * half_size.y) / length(half_size);
     }
-    return roundedBoxDistance(p, half_size,
+    if (shape_id == 5)
+        return roundedBoxDistance(rotatePoint(p, shape_rotation), half_size, 0.0);
+    if (shape_id == 6)
+        return regularPolygonDistance(p, half_size, 3, shape_rotation - 1.57079632679);
+    if (shape_id == 7)
+        return regularPolygonDistance(p, half_size, polygon_sides, shape_rotation);
+    return roundedBoxDistance(rotatePoint(p, shape_rotation), half_size,
                               min(corner_radius, min(half_size.x, half_size.y)));
 }
 
 float4 drawNeonMask(VertData v_in) : TARGET
 {
     const float TAU = 6.28318530718;
-    float2 p = v_in.uv * uv_size - uv_size * 0.5;
+    float2 sourcePos = v_in.uv * uv_size - uv_size * 0.5;
+    float2 p = sourcePos - mask_offset;
     float d = shapeDistance(p);
-    float4 src = image.Sample(image_sampler, v_in.uv);
+
+    // Positive pan moves the visible subject right/down inside a fixed mask.
+    // Uniform zoom preserves face proportions. Explicit bounds prevent the
+    // Clamp sampler from smearing source-edge pixels into translated areas.
+    float2 samplePos = (sourcePos - subject_pan) / max(subject_zoom, 0.001);
+    float2 sourceUV = (samplePos + uv_size * 0.5) / uv_size;
+    float insideSource = step(0.0, sourceUV.x) * step(sourceUV.x, 1.0) *
+                         step(0.0, sourceUV.y) * step(sourceUV.y, 1.0);
+    float4 src = insideSource > 0.5 ? image.Sample(image_sampler, sourceUV) :
+                                     float4(0.0, 0.0, 0.0, 0.0);
     float mask = 1.0 - smoothstep(-max(feather, 0.5), max(feather, 0.5), d);
     float baseA = src.a * mask;
     // OBS's non-direct filter texrender contains premultiplied RGB.
