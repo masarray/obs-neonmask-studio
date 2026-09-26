@@ -21,7 +21,7 @@ assert shader.count("{") == shader.count("}")
 assert "OBS_NO_DIRECT_RENDERING" in host, "Premultiplied input contract requires capture"
 assert "OBS_ALLOW_DIRECT_RENDERING" not in host
 assert "vec4_from_rgba_srgb" in host and "gs_effect_set_vec4" in host
-assert not re.search(r"\\bgs_effect_set_color\\s*\\(", host), "OBS color property data is RGBA, not BGRA"
+assert not re.search(r"\bgs_effect_set_color\s*\(", host), "OBS color property data is RGBA, not BGRA"
 assert "src.rgb * mask" in shader
 assert "src.rgb * baseA" not in shader, "Would double-multiply alpha at edges"
 assert "obs_source_get_base_width" in host and "obs_source_get_base_height" in host
