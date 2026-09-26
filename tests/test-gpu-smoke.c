@@ -27,6 +27,26 @@ int main(int argc, char **argv)
         return 2;
     }
 
+    /* G1 migration contract: a default schema is not a saved user value.
+     * This matters because legacy v0 scene settings acquire OBS defaults. */
+    obs_data_t *schema_fixture = obs_data_create();
+    obs_data_set_default_int(schema_fixture, "schema_version", 1);
+    if (obs_data_has_user_value(schema_fixture, "schema_version") ||
+        obs_data_get_int(schema_fixture, "schema_version") != 1) {
+        fprintf(stderr, "FAIL: OBS schema default/user-value contract\n");
+        obs_data_release(schema_fixture);
+        obs_shutdown();
+        return 1;
+    }
+    obs_data_set_int(schema_fixture, "schema_version", 1);
+    if (!obs_data_has_user_value(schema_fixture, "schema_version")) {
+        fprintf(stderr, "FAIL: OBS explicit schema value not visible\n");
+        obs_data_release(schema_fixture);
+        obs_shutdown();
+        return 1;
+    }
+    obs_data_release(schema_fixture);
+
     /* The CI SDK is staged outside an installed OBS directory. Add the real
      * libobs base effects before initializing the graphics subsystem. */
     const char *libobs_data = getenv("NEONMASK_LIBOBS_DATA_DIR");
