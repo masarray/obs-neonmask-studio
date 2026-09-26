@@ -3,9 +3,10 @@
 #include <math.h>
 #include <float.h>
 
+#define NM_PI 3.14159265358979323846f
+
 float nm_clamp(float value, float min_value, float max_value)
 {
-    /* Comparison also rejects NaN/Inf and avoids non-portable C isfinite. */
     if (!(value >= -FLT_MAX && value <= FLT_MAX)) return min_value;
     return fminf(max_value, fmaxf(min_value, value));
 }
@@ -17,12 +18,48 @@ nm_geometry nm_make_geometry(uint32_t width, uint32_t height, float scale,
     g.width = (float)width;
     g.height = (float)height;
     scale = nm_clamp(scale, 0.30f, 0.96f);
-    /* Reserve source-space margin for a halo without resizing OBS's source. */
     g.half_width = 0.5f * g.width * scale;
     g.half_height = 0.5f * g.height * scale;
     g.radius = nm_clamp(roundness, 0.0f, 1.0f) *
                fminf(g.half_width, g.half_height);
     return g;
+}
+
+nm_geometry nm_make_geometry_framed(uint32_t width, uint32_t height,
+                                    float scale, float roundness,
+                                    float width_factor, float height_factor)
+{
+    nm_geometry g = nm_make_geometry(width, height, scale, roundness);
+    g.half_width *= nm_clamp(width_factor, 0.25f, 1.25f);
+    g.half_height *= nm_clamp(height_factor, 0.25f, 1.25f);
+    g.radius = nm_clamp(roundness, 0.0f, 1.0f) *
+               fminf(g.half_width, g.half_height);
+    return g;
+}
+
+nm_point nm_mask_point(float u, float v, uint32_t width, uint32_t height,
+                       float mask_x, float mask_y)
+{
+    nm_point p = {(u - 0.5f) * (float)width - mask_x,
+                  (v - 0.5f) * (float)height - mask_y};
+    return p;
+}
+
+nm_point nm_source_uv(float u, float v, uint32_t width, uint32_t height,
+                      float subject_x, float subject_y, float subject_zoom)
+{
+    nm_point uv = {-1.0f, -1.0f};
+    if (!width || !height) return uv;
+    const float z = nm_clamp(subject_zoom, 0.5f, 3.0f);
+    uv.x = 0.5f + ((u - 0.5f) * (float)width - subject_x) / (z * (float)width);
+    uv.y = 0.5f + ((v - 0.5f) * (float)height - subject_y) / (z * (float)height);
+    return uv;
+}
+
+bool nm_uv_inside(nm_point uv)
+{
+    return uv.x >= 0.0f && uv.x <= 1.0f &&
+           uv.y >= 0.0f && uv.y <= 1.0f;
 }
 
 float nm_sd_round_rect(float x, float y, float half_width,
@@ -41,15 +78,43 @@ float nm_sd_circle(float x, float y, float radius)
     return hypotf(x, y) - radius;
 }
 
-/* Fast ellipse distance approximation, exact on its principal axes. */
 float nm_sd_ellipse_approx(float x, float y, float rx, float ry)
 {
     if (rx <= 0.0f || ry <= 0.0f) return 1.0e6f;
-    /* Match the GPU distance approximation, including its center guard. */
     const float k0 = hypotf(x / rx, y / ry);
     if (k0 < 0.0001f) return -fminf(rx, ry);
     const float k1 = hypotf(x / (rx * rx), y / (ry * ry));
     return k0 * (k0 - 1.0f) / fmaxf(k1, 0.00001f);
+}
+
+/* Pixel-space point-to-segment distance preserves the visual stroke width
+ * even when the shape's X and Y extents differ. Winding is clockwise in
+ * source/texture coordinates (+Y points down). */
+float nm_sd_regular_polygon(float x, float y, float rx, float ry,
+                            int sides, float rotation_deg)
+{
+    if (rx <= 0.0f || ry <= 0.0f || sides < 3 || sides > 12)
+        return 1.0e6f;
+
+    const float phase = -0.5f * NM_PI + ((sides & 1) ? 0.0f : NM_PI / (float)sides)
+                      + rotation_deg * NM_PI / 180.0f;
+    const float step = 2.0f * NM_PI / (float)sides;
+    float best_sq = FLT_MAX;
+    bool inside = true;
+    for (int i = 0; i < sides; ++i) {
+        const float a = phase + (float)i * step;
+        const float b = a + step;
+        const float ax = rx * cosf(a), ay = ry * sinf(a);
+        const float bx = rx * cosf(b), by = ry * sinf(b);
+        const float ex = bx - ax, ey = by - ay;
+        const float px = x - ax, py = y - ay;
+        const float t = nm_clamp((px * ex + py * ey) / (ex * ex + ey * ey),
+                                 0.0f, 1.0f);
+        const float dx = px - t * ex, dy = py - t * ey;
+        best_sq = fminf(best_sq, dx * dx + dy * dy);
+        if (ex * py - ey * px < -0.00001f) inside = false;
+    }
+    return (inside ? -1.0f : 1.0f) * sqrtf(best_sq);
 }
 
 uint32_t nm_obs_rgba(unsigned r, unsigned g, unsigned b)

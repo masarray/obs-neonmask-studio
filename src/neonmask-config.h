@@ -5,11 +5,23 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define NM_CONFIG_SCHEMA_VERSION 1u
+#define NM_CONFIG_SCHEMA_VERSION 2u
 
 typedef struct nm_config {
     uint32_t schema_version;
     float scale;
+    /* Mask position is independent of webcam source sampling, in source pixels. */
+    float mask_x;
+    float mask_y;
+    /* Relative size factors 1.0 retain the legacy scale and silhouette. */
+    float mask_width;
+    float mask_height;
+    /* Positive subject pan shifts the picture right/down within a fixed mask. */
+    float subject_x;
+    float subject_y;
+    float subject_zoom;
+    int polygon_sides;
+    float polygon_rotation;
     float roundness;
     float border_px;
     float feather_px;
