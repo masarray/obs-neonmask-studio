@@ -5,6 +5,11 @@ uniform float4x4 ViewProj;
 uniform texture2d image;
 uniform float2 uv_size;
 uniform float2 half_size;
+uniform float2 mask_offset;
+uniform float2 subject_pan;
+uniform float subject_zoom;
+uniform int polygon_sides;
+uniform float polygon_rotation;
 uniform float corner_radius;
 uniform int shape_id;
 uniform float border_width;
@@ -55,16 +60,42 @@ float ellipseDistance(float2 p, float2 r)
     return k0 * (k0 - 1.0) / max(k1, 0.00001);
 }
 
+
+/* Pixel-space distance to actual polygon edges, preserving stroke width on
+ * non-square source sizes. +Y down; vertices proceed clockwise. */
+float polygonDistance(float2 p, int sides, float rotation_deg)
+{
+    const float PI = 3.14159265359;
+    float phase = -0.5 * PI + ((sides % 2) == 0 ? PI / sides : 0.0)
+                  + rotation_deg * PI / 180.0;
+    float stepAngle = 2.0 * PI / sides;
+    float bestSq = 1.0e20;
+    bool inside = true;
+    for (int i = 0; i < 12; ++i) {
+        if (i >= sides) break;
+        float a = phase + i * stepAngle;
+        float b = a + stepAngle;
+        float2 v0 = half_size * float2(cos(a), sin(a));
+        float2 v1 = half_size * float2(cos(b), sin(b));
+        float2 edge = v1 - v0;
+        float2 rel = p - v0;
+        float t = saturate(dot(rel, edge) / max(dot(edge, edge), 0.0001));
+        float2 nearest = rel - t * edge;
+        bestSq = min(bestSq, dot(nearest, nearest));
+        if (edge.x * rel.y - edge.y * rel.x < -0.00001)
+            inside = false;
+    }
+    return (inside ? -1.0 : 1.0) * sqrt(bestSq);
+}
+
 float shapeDistance(float2 p)
 {
     if (shape_id == 1) return length(p) - min(half_size.x, half_size.y);
     if (shape_id == 2) return ellipseDistance(p, half_size);
-    if (shape_id == 3) {
-        float2 q = abs(p);
-        // Flat-top six-sided silhouette with pixel-space unit-length normals.
-        return max(q.y - half_size.y,
-                   0.8660254 * (q.x - half_size.x) + 0.5 * q.y);
-    }
+    if (shape_id == 3) return polygonDistance(p, 6, polygon_rotation);
+    if (shape_id == 5) return roundedBoxDistance(p, half_size, 0.0);
+    if (shape_id == 6) return polygonDistance(p, 3, polygon_rotation);
+    if (shape_id == 7) return polygonDistance(p, polygon_sides, polygon_rotation);
     if (shape_id == 4) {
         float2 q = abs(p);
         return (q.x * half_size.y + q.y * half_size.x -
@@ -77,9 +108,18 @@ float shapeDistance(float2 p)
 float4 drawNeonMask(VertData v_in) : TARGET
 {
     const float TAU = 6.28318530718;
-    float2 p = v_in.uv * uv_size - uv_size * 0.5;
+    float2 p = v_in.uv * uv_size - uv_size * 0.5 - mask_offset;
     float d = shapeDistance(p);
-    float4 src = image.Sample(image_sampler, v_in.uv);
+    // Pan is in destination/source pixels; positive values move the picture
+    // right/down. Uniform zoom preserves the webcam aspect ratio.
+    float2 srcUV = 0.5 + ((v_in.uv - 0.5) * uv_size - subject_pan) /
+                          (max(subject_zoom, 0.5) * uv_size);
+    float4 src = float4(0.0, 0.0, 0.0, 0.0);
+    // The sampler uses Clamp for valid bilinear samples, but samples outside
+    // the source must be transparent rather than smeared edge pixels.
+    if (srcUV.x >= 0.0 && srcUV.x <= 1.0 &&
+        srcUV.y >= 0.0 && srcUV.y <= 1.0)
+        src = image.Sample(image_sampler, srcUV);
     float mask = 1.0 - smoothstep(-max(feather, 0.5), max(feather, 0.5), d);
     float baseA = src.a * mask;
     // OBS's non-direct filter texrender contains premultiplied RGB.
