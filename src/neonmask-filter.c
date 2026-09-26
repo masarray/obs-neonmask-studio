@@ -104,6 +104,18 @@ static void nm_update(void *data, obs_data_t *settings)
     nm_config_validate(&next);
     f->config = next;
 
+    /* Pin additive Phase-B defaults into saved v2 scenes once. Existing
+     * explicit user values are never overwritten by a later preset/default
+     * change, and Phase-A framing keys remain untouched. */
+    if (!obs_data_has_user_value(settings, "mid_glow_strength"))
+        obs_data_set_double(settings, "mid_glow_strength", next.mid_glow_strength);
+    if (!obs_data_has_user_value(settings, "bloom_strength"))
+        obs_data_set_double(settings, "bloom_strength", next.bloom_strength);
+    if (!obs_data_has_user_value(settings, "hotspot_strength"))
+        obs_data_set_double(settings, "hotspot_strength", next.hotspot_strength);
+    if (!obs_data_has_user_value(settings, "hotspot_size"))
+        obs_data_set_double(settings, "hotspot_size", next.hotspot_size);
+
     /* v0/v1 used one uniform scale. Migrate once to independent dimensions
      * while keeping all old keys and enum values intact. */
     if (legacy_framing) {
