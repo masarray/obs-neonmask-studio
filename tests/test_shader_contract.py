@@ -24,6 +24,8 @@ assert "NM_SHAPE_HUD_PANEL" in host and "NM_SHAPE_SQUIRCLE" in host
 assert "NM_SHAPE_SVG_PATH" in host and "svgPathDistance(" in shader
 assert "nm_svg_read_local(" in host and "nm_svg_raster_sdf(" in host
 assert "shape_id == 12 && svg_ready == 0" in shader
+assert "outside>0.0 ? outside+max(d,0.0) : d" in shader
+assert "return d+length(max(abs(q)-half_size,0.0))" not in shader
 assert "gs_effect_set_texture(f->svg_sdf" in host
 assert "NM_PARAM(svg_sdf, \"svg_sdf\")" in host
 assert "NM_PARAM(svg_ready, \"svg_ready\")" in host

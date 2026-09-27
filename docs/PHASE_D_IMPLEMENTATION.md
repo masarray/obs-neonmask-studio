@@ -224,3 +224,7 @@ cases in pure C, direct OpenGL/D3D11 SVG alpha/border and empty-asset pixels,
 and reload/resize resource smoke. Final OBS source/filter-chain save/restart,
 light/dark 320×180 capture, complex-path fidelity and hardware timings are
 still pending G4-V/G5/G6; original advanced SVG features remain future work.
+
+## D2.4 follow-up — SVG viewBox occupancy boundary
+
+Audit of the first SVG preview found that clamped SDF sampling could repeat a **negative** edge texel outside a path that touches the viewBox. Adding the outside distance to that negative texel caused a narrow band of unintended source alpha outside the authored bounds. The corrected shader keeps the sampled signed distance inside the viewBox but clamps negative texture distance to zero before extrapolating **outside** it. This preserves legitimate exterior neon/bloom while forbidding mask occupancy beyond the declared local canvas. Real OpenGL and D3D11 pixel fixtures use an all-the-way-to-viewBox filled shape, a subpixel translated frame and test-only GPU readback to catch the leak. This is a preview correctness fix, not completed complex-SVG support, real-OBS visual parity or D3 safe-fit.

@@ -381,7 +381,13 @@ float svgPathDistance(float2 p)
     float2 uv=q/max(half_size*2.0,float2(0.001,0.001))+0.5;
     float2 clamped=saturate(uv);
     float d=svg_sdf.Sample(svg_sampler,clamped).r;
-    return d+length(max(abs(q)-half_size,0.0));
+    // Clamp-to-edge alone repeats the last *negative* interior texel when
+    // an authored path fills its viewBox. Extrapolating that negative value
+    // outside the mask leaks image alpha past the agreed local bounds.
+    // Clip occupancy against the viewBox rectangle while allowing distance
+    // to grow outward for a legitimate border/bloom at its outer perimeter.
+    float outside=length(max(abs(q)-half_size,0.0));
+    return outside>0.0 ? outside+max(d,0.0) : d;
 }
 
 float shapeDistance(float2 p)
