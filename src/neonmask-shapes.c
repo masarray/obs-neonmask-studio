@@ -230,7 +230,28 @@ static float squircle(nm_p2 p,nm_p2 b,float detail)
     const float fx=powf(ax,exponent),fy=powf(ay,exponent);
     const float gx=exponent*powf(ax,exponent-1.0f)/b.x;
     const float gy=exponent*powf(ay,exponent-1.0f)/b.y;
-    const float d=(fx+fy-1.0f)/fmaxf(hypotf(gx,gy),1.0f/fminf(b.x,b.y));
+    float d=(fx+fy-1.0f)/fmaxf(hypotf(gx,gy),1.0f/fminf(b.x,b.y));
+    /* The long near-horizontal and near-vertical sections benefit from
+     * solving the implicit superellipse for the exact axis boundary.
+     * This prevents flat-rail speckling when gradient linearization sees
+     * subpixel changes; blend smoothly into the original corner distance. */
+    if(ax<0.72f && ay>0.72f){
+        const float rem=fmaxf(0.00001f,1.0f-fx);
+        const float edge=b.y*powf(rem,1.0f/exponent);
+        const float slope=(b.y/b.x)*powf(ax,exponent-1.0f)*
+                          powf(rem,1.0f/exponent-1.0f);
+        const float axis=(fabsf(p.y)-edge)/hypotf(1.0f,slope);
+        const float t=nm_clamp((ax-0.58f)/0.14f,0.0f,1.0f);
+        d=axis*(1.0f-t)+d*t;
+    }else if(ay<0.72f && ax>0.72f){
+        const float rem=fmaxf(0.00001f,1.0f-fy);
+        const float edge=b.x*powf(rem,1.0f/exponent);
+        const float slope=(b.x/b.y)*powf(ay,exponent-1.0f)*
+                          powf(rem,1.0f/exponent-1.0f);
+        const float axis=(fabsf(p.x)-edge)/hypotf(1.0f,slope);
+        const float t=nm_clamp((ay-0.58f)/0.14f,0.0f,1.0f);
+        d=axis*(1.0f-t)+d*t;
+    }
     return fmaxf(d,-fminf(b.x,b.y));
 }
 
