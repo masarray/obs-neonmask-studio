@@ -112,6 +112,12 @@ assert "src.rgb * mask" in shader
 assert "src.rgb * baseA" not in shader, "Would double-multiply alpha at edges"
 assert "obs_source_get_base_width" in host and "obs_source_get_base_height" in host
 assert "if (!valid)" in host, "Missing shader parameters must disable effect gracefully"
+# No shader / zero-size rendering must fail closed, not display the webcam.
+render = host.split("static void nm_render(", 1)[1].split("struct obs_source_info neonmask_filter_info", 1)[0]
+assert "if (!target || !f->effect)" in render
+assert "obs_source_skip_video_filter(" not in render, "Unmasked bypass in render callback"
+assert "filter will render transparent" in host
+
 assert "nm_custom_changed" in host, "User edits should reset preset status to Custom"
 assert "sourcePos - mask_offset" in shader
 assert "sourcePos - subject_pan" in shader and "/ max(subject_zoom" in shader

@@ -228,3 +228,16 @@ still pending G4-V/G5/G6; original advanced SVG features remain future work.
 ## D2.4 follow-up — SVG viewBox occupancy boundary
 
 Audit of the first SVG preview found that clamped SDF sampling could repeat a **negative** edge texel outside a path that touches the viewBox. Adding the outside distance to that negative texel caused a narrow band of unintended source alpha outside the authored bounds. The corrected shader keeps the sampled signed distance inside the viewBox but clamps negative texture distance to zero before extrapolating **outside** it. This preserves legitimate exterior neon/bloom while forbidding mask occupancy beyond the declared local canvas. Real OpenGL and D3D11 pixel fixtures use an all-the-way-to-viewBox filled shape, a subpixel translated frame and test-only GPU readback to catch the leak. This is a preview correctness fix, not completed complex-SVG support, real-OBS visual parity or D3 safe-fit.
+
+## D2.4 safety follow-up — missing-effect fail-closed behavior
+
+An unavailable main shader (missing file, compile failure, or missing uniform)
+previously invoked `obs_source_skip_video_filter`, exposing the unmasked
+upstream video despite the already transparent invalid-SVG path. The render
+callback now emits no draw when its effect or target is absent or source
+dimensions are zero. This is a fail-closed render policy, not a replacement
+shader or recovery from driver/device loss. Normal rendering, IDs, settings,
+subject framing and SVG cache are unchanged. A structural regression forbids
+unmasked bypass from the render callback. Verify real OBS missing-effect,
+save/restart and filter-chain behavior separately under G4-V/G5; code and GPU
+CI cannot substitute for frontend proof.
