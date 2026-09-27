@@ -17,4 +17,15 @@ Read [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md), [docs/ARCHITECTURE.md](docs/A
 - Keep provenance and notices for reused code. Do not introduce DCO/signoff, CLA gates or paid signing requirements unless the maintainer explicitly requests them.
 - For docs-only changes, verify links and consistency; runtime builds are unnecessary unless repository CI requires them.
 
+## GitHub contribution and achievement practice
+
+The maintainer wants GitHub Achievements to grow naturally alongside genuine open-source development. This is a **secondary outcome**, never a reason to weaken product quality, create noise or alter the delivery roadmap.
+
+- Prefer a focused branch and pull request for each cohesive feature, bugfix or meaningful documentation change. Tie it to the relevant issue/requirements, include tests and evidence, and use descriptive commits/PRs. Do not split a single cohesive task into artificial micro-PRs, create empty PRs/issues, or manufacture activity for badges.
+- Run the applicable CI and review checks before merge; merge only after the change meets its acceptance criteria. Prefer squash merge when appropriate, preserve a traceable commit/artifact and update the roadmap ledger. A green build alone does not satisfy OBS visual/runtime gates.
+- Attribute authorship to the actual contributor(s) and the maintainer's authorized GitHub identity. Use Co-authored-by only for real collaborators who contributed and agreed to attribution; do not invent human co-authors or falsely attribute ChatGPT/tool activity. Follow repository review rules, even if a badge could be obtained by skipping them.
+- Pull Shark may progress through legitimate merged PRs. Quickdraw and YOLO are already earned and are not a reason to rush issue closure or bypass review. Other achievements (e.g. Pair Extraordinaire, Galaxy Brain, Starstruck) may follow genuine collaboration, helpful discussions and useful releases/documentation; do not guarantee GitHub will award or upgrade a badge.
+- Keep new releases, actual OBS screenshots/clips, contributor instructions, changelogs and issue triage useful to real users. Do not solicit fake stars, create sham conversations or make sponsorship/payment decisions on the maintainer's behalf.
+- When reporting progress, cite real PRs, commits, tests and GitHub artifact links. Mention an achievement change only when verified on GitHub; otherwise describe the qualifying development activity without claiming the badge was awarded.
+
 - Phase D is [Issue #26](https://github.com/masarray/obs-neonmask-studio/issues/26) plus docs/PHASE_D_IMPLEMENTATION.md. Implement integrated alpha+neon bubble/card silhouettes before more detached ornament modes; all old shape IDs, pan/zoom and legacy scenes must remain intact. No source import from GPL-2.0-only Advanced Masks code without compatible permission; use it as an audited feature baseline and acknowledge provenance.
