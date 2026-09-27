@@ -129,6 +129,9 @@ assert "vec2_set(&output_dimensions, (float)fit.output_width, (float)fit.output_
 assert "fit.output_width, fit.output_height, \"Draw\"" in host
 assert "v_in.uv * output_size - input_origin - uv_size * 0.5" in shader
 assert "v_in.uv * uv_size - uv_size * 0.5" not in shader
+assert "sourceUV = (samplePos + uv_size * 0.5) / uv_size" in shader
+assert "gs_effect_set_vec2(f->output_size, &output_dimensions)" in host
+assert "gs_effect_set_vec2(f->input_origin, &origin)" in host
 assert 'Mask.SafeFit="Keep glow inside source (may shrink mask)"' in en_locale
 assert 'Mask.SafeFit="Jaga glow di dalam sumber (mask dapat mengecil)"' in id_locale
 assert "if (!valid)" in host, "Missing shader parameters must disable effect gracefully"

@@ -294,7 +294,9 @@ Do not silently mutate scenes or claim their transforms are preserved.
 A source used by multiple scenes or filter chains needs manual review.
 
 Tests: canonical bounds/rotation/offset/limits/legacy behavior and shader
-input-origin pixel probes (OpenGL and D3D11). This is partial G4 GPU proof;
+input-origin pixel probes (OpenGL and D3D11), including a luminous rim in the
+new left pad, no source pixel smearing there, unchanged red source interior,
+and transparent far-output pixel. This is partial G4 GPU proof;
 real OBS scene item anchor, filter order, source resize/restart, SVG reload,
 320x180 dark/light captures, render lag and soak are pending G4-V/G5/G6.
 Issue #24/#26 stay open. No claim of final automatic scene-origin parity.

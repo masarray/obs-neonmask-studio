@@ -29,17 +29,21 @@ static const char *const uniforms[] = {
 static int verify_pixel_fixture(gs_effect_t *effect, int variant)
 {
     enum { W = 64, H = 64 };
+    /* 38: input 64x64, output 96x80, captured source origin (16,8). */
+    const bool expanded = variant == 38;
+    const uint32_t out_w = expanded ? 96u : W;
+    const uint32_t out_h = expanded ? 80u : H;
     uint8_t pixels[W * H * 4];
     const uint8_t red = variant == 0 ? 255 : variant == 1 ? 128 :
                         (variant == 3 || variant == 4 || variant == 18 ||
                          variant == 19 || variant == 21 || variant == 22 ||
                          variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                          variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 ? 255 : 0);
+                          variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 ? 255 : 0);
     const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
                           (variant == 3 || variant == 4 || variant == 18 ||
                            variant == 19 || variant == 21 || variant == 22 ||
                            variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                            variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 ? 255 : 0);
+                            variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 ? 255 : 0);
     for (size_t i = 0; i < W * H; ++i) {
         pixels[4 * i + 0] = red;   /* premultiplied red */
         pixels[4 * i + 1] = 0;
@@ -70,9 +74,9 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
         if(!svg_texture){fprintf(stderr,"FAIL: SVG signed distance texture\\n");return 1;}
     }
     gs_texrender_t *target = gs_texrender_create(GS_RGBA, GS_ZS_NONE);
-    gs_stagesurf_t *stage = gs_stagesurface_create(W, H, GS_RGBA);
+    gs_stagesurf_t *stage = gs_stagesurface_create(out_w, out_h, GS_RGBA);
     int failed = 0;
-    const bool glow_case = variant == 5 || variant == 6 || variant == 9 || variant == 10;
+    const bool glow_case = variant == 5 || variant == 6 || variant == 9 || variant == 10 || expanded;
 
     if (!input || !target || !stage) {
         fprintf(stderr, "FAIL: GPU fixture resource creation\n");
@@ -81,19 +85,25 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     }
 
     struct vec2 dims;
+    struct vec2 output_dims;
+    struct vec2 source_origin;
     struct vec2 extents;
     struct vec2 zero2;
     struct vec4 magenta;
     vec2_set(&dims, (float)W, (float)H);
+    vec2_set(&output_dims, (float)out_w, (float)out_h);
+    vec2_set(&source_origin, expanded ? 16.0f : 0.0f, expanded ? 8.0f : 0.0f);
     vec2_set(&extents, 24.0f, 24.0f);
     vec2_set(&zero2, 0.0f, 0.0f);
     struct vec2 mask_shift;
     struct vec2 subject_shift;
     vec2_set(&mask_shift, variant == 4 ? 28.0f :
-             variant == 37 ? 0.45f : 0.0f, 0.0f);
+             variant == 37 ? 0.45f : expanded ? -20.0f : 0.0f, 0.0f);
     vec2_set(&subject_shift, variant == 3 ? 96.0f : 0.0f, 0.0f);
     vec4_set(&magenta, 1.0f, 0.0f, 1.0f, 1.0f);
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "uv_size"), &dims);
+    gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "output_size"), &output_dims);
+    gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "input_origin"), &source_origin);
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "half_size"), &extents);
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "mask_offset"), &mask_shift);
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "subject_pan"), &subject_shift);
@@ -142,14 +152,14 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                       variant == 2 || (variant >= 5 && variant <= 17) ||
                       variant == 20 || variant == 23 || variant == 26 ||
                        variant == 27 || variant == 29 || variant == 31 || variant == 33 ||
-                       variant == 35 || variant == 36);
+                       variant == 35 || variant == 36 || expanded);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), glow_case);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "svg_sdf"),svg_texture);
     gs_effect_set_int(gs_effect_get_param_by_name(effect,"svg_ready"),
                       variant == 34 || variant == 36 || variant == 37 ? 1 : 0);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "image"), input);
 
-    if (!gs_texrender_begin(target, W, H)) {
+    if (!gs_texrender_begin(target, out_w, out_h)) {
         fprintf(stderr, "FAIL: GPU fixture render target begin\n");
         failed = 1;
         goto done;
@@ -162,7 +172,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     struct vec4 transparent;
     vec4_zero(&transparent);
     gs_clear(GS_CLEAR_COLOR, &transparent, 0.0f, 0);
-    gs_ortho(0.0f, (float)W, 0.0f, (float)H, -100.0f, 100.0f);
+    gs_ortho(0.0f, (float)out_w, 0.0f, (float)out_h, -100.0f, 100.0f);
     int draw_count = 0;
     /* Standalone harness has no OBS scene traversal to establish a model
      * transform/cull state. Make the draw state deterministic. */
@@ -172,7 +182,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_set_cull_mode(GS_NEITHER);
     while (gs_effect_loop(effect, "Draw")) {
         ++draw_count;
-        gs_draw_sprite(input, 0, W, H);
+        gs_draw_sprite(input, 0, out_w, out_h);
     }
     gs_set_cull_mode(previous_cull);
     gs_matrix_pop();
@@ -424,6 +434,25 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
         failed=1;
     }
 
+    else if (expanded) {
+        /* A real padding pixel before input X=16 must show only the halo;
+         * the input itself is not stretched/clamped into the new margin.
+         * Source center (input 32,32) must move to output (48,40). */
+        const uint8_t *padded_rim = mapped + 40u*stride + 4u*4u;
+        const uint8_t *padded_inner = mapped + 40u*stride + 11u*4u;
+        const uint8_t *padded_video = mapped + 40u*stride + 28u*4u;
+        const uint8_t *padded_far = mapped + 40u*stride + 95u*4u;
+        if (padded_rim[2] < 120 || padded_rim[3] < 140 ||
+            padded_inner[2] < 20 || padded_inner[3] > 100 ||
+            padded_video[0] < 240 || padded_video[3] < 240 ||
+            padded_video[2] > 40 || padded_far[3] > 2) {
+            fprintf(stderr, "FAIL: expanded input-origin mapping rim=%u/%u pad=%u/%u video=%u/%u/%u far=%u\n",
+                    padded_rim[2],padded_rim[3],padded_inner[2],padded_inner[3],
+                    padded_video[0],padded_video[2],padded_video[3],padded_far[3]);
+            failed=1;
+        }
+    }
+
     gs_stagesurface_unmap(stage);
 done:
     if (stage) gs_stagesurface_destroy(stage);
@@ -524,7 +553,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 38; ++variant)
+            for (int variant = 0; variant < 39; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
@@ -533,6 +562,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: libobs alpha/framing/light + bubble seam/leaf + selective card cut GPU fixtures (partial G4)");
+    puts("PASS: libobs alpha/framing/light + SVG + expanded origin GPU fixtures (partial G4)");
     return 0;
 }
