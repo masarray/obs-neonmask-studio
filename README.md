@@ -9,12 +9,12 @@ Start with the [product and engineering charter](docs/PRODUCT_SPEC.md). It links
 ## Implemented
 
 - One OBS video filter: `NeonMask Studio — Facecam Mask & Border`.
-- Rounded rectangle, circle, ellipse, hexagon and diamond; size, roundness and feather controls.
+- Rounded rectangle, circle, oval, rectangle, hexagon, diamond, triangle, and configurable polygon; independent mask size/X/Y, subject pan/zoom, rotation and feather.
 - Dual-color neon, width, analytic halo radius/intensity, static/pulse/traveling-light modes, angular segmentation.
 - Four GPU-composited border styles: Classic Neon, Cyber Double Rim, Tech HUD, Minimal Glow.
-- Four editable presets: Cyber Rounded, Reactor Ring, Emerald Hex, Ember Frame; style included in preset data.
+- Six editable presets: Cyber Rounded, Reactor Ring, Emerald Hex, Ember Frame, Tech HUD and Streamer Bubble. Existing IDs 1–4 are stable; the latter two append IDs 5–6. Explicit signature ornament recipes (Cyber corner traces, Reactor arcs, HUD brackets, Streamer decorative bubble tail) are optional and follow the mask contour.
 - OBS-native properties, English and Indonesian strings, direct GPU effect. No web browser or recurring texture uploads.
-- Release-safe C geometry and preset tests; static shader/host contract tests.
+- Release-safe C geometry, contour, preset and motion tests; static shader/host contract and actual libobs OpenGL/D3D11 direct-effect pixel fixtures.
 - Corrected RGBA color handling, captured-alpha compositing and base-size calculations.
 
 ## Build
@@ -40,13 +40,13 @@ On Windows, select your OBS SDK toolchain and supply `-Dlibobs_DIR=<directory co
 
 ## In OBS
 
-Right-click webcam source → **Filters** → **Effect Filters** → **+** → **NeonMask Studio**. Select a preset or adjust shape, colors and effect strength. The filter operates on the **source itself**, not a scene-wide frame.
+Right-click webcam source → **Filters** → **Effect Filters** → **+** → **NeonMask Studio**. Choose an authored preset, or set **Signature Frame Detailing** to Legacy/Cyber/Reactor/Tech HUD/Streamer and customize its intensity/gap. Mask X/Y moves the geometric frame; Subject Pan/Zoom reframes only the source image. The filter operates on the **source itself**, not a scene-wide frame.
 
 ## Deliberate MVP limitations
 
 - Halo stays **within the original source rectangle**; use the built-in scale margin. Expanded output padding / companion frame source is next.
 - Custom alpha images, SVG and source masks are **not yet implemented**, nor are a graphical preset gallery, audio reactivity and GPU benchmarks.
-- The outline on ellipses and segmented non-circular shapes is approximate; later versions will use better distance-field/path-length algorithms.
+- Ellipse and segmented non-circular paths remain approximate; Cyber Rounded has rounded-perimeter travel, while universal contour-length motion is not yet delivered. Actual visual parity with the concept artwork and final OBS output are **not yet verified**.
 - GPU compilation and direct-effect pixel smoke tests run on libobs OpenGL and D3D11. Real OBS frontend/final-output visual tests, filter-chain validation, compatibility matrix and performance measurements remain pending.
 
 ## Engineering quality gate
