@@ -296,3 +296,7 @@ The deliverable is **code-level D2 built-in shapes v1**, not all of D2.
 The local bounded SVG import/cache provider, Star/Heart/Rounded Polygon,
 actual full-size/320×180 OBS captures, D3 safe-fit and hardware timing/soak
 remain pending and keep Issue #26 and #24 open.
+
+## D2.3c OBS refinement and clarity
+
+User-approved the Angled Card arc; HUD/Squircle screenshots showed a plain custom-state outline and remaining visual roughness. Audited actual **Custom/current settings** state versus opt-in presets 8/9. The HUD notch now has two chamfered transitions instead of unstyled square stairs, plus deliberate preset-only top/side accent traces. Squircle near-flat SDF is axis-stabilized. Irrelevant native geometry controls are hidden for the selected shape without deleting or resetting the user's saved data. The gallery and other design families are NOT considered complete. Verify exact main build in OBS, compare with reference #9 over dark/light and 320×180, and keep Issue #24 release gate open.
