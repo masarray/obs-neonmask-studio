@@ -132,8 +132,8 @@ int main(void)
     near("preset bloom complete", cfg.bloom_strength, 0.90f);
     near("preset highlight complete", cfg.hotspot_strength, 0.92f);
     near("preset hotspot size complete", cfg.hotspot_size, 0.10f);
-    check("Reactor has no Cyber ornament", cfg.ornament_mode == NM_ORNAMENT_NONE);
-    near("Reactor art intensity complete", cfg.art_intensity, 0.0f);
+    check("Reactor has authored ring", cfg.ornament_mode == NM_ORNAMENT_REACTOR);
+    near("Reactor art intensity complete", cfg.art_intensity, 0.88f);
     near("Reactor art gap complete", cfg.art_gap, 2.0f);
     check("Cyber preset applies authored ornament", nm_config_apply_preset(&cfg, 1) && cfg.ornament_mode == NM_ORNAMENT_CYBER && cfg.art_intensity > 0.8f);
     check("preset restores border", cfg.show_border);
