@@ -242,7 +242,8 @@ static float squircle(nm_p2 p,nm_p2 b,float detail)
                           powf(rem,1.0f/exponent-1.0f);
         const float axis=(fabsf(p.y)-edge)/hypotf(1.0f,slope);
         const float t=nm_clamp((ax-0.58f)/0.14f,0.0f,1.0f);
-        d=axis*(1.0f-t)+d*t;
+        const float blend=t*t*(3.0f-2.0f*t);
+        d=axis*(1.0f-blend)+d*blend;
     }else if(ay<0.72f && ax>0.72f){
         const float rem=fmaxf(0.00001f,1.0f-fy);
         const float edge=b.x*powf(rem,1.0f/exponent);
@@ -250,7 +251,8 @@ static float squircle(nm_p2 p,nm_p2 b,float detail)
                           powf(rem,1.0f/exponent-1.0f);
         const float axis=(fabsf(p.x)-edge)/hypotf(1.0f,slope);
         const float t=nm_clamp((ay-0.58f)/0.14f,0.0f,1.0f);
-        d=axis*(1.0f-t)+d*t;
+        const float blend=t*t*(3.0f-2.0f*t);
+        d=axis*(1.0f-blend)+d*blend;
     }
     return fmaxf(d,-fminf(b.x,b.y));
 }
