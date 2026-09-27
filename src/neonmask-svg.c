@@ -6,6 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#if defined(_WIN32)
+#include <windows.h>
+#include <wchar.h>
+#endif
 
 static bool bad(char *why,size_t n,const char *message)
 {
@@ -285,7 +290,25 @@ bool nm_svg_read_local(const char *path,nm_svg_shape *out,
     memset(out,0,sizeof(*out));
     if(!path || !*path || strlen(path)>=1024)
         return bad(why,why_size,"select a local SVG path");
+    /* Only regular local files, not pipes/devices (which could block the
+     * settings thread indefinitely). OBS gives UTF-8 paths on Windows. */
+#if defined(_WIN32)
+    wchar_t wide[NM_SVG_PATH_MAX];
+    int chars=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,
+                                  path,-1,wide,NM_SVG_PATH_MAX);
+    if(chars<=0) return bad(why,why_size,"invalid UTF-8 local path");
+    struct _stat64 st;
+    if(_wstat64(wide,&st)!=0 || (st.st_mode & _S_IFMT)!=_S_IFREG ||
+       st.st_size<=0 || st.st_size>NM_SVG_MAX_BYTES)
+        return bad(why,why_size,"SVG must be a 1..65536 byte regular file");
+    FILE *f=_wfopen(wide,L"rb");
+#else
+    struct stat st;
+    if(stat(path,&st)!=0 || !S_ISREG(st.st_mode) ||
+       st.st_size<=0 || st.st_size>NM_SVG_MAX_BYTES)
+        return bad(why,why_size,"SVG must be a 1..65536 byte regular file");
     FILE *f=fopen(path,"rb");
+#endif
     if(!f) return bad(why,why_size,"cannot open local SVG");
     char buffer[NM_SVG_MAX_BYTES+1];
     size_t size=fread(buffer,1,sizeof(buffer),f);
