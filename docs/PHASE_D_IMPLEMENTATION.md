@@ -156,3 +156,26 @@ screenshot/artifact.
 ## D2.3a — full-arc Angled Card refinement (user OBS feedback)
 
 User OBS screenshots confirm the integrated Chat Bubble seam is visually clean on the new build. On Angled Card, however, Roundness 1.00 still shows a conspicuous straight diagonal between two small corner fillets. Increase the **geometry**, not blur: normalize the existing source-pixel radius by the smaller half-extent to recover the full 0..1 slider travel, and map it to a maximum radius `cut × (1 + 1/√2)`. At maximum, the two 45-degree arcs have **the same circle center**, join tangentially, and form one continuous 90-degree arc between the top and right rails (and the opposite bottom-left pair). Zero preserves the original chamfer; half slider creates intermediate curvature; upper-left and lower-right remain mathematically sharp. The same distance still drives actual source alpha and all neon layers. No extra property, preset ID, schema or scene migration is needed; existing saved Angled Card settings intentionally gain fuller curvature. CPU oracle and real OpenGL/D3D11 pixel fixtures are the code-level gates; visual acceptance remains pending actual OBS captures on user source.
+
+## D2.3b — Authored Shape Pack v1: HUD Cut Panel + Squircle
+
+The first incremental D2 library milestone appends stable shape IDs 10
+(HUD Cut Panel) and 11 (Squircle), and additive built-in preset IDs 8/9.
+Existing IDs, schema v2, scene assignments and old presets are unchanged.
+
+HUD Cut Panel uses a ten-segment *concave exterior contour*: asymmetrical
+top/right chamfers plus an intentionally stepped lower-left notch that
+actually clips source video. A new SDF-aligned selective supporting rail
+follows that contour rather than using old rectangle-only bracket geometry.
+Squircle is a continuously curved superellipse, with exponent 4..5
+controlled by the existing `shape_detail`; the implicit-function gradient
+normalizes near-contour stroke width in source pixels. Both shapes feed the
+same mask alpha, core, secondary rim and glow from one signed distance.
+Shape detail now has shape-neutral EN/ID labels. No runtime image asset,
+SVG parser, worker, new uniform or source readback.
+
+Acceptance at code level: CPU oracle across aspect ratios, notch alpha
+and finite distance; separate real OpenGL/D3D11 GPU tests for filled interiors,
+transparent clipped corners and neon on concave/curved exterior. OBS
+real-output aesthetic review, custom SVG import, Star/Heart/Rounded
+Polygon and D3 safe-fit/motion/performance remain explicitly open.
