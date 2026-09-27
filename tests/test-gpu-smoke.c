@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <graphics/vec2.h>
 #include <graphics/vec4.h>
 
@@ -18,7 +19,7 @@ static const char *const uniforms[] = {
     "bloom_strength", "hotspot_strength", "hotspot_size", "color_a", "color_b",
     "color_phase", "pulse_phase", "flow_phase", "animation_id", "segment_count",
     "border_enabled", "glow_enabled", "style_id", "ornament_mode",
-    "art_intensity", "art_gap", "image", "ViewProj"
+    "art_intensity", "art_gap", "svg_sdf", "svg_ready", "image", "ViewProj"
 };
 
 
@@ -33,12 +34,12 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                         (variant == 3 || variant == 4 || variant == 18 ||
                          variant == 19 || variant == 21 || variant == 22 ||
                          variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                          variant == 30 || variant == 32 ? 255 : 0);
+                          variant == 30 || variant == 32 || variant == 34 || variant == 35 ? 255 : 0);
     const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
                           (variant == 3 || variant == 4 || variant == 18 ||
                            variant == 19 || variant == 21 || variant == 22 ||
                            variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                            variant == 30 || variant == 32 ? 255 : 0);
+                            variant == 30 || variant == 32 || variant == 34 || variant == 35 ? 255 : 0);
     for (size_t i = 0; i < W * H; ++i) {
         pixels[4 * i + 0] = red;   /* premultiplied red */
         pixels[4 * i + 1] = 0;
@@ -48,6 +49,22 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
 
     const uint8_t *layers[] = {pixels};
     gs_texture_t *input = gs_texture_create(W, H, GS_RGBA, 1, layers, 0);
+    gs_texture_t *svg_texture = NULL;
+    if(variant>=34 && variant<=36){
+        enum { SIZE = 256 };
+        float *field=bmalloc(SIZE*SIZE*sizeof(float));
+        if(!field){fprintf(stderr,"FAIL: SVG GPU fixture allocation\\n");return 1;}
+        for(unsigned y=0;y<SIZE;++y)
+            for(unsigned x=0;x<SIZE;++x){
+                float px=((float)x+0.5f)/(float)SIZE*48.0f-24.0f;
+                float py=((float)y+0.5f)/(float)SIZE*48.0f-24.0f;
+                field[(size_t)y*SIZE+x]=sqrtf(px*px+py*py)-16.0f;
+            }
+        const uint8_t *svg_layers[]={ (const uint8_t *)field };
+        svg_texture=gs_texture_create(SIZE,SIZE,GS_R32F,1,svg_layers,0);
+        bfree(field);
+        if(!svg_texture){fprintf(stderr,"FAIL: SVG signed distance texture\\n");return 1;}
+    }
     gs_texrender_t *target = gs_texrender_create(GS_RGBA, GS_ZS_NONE);
     gs_stagesurf_t *stage = gs_stagesurface_create(W, H, GS_RGBA);
     int failed = 0;
@@ -87,6 +104,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                       variant == 13 || variant == 14 ? 1 :
                       variant == 15 || variant == 22 ? 5 :
                       variant == 18 || variant == 20 || variant == 27 ? 8 :
+                      variant >= 34 && variant <= 36 ? 12 :
                       variant == 30 || variant == 31 ? 10 :
                        variant == 32 || variant == 33 ? 11 :
                        variant == 21 || variant == 23 || variant >= 24 ? 9 : 0);
@@ -118,8 +136,12 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "border_enabled"),
                       variant == 2 || (variant >= 5 && variant <= 17) ||
                       variant == 20 || variant == 23 || variant == 26 ||
-                       variant == 27 || variant == 29 || variant == 31 || variant == 33);
+                       variant == 27 || variant == 29 || variant == 31 || variant == 33 ||
+                       variant == 35 || variant == 36);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), glow_case);
+    gs_effect_set_texture(gs_effect_get_param_by_name(effect, "svg_sdf"),svg_texture);
+    gs_effect_set_int(gs_effect_get_param_by_name(effect,"svg_ready"),
+                      variant == 34 || variant == 36 ? 1 : 0);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "image"), input);
 
     if (!gs_texrender_begin(target, W, H)) {
@@ -192,6 +214,8 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *squircle_corner = mapped + 55u * stride + 55u * 4u;
     const uint8_t *squircle_inside = mapped + 50u * stride + 50u * 4u;
     const uint8_t *squircle_axis_neon = mapped + 32u * stride + 56u * 4u;
+    const uint8_t *svg_outside = mapped + 32u * stride + 55u * 4u;
+    const uint8_t *svg_edge = mapped + 32u * stride + 48u * 4u;
     const uint8_t *card_diag_neon = mapped + 12u * stride + 52u * 4u;
     const uint8_t *fillet_endpoint = mapped + 8u * stride + 46u * 4u;
     const uint8_t *square_top_left = mapped + 8u * stride + 8u * 4u;
@@ -368,6 +392,21 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
         fprintf(stderr, "FAIL: squircle neon must track superellipse contour alpha=%u\\n",
                 squircle_axis_neon[3]);
         failed = 1;
+    } else if(variant==34 &&
+               (center[0]<240 || center[3]<245 || svg_outside[3]>3)) {
+        fprintf(stderr,"FAIL: imported SVG should clip source and fill center: center=%u outside=%u\\n",
+                center[3],svg_outside[3]);
+        failed=1;
+    } else if(variant==35 &&
+               (center[0]>2 || center[3]>2 || svg_edge[3]>2)) {
+        fprintf(stderr,"FAIL: invalid SVG must fail closed even with border: center=%u edge=%u\\n",
+                center[3],svg_edge[3]);
+        failed=1;
+    } else if(variant==36 &&
+               (svg_edge[0]<150 || svg_edge[2]<150 || svg_edge[3]<120)) {
+        fprintf(stderr,"FAIL: SVG neon not following SDF contour alpha=%u\\n",
+                svg_edge[3]);
+        failed=1;
     }
 
     gs_stagesurface_unmap(stage);
@@ -375,6 +414,7 @@ done:
     if (stage) gs_stagesurface_destroy(stage);
     if (target) gs_texrender_destroy(target);
     if (input) gs_texture_destroy(input);
+    if (svg_texture) gs_texture_destroy(svg_texture);
     return failed;
 }
 
@@ -469,7 +509,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 34; ++variant)
+            for (int variant = 0; variant < 37; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
