@@ -7,9 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
-assert len(names) == len(set(names)) == 30, f"Expected 30 unique bindings: {names!r}"
+assert len(names) == len(set(names)) == 31, f"Expected 31 unique bindings: {names!r}"
 uniforms = {name: kind for kind, name in re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader)}
-assert len(uniforms) == 32, f"Unexpected number of shader uniforms: {uniforms}"
+assert len(uniforms) == 33, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
     "Host/shader uniform drift: " + str(set(names) ^ (set(uniforms) - {"ViewProj", "image"}))
 )
@@ -18,6 +18,12 @@ assert uniforms["uv_size"] == uniforms["half_size"] == "float2"
 assert uniforms["mask_offset"] == uniforms["subject_pan"] == "float2"
 assert uniforms["subject_zoom"] == uniforms["shape_rotation"] == "float"
 assert uniforms["polygon_sides"] == "int"
+assert uniforms["shape_detail"] == "float"
+assert "NM_SHAPE_CHAT_BUBBLE" in host and "NM_SHAPE_ANGLED_CARD" in host
+assert "return chatBubbleDistance(" in shader and "return angledCardDistance(" in shader
+assert "return min(body,wedge)" in shader
+assert 'obs_data_has_user_value(settings, "shape_detail")' in host
+assert 'gs_effect_set_float(f->shape_detail, f->config.shape_detail)' in host
 assert uniforms["style_id"] == uniforms["ornament_mode"] == "int"
 assert uniforms["art_intensity"] == uniforms["art_gap"] == "float"
 assert "roundedContourTurn" in shader
