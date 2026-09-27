@@ -75,7 +75,7 @@ void nm_config_validate(nm_config *cfg)
     cfg->hotspot_size = nm_clamp(cfg->hotspot_size, 0.04f, 0.25f);
     cfg->art_gap = nm_clamp(cfg->art_gap, 1.0f, 16.0f);
     cfg->art_intensity = nm_clamp(cfg->art_intensity, 0.0f, 1.0f);
-    if (cfg->ornament_mode < NM_ORNAMENT_NONE || cfg->ornament_mode > NM_ORNAMENT_CYBER)
+    if (cfg->ornament_mode < NM_ORNAMENT_NONE || cfg->ornament_mode > NM_ORNAMENT_STREAMER)
         cfg->ornament_mode = NM_ORNAMENT_NONE;
     cfg->animation_speed = nm_clamp(cfg->animation_speed, 0.0f, 5.0f);
 
