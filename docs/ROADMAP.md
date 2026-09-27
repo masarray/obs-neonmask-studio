@@ -300,3 +300,9 @@ remain pending and keep Issue #26 and #24 open.
 ## D2.3c OBS refinement and clarity
 
 User-approved the Angled Card arc; HUD/Squircle screenshots showed a plain custom-state outline and remaining visual roughness. Audited actual **Custom/current settings** state versus opt-in presets 8/9. The HUD notch now has two chamfered transitions instead of unstyled square stairs, plus deliberate preset-only top/side accent traces. Squircle near-flat SDF is axis-stabilized. Irrelevant native geometry controls are hidden for the selected shape without deleting or resetting the user's saved data. The gallery and other design families are NOT considered complete. Verify exact main build in OBS, compare with reference #9 over dark/light and 320×180, and keep Issue #24 release gate open.
+
+## D2.4 — local SVG-path import implementation candidate
+
+An opt-in, bounded path-only SVG provider is in [PR #35](https://github.com/masarray/obs-neonmask-studio/pull/35): local file picker + Reload, path/complexity/viewBox budgets, closed contour flattening, nonzero/evenodd holes and a size-dirty 256×256 signed-distance GPU field. The same field clips actual source video and drives neon/glow; missing or invalid path is **transparent**, not an unmasked bypass. Unsupported SVG syntax is rejected, not interpreted. Existing saved shape/preset IDs and schema remain intact; 12 is an appended shape ID, not a replacement for a previous shape. This is a deliberately limited file-import preview, not unrestricted SVG/CSS/group/gradient or final shape-gallery parity. See [PHASE_D_IMPLEMENTATION.md](PHASE_D_IMPLEMENTATION.md).
+
+Exit requires headless hostile-input and geometry tests, OpenGL/D3D11 image/SDF pixel tests and a Windows artifact, then actual OBS reload/resize/invalid-file proof. Safe-fit, production hardware timing, eight-hour soak and final artistic agreement with image #9 remain #24 release gates.
