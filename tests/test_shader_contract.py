@@ -20,6 +20,12 @@ assert uniforms["subject_zoom"] == uniforms["shape_rotation"] == "float"
 assert uniforms["polygon_sides"] == "int"
 assert uniforms["shape_detail"] == "float"
 assert "NM_SHAPE_CHAT_BUBBLE" in host and "NM_SHAPE_ANGLED_CARD" in host
+# The same saved Roundness slider affects both Bubble tail and Angled Card
+# cut-end fillets. Reject the old UI text claiming it is Angled-only.
+en_locale = (ROOT / "data" / "locale" / "en-US.ini").read_text(encoding="utf-8")
+id_locale = (ROOT / "data" / "locale" / "id-ID.ini").read_text(encoding="utf-8")
+assert 'Roundness="Contour roundness"' in en_locale
+assert 'Roundness="Kelengkungan kontur"' in id_locale
 assert "return chatBubbleDistance(" in shader and "return angledCardDistance(" in shader
 # A primitive min is an occupancy union, NOT the exposed contour distance:
 # its hidden body bottom/tail base caused a phantom horizontal neon seam.
