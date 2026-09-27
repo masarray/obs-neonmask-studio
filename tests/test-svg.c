@@ -60,13 +60,18 @@ int main(int argc,char **argv)
           !nm_svg_raster_sdf(NULL,24,24,sdf,n) &&
           !nm_svg_raster_sdf(&shape,-1,24,sdf,n) &&
           !nm_svg_raster_sdf(&shape,24,24,sdf,128));
-    if(argc==2){
+    if(argc>=2){
         char why[128];
         check("local file loads",nm_svg_read_local(argv[1],&shape,why,sizeof(why)));
         check("local file raster",nm_svg_raster_sdf(&shape,30,20,sdf,n));
         check("invalid path fails closed",!nm_svg_read_local("/nonexistent/neonmask.svg",
                                                               &shape,why,sizeof(why)));
         check("invalid path clears geometry",shape.edge_count==0);
+        for(int i=2;i<argc;i++){
+            check("original authored reference SVG imports",
+                  nm_svg_read_local(argv[i],&shape,why,sizeof(why)));
+            check("original SVG raster",nm_svg_raster_sdf(&shape,40,24,sdf,n));
+        }
     }
     free(sdf);
     if(failures)return 1;
