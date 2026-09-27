@@ -44,7 +44,11 @@ static int in_tri(nm_p2 p,nm_p2 a,nm_p2 b,nm_p2 c)
 {
     float x=cross(sub(b,a),sub(p,a)),y=cross(sub(c,b),sub(p,b)),
           z=cross(sub(a,c),sub(p,c));
-    return (x>=0&&y>=0&&z>=0)||(x<=0&&y<=0&&z<=0);
+    /* Treat boundary vertices consistently despite float cancellation.
+     * Shared by selective card fillets and the leaf-tip excision. */
+    const float eps=0.0001f;
+    return (x>=-eps&&y>=-eps&&z>=-eps)||
+           (x<=eps&&y<=eps&&z<=eps);
 }
 static int excised(nm_p2 p,nm_p2 start,nm_p2 vertex,nm_p2 finish,
                    nm_p2 center,float r)
