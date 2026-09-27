@@ -19,6 +19,7 @@ void nm_config_defaults(nm_config *cfg)
         .shape_rotation_deg = 0.0f,
         .polygon_sides = 8,
         .roundness = 0.15f,
+        .shape_detail = 0.22f,
         .border_px = 4.0f,
         .feather_px = 0.85f,
         .glow_px = 18.0f,
@@ -65,6 +66,7 @@ void nm_config_validate(nm_config *cfg)
     if (cfg->polygon_sides < 5) cfg->polygon_sides = 5;
     if (cfg->polygon_sides > 12) cfg->polygon_sides = 12;
     cfg->roundness = nm_clamp(cfg->roundness, 0.0f, 1.0f);
+    cfg->shape_detail = nm_clamp(cfg->shape_detail, 0.08f, 0.35f);
     cfg->border_px = nm_clamp(cfg->border_px, 0.5f, 32.0f);
     cfg->feather_px = nm_clamp(cfg->feather_px, 0.5f, 30.0f);
     cfg->glow_px = nm_clamp(cfg->glow_px, 1.0f, 80.0f);
@@ -82,7 +84,7 @@ void nm_config_validate(nm_config *cfg)
     cfg->primary |= 0xFF000000u;
     cfg->secondary |= 0xFF000000u;
 
-    if (cfg->shape_id < NM_SHAPE_ROUNDED || cfg->shape_id > NM_SHAPE_POLYGON)
+    if (cfg->shape_id < NM_SHAPE_ROUNDED || cfg->shape_id > NM_SHAPE_ANGLED_CARD)
         cfg->shape_id = NM_SHAPE_ROUNDED;
     if (cfg->animation_id < NM_ANIM_STATIC || cfg->animation_id > NM_ANIM_FLOW)
         cfg->animation_id = NM_ANIM_STATIC;
@@ -107,6 +109,7 @@ bool nm_config_apply_preset(nm_config *cfg, int preset_id)
     cfg->secondary = preset.secondary | 0xFF000000u;
     cfg->scale = (float)preset.scale;
     cfg->roundness = (float)preset.roundness;
+    cfg->shape_detail = (float)preset.shape_detail;
     cfg->border_px = (float)preset.border_width;
     cfg->feather_px = (float)preset.feather;
     cfg->glow_px = (float)preset.glow_radius;

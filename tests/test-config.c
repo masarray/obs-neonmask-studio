@@ -37,6 +37,7 @@ int main(void)
     near("default subject pan y", cfg.subject_pan_y_px, 0.0f);
     near("default subject zoom", cfg.subject_zoom, 1.0f);
     check("default polygon sides", cfg.polygon_sides == 8);
+    near("default shape detail", cfg.shape_detail, 0.22f);
     check("default border enabled", cfg.show_border);
     check("default glow enabled", cfg.show_glow);
     check("legacy custom art defaults off", cfg.ornament_mode == NM_ORNAMENT_NONE && cfg.art_intensity == 0.0f);
@@ -55,6 +56,7 @@ int main(void)
     cfg.shape_rotation_deg = -999.0f;
     cfg.polygon_sides = 99;
     cfg.roundness = INFINITY;
+    cfg.shape_detail = INFINITY;
     cfg.border_px = -10.0f;
     cfg.feather_px = NAN;
     cfg.glow_px = 999.0f;
@@ -86,6 +88,7 @@ int main(void)
     near("shape rotation clamp", cfg.shape_rotation_deg, -180.0f);
     check("polygon sides clamp", cfg.polygon_sides == 12);
     near("roundness inf fallback", cfg.roundness, 0.0f);
+    near("shape detail inf fallback", cfg.shape_detail, 0.08f);
     near("border clamp", cfg.border_px, 0.5f);
     near("feather nan fallback", cfg.feather_px, 0.5f);
     near("glow radius clamp", cfg.glow_px, 80.0f);
@@ -104,6 +107,13 @@ int main(void)
     nm_config_validate(&cfg);
     check("new polygon enum accepted", cfg.shape_id == NM_SHAPE_POLYGON);
     check("polygon minimum accepted", cfg.polygon_sides == 5);
+    cfg.shape_id = NM_SHAPE_CHAT_BUBBLE;
+    cfg.shape_detail = 0.23f;
+    nm_config_validate(&cfg);
+    check("bubble enum accepted", cfg.shape_id == NM_SHAPE_CHAT_BUBBLE);
+    cfg.shape_id = NM_SHAPE_ANGLED_CARD;
+    nm_config_validate(&cfg);
+    check("angled enum accepted", cfg.shape_id == NM_SHAPE_ANGLED_CARD);
     check("animation fallback", cfg.animation_id == NM_ANIM_STATIC);
     check("style fallback", cfg.style_id == NM_STYLE_CLASSIC);
     check("segments clamp", cfg.segment_count == 48);
@@ -135,9 +145,12 @@ int main(void)
     check("Reactor has authored ring", cfg.ornament_mode == NM_ORNAMENT_REACTOR);
     near("Reactor art intensity complete", cfg.art_intensity, 0.88f);
     near("Reactor art gap complete", cfg.art_gap, 2.0f);
+    near("preset shape detail complete", cfg.shape_detail, 0.22f);
     check("Cyber preset applies authored ornament", nm_config_apply_preset(&cfg, 1) && cfg.ornament_mode == NM_ORNAMENT_CYBER && cfg.art_intensity > 0.8f);
     check("preset restores border", cfg.show_border);
     check("preset restores glow", cfg.show_glow);
+    check("Streamer selects actual bubble", nm_config_apply_preset(&cfg, 6) && cfg.shape_id == NM_SHAPE_CHAT_BUBBLE);
+    check("Angled preset selects diagonal mask", nm_config_apply_preset(&cfg, 7) && cfg.shape_id == NM_SHAPE_ANGLED_CARD);
 
     check("legacy schema supported", nm_config_schema_supported(0));
     check("current schema supported", nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION));

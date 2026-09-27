@@ -19,6 +19,7 @@ struct nm_filter {
     gs_eparam_t *subject_zoom;
     gs_eparam_t *shape_rotation;
     gs_eparam_t *polygon_sides;
+    gs_eparam_t *shape_detail;
     gs_eparam_t *corner_radius;
     gs_eparam_t *shape;
     gs_eparam_t *border_width;
@@ -86,6 +87,7 @@ static void nm_update(void *data, obs_data_t *settings)
         .shape_rotation_deg = legacy_framing ? 0.0f : (float)obs_data_get_double(settings, "shape_rotation"),
         .polygon_sides = legacy_framing ? 8 : (int)obs_data_get_int(settings, "polygon_sides"),
         .roundness = (float)obs_data_get_double(settings, "roundness"),
+        .shape_detail = (float)obs_data_get_double(settings, "shape_detail"),
         .border_px = (float)obs_data_get_double(settings, "border_width"),
         .feather_px = (float)obs_data_get_double(settings, "feather"),
         .glow_px = (float)obs_data_get_double(settings, "glow_radius"),
@@ -121,6 +123,11 @@ static void nm_update(void *data, obs_data_t *settings)
         obs_data_set_double(settings, "hotspot_strength", next.hotspot_strength);
     if (!obs_data_has_user_value(settings, "hotspot_size"))
         obs_data_set_double(settings, "hotspot_size", next.hotspot_size);
+
+    /* D1 additive setting. Pin the resolved default without changing the
+     * current shape, subject pan/zoom, or any saved preset identity. */
+    if (!obs_data_has_user_value(settings, "shape_detail"))
+        obs_data_set_double(settings, "shape_detail", next.shape_detail);
 
     /* Existing scenes had no authored ornaments. Pin the old appearance
      * explicitly instead of silently adopting a new default in a future build. */
@@ -166,6 +173,7 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_double(settings, "shape_rotation", cfg.shape_rotation_deg);
     obs_data_set_default_int(settings, "polygon_sides", cfg.polygon_sides);
     obs_data_set_default_double(settings, "roundness", cfg.roundness);
+    obs_data_set_default_double(settings, "shape_detail", cfg.shape_detail);
     obs_data_set_default_double(settings, "border_width", cfg.border_px);
     obs_data_set_default_double(settings, "feather", cfg.feather_px);
     obs_data_set_default_double(settings, "glow_radius", cfg.glow_px);
@@ -208,6 +216,7 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_double(settings, "mask_width", cfg.scale);
     obs_data_set_double(settings, "mask_height", cfg.scale);
     obs_data_set_double(settings, "roundness", cfg.roundness);
+    obs_data_set_double(settings, "shape_detail", cfg.shape_detail);
     obs_data_set_double(settings, "border_width", cfg.border_px);
     obs_data_set_double(settings, "feather", cfg.feather_px);
     obs_data_set_double(settings, "glow_radius", cfg.glow_px);
@@ -269,6 +278,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(preset, obs_module_text("Preset.Ember"), 4);
     obs_property_list_add_int(preset, obs_module_text("Preset.TechHUD"), 5);
     obs_property_list_add_int(preset, obs_module_text("Preset.Streamer"), 6);
+    obs_property_list_add_int(preset, obs_module_text("Preset.AngledCard"), 7);
     obs_property_set_modified_callback(preset, nm_preset_changed);
 
     obs_property_t *shape = obs_properties_add_list(props, "shape", obs_module_text("Shape"),
@@ -281,12 +291,15 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(shape, obs_module_text("Shape.Rectangle"), NM_SHAPE_RECTANGLE);
     obs_property_list_add_int(shape, obs_module_text("Shape.Triangle"), NM_SHAPE_TRIANGLE);
     obs_property_list_add_int(shape, obs_module_text("Shape.Polygon"), NM_SHAPE_POLYGON);
+    obs_property_list_add_int(shape, obs_module_text("Shape.ChatBubble"), NM_SHAPE_CHAT_BUBBLE);
+    obs_property_list_add_int(shape, obs_module_text("Shape.AngledCard"), NM_SHAPE_ANGLED_CARD);
     obs_property_set_modified_callback(shape, nm_custom_changed);
 
 #define NM_CUSTOM(expr) obs_property_set_modified_callback((expr), nm_custom_changed)
     obs_properties_t *mask_group = obs_properties_create();
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_width", obs_module_text("Mask.Width"), 0.10, 0.98, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_height", obs_module_text("Mask.Height"), 0.10, 0.98, 0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(mask_group, "shape_detail", obs_module_text("Mask.Detail"), 0.08, 0.35, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_x", obs_module_text("Mask.PositionX"), -4096.0, 4096.0, 1.0));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_y", obs_module_text("Mask.PositionY"), -4096.0, 4096.0, 1.0));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "shape_rotation", obs_module_text("Mask.Rotation"), -180.0, 180.0, 1.0));
@@ -375,6 +388,7 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         NM_PARAM(subject_zoom, "subject_zoom");
         NM_PARAM(shape_rotation, "shape_rotation");
         NM_PARAM(polygon_sides, "polygon_sides");
+        NM_PARAM(shape_detail, "shape_detail");
         NM_PARAM(corner_radius, "corner_radius");
         NM_PARAM(shape, "shape_id");
         NM_PARAM(border_width, "border_width");
@@ -474,6 +488,7 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_float(f->subject_zoom, f->config.subject_zoom);
     gs_effect_set_float(f->shape_rotation, f->config.shape_rotation_deg * 0.01745329251994329577f);
     gs_effect_set_int(f->polygon_sides, f->config.polygon_sides);
+    gs_effect_set_float(f->shape_detail, f->config.shape_detail);
     gs_effect_set_float(f->corner_radius, corner_radius);
     gs_effect_set_int(f->shape, f->config.shape_id);
     gs_effect_set_float(f->border_width, f->config.border_px);

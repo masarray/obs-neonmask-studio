@@ -21,6 +21,8 @@ typedef struct nm_config {
     float shape_rotation_deg;
     int polygon_sides;
     float roundness;
+    /* D1: proportional tail height / diagonal cut, range 0.08..0.35. */
+    float shape_detail;
     float border_px;
     float feather_px;
     float glow_px;

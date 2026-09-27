@@ -10,6 +10,7 @@ uniform float2 subject_pan;
 uniform float subject_zoom;
 uniform float shape_rotation;
 uniform int polygon_sides;
+uniform float shape_detail;
 uniform float corner_radius;
 uniform int shape_id;
 uniform float border_width;
@@ -83,8 +84,83 @@ float regularPolygonDistance(float2 p, float2 bounds, int sides, float rotation)
     return edge * min(bounds.x, bounds.y);
 }
 
+// D1: explicit signed distances use the SAME value for image coverage,
+// primary neon contour, secondary tracks and halo. No detached bubble tail.
+float cross2(float2 a, float2 b)
+{
+    return a.x * b.y - a.y * b.x;
+}
+
+float edgeDistanceSquared(float2 p, float2 a, float2 b)
+{
+    float2 ab = b - a;
+    float t = saturate(dot(p - a, ab) / max(dot(ab, ab), 0.0001));
+    float2 e = p - a - ab * t;
+    return dot(e, e);
+}
+
+float signedTriangle(float2 p, float2 a, float2 b, float2 c)
+{
+    float ds = min(edgeDistanceSquared(p,a,b),
+                   min(edgeDistanceSquared(p,b,c),
+                       edgeDistanceSquared(p,c,a)));
+    float inside = min(cross2(b-a,p-a),
+                       min(cross2(c-b,p-b),cross2(a-c,p-c)));
+    return sqrt(ds) * (inside >= 0.0 ? -1.0 : 1.0);
+}
+
+// Authored asymmetry: top-right and bottom-left corners are diagonally
+// clipped. Signed distance is edge-Euclidean, including near vertices.
+float angledCardDistance(float2 p, float2 b, float detail)
+{
+    float cut = max(1.0, min(b.x, b.y) * detail * 1.65);
+    float2 a = float2(-b.x,-b.y);
+    float2 c = float2(b.x-cut,-b.y);
+    float2 d = float2(b.x,-b.y+cut);
+    float2 e = float2(b.x,b.y);
+    float2 f = float2(-b.x+cut,b.y);
+    float2 g = float2(-b.x,b.y-cut);
+    float ds = edgeDistanceSquared(p,a,c);
+    ds = min(ds,edgeDistanceSquared(p,c,d));
+    ds = min(ds,edgeDistanceSquared(p,d,e));
+    ds = min(ds,edgeDistanceSquared(p,e,f));
+    ds = min(ds,edgeDistanceSquared(p,f,g));
+    ds = min(ds,edgeDistanceSquared(p,g,a));
+    float side = cross2(c-a,p-a);
+    side = min(side,cross2(d-c,p-c));
+    side = min(side,cross2(e-d,p-d));
+    side = min(side,cross2(f-e,p-e));
+    side = min(side,cross2(g-f,p-f));
+    side = min(side,cross2(a-g,p-g));
+    return sqrt(ds) * (side >= 0.0 ? -1.0 : 1.0);
+}
+
+float chatBubbleDistance(float2 p, float2 b, float radius, float detail)
+{
+    // Reserve the tail inside the mask's half-height: no source-edge
+    // clipping at the default centered position; expanded OBS bounds for
+    // translated masks/bloom remain a separate task.
+    float tail = max(3.0, b.y * detail * 1.8);
+    float bottom = b.y - tail;
+    float bodyHalfY = b.y - 0.5 * tail;
+    float2 bodyP = p + float2(0.0,0.5*tail);
+    float body = roundedBoxDistance(bodyP,float2(b.x,bodyHalfY),
+                                    min(radius,min(b.x,bodyHalfY)));
+    float2 left = float2(-0.78*b.x,bottom-2.0);
+    float2 right = float2(-0.34*b.x,bottom-2.0);
+    float2 tip = float2(-0.72*b.x,b.y-1.0);
+    float wedge = signedTriangle(p,left,right,tip);
+    return min(body,wedge); // True union: no line across the joined shoulder.
+}
+
 float shapeDistance(float2 p)
 {
+    if (shape_id == 8)
+        return chatBubbleDistance(rotatePoint(p,shape_rotation),half_size,
+                                  corner_radius,shape_detail);
+    if (shape_id == 9)
+        return angledCardDistance(rotatePoint(p,shape_rotation),half_size,
+                                  shape_detail);
     if (shape_id == 1) return length(p) - min(half_size.x, half_size.y);
     if (shape_id == 2) return ellipseDistance(rotatePoint(p, shape_rotation), half_size);
     if (shape_id == 3) {

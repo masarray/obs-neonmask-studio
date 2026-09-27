@@ -242,3 +242,17 @@ mask X/Y, subject pan/zoom and Phase-B light tests.
 Real visual quality, corner-detail legibility, safe-fit, GPU frame timing and
 full user OBS comparison remain open G4-V/G5/G6 gates. Do not claim marketing
 board parity or a stable release from this preview build.
+
+
+## Phase D scope merged with Issue #26 — first executable vertical slice
+
+[Phase D execution contract](PHASE_D_IMPLEMENTATION.md) owns the sequence and
+[Issue #26](https://github.com/masarray/obs-neonmask-studio/issues/26)
+tracks implementation. D1 adds actual bubble and asymmetric cut-corner shape
+IDs 8/9, default-backed shape-detail parameter, reselectable Streamer bubble
+and new Angled Card preset 7. The same signed distance drives alpha, border,
+glow and secondary tracks. Old saved IDs/shape assignments remain unchanged.
+The original SVG authoring samples are not a runtime SVG importer. D2 is
+bounded SVG/distance field and expanded original shape library; D3 is safe-fit,
+actual OBS comparison and performance acceptance in Issue #24. Do not mark
+D2/D3 or image #8/#9 visual parity complete from a shader CI result.

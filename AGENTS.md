@@ -16,3 +16,5 @@ Read [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md), [docs/ARCHITECTURE.md](docs/A
 - Update the roadmap/evidence with each completed slice. Report tests run and pending runtime gates honestly.
 - Keep provenance and notices for reused code. Do not introduce DCO/signoff, CLA gates or paid signing requirements unless the maintainer explicitly requests them.
 - For docs-only changes, verify links and consistency; runtime builds are unnecessary unless repository CI requires them.
+
+- Phase D is [Issue #26](https://github.com/masarray/obs-neonmask-studio/issues/26) plus docs/PHASE_D_IMPLEMENTATION.md. Implement integrated alpha+neon bubble/card silhouettes before more detached ornament modes; all old shape IDs, pan/zoom and legacy scenes must remain intact. No source import from GPL-2.0-only Advanced Masks code without compatible permission; use it as an audited feature baseline and acknowledge provenance.

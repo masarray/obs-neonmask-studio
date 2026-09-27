@@ -12,7 +12,9 @@ enum nm_shape {
     NM_SHAPE_DIAMOND = 4,
     NM_SHAPE_RECTANGLE = 5,
     NM_SHAPE_TRIANGLE = 6,
-    NM_SHAPE_POLYGON = 7
+    NM_SHAPE_POLYGON = 7,
+    NM_SHAPE_CHAT_BUBBLE = 8,
+    NM_SHAPE_ANGLED_CARD = 9
 };
 
 enum nm_animation {
@@ -52,7 +54,9 @@ typedef struct nm_preset {
     int ornament_mode;
     double art_intensity;
     double art_gap;
+    double shape_detail;
 } nm_preset;
 
-/* IDs 1..4 preserved; 5=Tech HUD, 6=Streamer. 0 is Custom. */
+/* IDs 1..6 stable; 6 selects the new integrated Chat Bubble when reapplied;
+ * existing saved shape=0 scenes remain unchanged. 7 is Angled Card. */
 bool nm_get_preset(int id, nm_preset *out);

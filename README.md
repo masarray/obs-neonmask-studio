@@ -9,10 +9,10 @@ Start with the [product and engineering charter](docs/PRODUCT_SPEC.md). It links
 ## Implemented
 
 - One OBS video filter: `NeonMask Studio — Facecam Mask & Border`.
-- Rounded rectangle, circle, oval, rectangle, hexagon, diamond, triangle, and configurable polygon; independent mask size/X/Y, subject pan/zoom, rotation and feather.
+- Rounded rectangle, circle, oval, rectangle, hexagon, diamond, triangle, polygon, **integrated Chat Bubble** and **Angled Card**; independent mask size/X/Y, subject pan/zoom, rotation and feather.
 - Dual-color neon, width, analytic halo radius/intensity, static/pulse/traveling-light modes, angular segmentation.
 - Four GPU-composited border styles: Classic Neon, Cyber Double Rim, Tech HUD, Minimal Glow.
-- Six editable presets: Cyber Rounded, Reactor Ring, Emerald Hex, Ember Frame, Tech HUD and Streamer Bubble. Existing IDs 1–4 are stable; the latter two append IDs 5–6. Explicit signature ornament recipes (Cyber corner traces, Reactor arcs, HUD brackets, Streamer decorative bubble tail) are optional and follow the mask contour.
+- Seven editable presets: Cyber Rounded, Reactor Ring, Emerald Hex, Ember Frame, Tech HUD, Streamer Bubble and Angled Card. Existing IDs 1–6 are stable; Angled Card appends ID 7. Reselecting Streamer uses the integrated bubble; previously saved rounded Streamer scenes retain their stored shape. Explicit signature ornament recipes (Cyber corner traces, Reactor arcs, HUD brackets, legacy Streamer decorative bubble tail) are optional and follow the mask contour.
 - OBS-native properties, English and Indonesian strings, direct GPU effect. No web browser or recurring texture uploads.
 - Release-safe C geometry, contour, preset and motion tests; static shader/host contract and actual libobs OpenGL/D3D11 direct-effect pixel fixtures.
 - Corrected RGBA color handling, captured-alpha compositing and base-size calculations.
@@ -45,7 +45,7 @@ Right-click webcam source → **Filters** → **Effect Filters** → **+** → *
 ## Deliberate MVP limitations
 
 - Halo stays **within the original source rectangle**; use the built-in scale margin. Expanded output padding / companion frame source is next.
-- Custom alpha images, SVG and source masks are **not yet implemented**, nor are a graphical preset gallery, audio reactivity and GPU benchmarks.
+- Custom alpha images, **SVG import** and source masks are **not yet implemented**. Original SVG design references in `assets/designs/` are authoring samples only; the D1 integrated Chat Bubble and Angled Card use production GPU geometry. No graphical gallery, audio reactivity or GPU benchmark evidence yet.
 - Ellipse and segmented non-circular paths remain approximate; Cyber Rounded has rounded-perimeter travel, while universal contour-length motion is not yet delivered. Actual visual parity with the concept artwork and final OBS output are **not yet verified**.
 - GPU compilation and direct-effect pixel smoke tests run on libobs OpenGL and D3D11. Real OBS frontend/final-output visual tests, filter-chain validation, compatibility matrix and performance measurements remain pending.
 
@@ -56,6 +56,10 @@ See [docs/PRE_PHASE2_AUDIT.md](docs/PRE_PHASE2_AUDIT.md) for the upstream compar
 ## Attribution and reuse
 
 This implementation is newly written around the documented libobs filter/effect APIs and signed-distance geometry. The architecture was informed by [FiniteSingularity/obs-advanced-masks](https://github.com/FiniteSingularity/obs-advanced-masks) and [the official OBS plugin template](https://github.com/obsproject/obs-plugintemplate). No upstream source file is pasted or mechanically renamed. If upstream code is subsequently imported, keep its copyright notices and comply with the GPL. The rounded-rectangle SDF method is widely documented by [Inigo Quilez](https://iquilezles.org/articles/distfunctions2d/). The repository is distributed under its existing GPL-3.0 license; new source files carry GPL-2.0-or-later notices, which are GPL-3.0-compatible.
+
+## Phase D: actual authored mask contours
+
+The Chat Bubble tail and Angled Card diagonal cuts are **part of the source alpha mask and its shared neon contour**, not detached overlay ornaments. The new shape-detail control changes tail depth/chamfer size. [Phase D implementation contract](docs/PHASE_D_IMPLEMENTATION.md) separates the shipped code candidate from pending SVG importer, wider authored library, safe-fit and actual OBS concept comparison.
 
 ## Roadmap
 
