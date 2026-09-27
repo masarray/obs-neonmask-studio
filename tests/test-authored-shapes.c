@@ -55,8 +55,8 @@ int main(void)
     check("rounding removes cut tip",leaf>0.4f);
     check("rounding removes bottom-left cut tip",
           nm_authored_shape_distance(card,-cx,fy,bx,by,10.5f,detail)>0.4f);
-    check("leaf fillet removes former cut shoulder",
-          nm_authored_shape_distance(card,14.5f,-23.5f,bx,by,10.5f,detail)>0.1f);
+    check("full arc removes former cut shoulder",
+          nm_authored_shape_distance(card,14.5f,-23.5f,bx,by,24.0f,detail)>0.4f);
     check("geometric shoulder remains inside at zero",
           nm_authored_shape_distance(card,14.5f,-23.5f,bx,by,0.0f,detail)<-0.2f);
     check("upper-left right-angle remains square",
@@ -67,6 +67,32 @@ int main(void)
           fabsf(nm_authored_shape_distance(card,-bx,-by,bx,by,10.5f,detail))<0.0001f);
     check("lower-right corner remains at boundary",
           fabsf(nm_authored_shape_distance(card,bx,by,bx,by,10.5f,detail))<0.0001f);
+    /* Roundness=1 must be a complete quarter-circle, NOT four small arcs
+     * separated by an obvious flat diagonal. Its two 45-degree sub-arcs
+     * have one center and meet with a continuous tangent. */
+    const float root2=1.41421356237f;
+    const float rmax=cut*(1.0f+1.0f/root2);
+    const float tx=bx-rmax;
+    const float mid=bx-0.5f*cut;
+    const float max_mid=nm_authored_shape_distance(card,mid,-mid,bx,by,by,detail);
+    check("max quarter-circle midpoint is contour",fabsf(max_mid)<0.002f);
+    check("max quarter-circle top tangent is contour",
+          fabsf(nm_authored_shape_distance(card,tx,-by,bx,by,by,detail))<0.002f);
+    check("max quarter-circle right tangent is contour",
+          fabsf(nm_authored_shape_distance(card,bx,-tx,bx,by,by,detail))<0.002f);
+    check("full arc curves outward on both sides of center seam",
+          nm_authored_shape_distance(card,mid+1.0f,-mid,bx,by,by,detail)>0.20f &&
+          nm_authored_shape_distance(card,mid-1.0f,-mid,bx,by,by,detail)<-0.20f);
+    check("maximum removes diagonal endpoint more than mid slider",
+          nm_authored_shape_distance(card,cx,-by,bx,by,by,detail)>
+          nm_authored_shape_distance(card,cx,-by,bx,by,0.5f*by,detail)+0.2f);
+    check("full arc is centrally symmetric on bottom left",
+          fabsf(nm_authored_shape_distance(card,mid,-mid,bx,by,by,detail)-
+                 nm_authored_shape_distance(card,-mid,mid,bx,by,by,detail))<0.002f);
+    check("max never rounds protected upper-left corner",
+          fabsf(nm_authored_shape_distance(card,-bx,-by,bx,by,by,detail))<0.0001f);
+    check("max never rounds protected lower-right corner",
+          fabsf(nm_authored_shape_distance(card,bx,by,bx,by,by,detail))<0.0001f);
     check("fillet respects shape-detail change",
           nm_authored_shape_distance(card,cx,-by,bx,by,10.5f,0.35f)>0.0f);
     check("large roundness stays finite",
@@ -87,6 +113,6 @@ int main(void)
     }
 #undef D
     if(failures)return 1;
-    puts("PASS: exterior-only bubble contour, rounded leaf tip, selective card fillets and square corners");
+    puts("PASS: exterior-only bubble, fully tangent quarter-circle Angled Card, protected square corners");
     return 0;
 }
