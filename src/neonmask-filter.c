@@ -576,6 +576,12 @@ static void nm_tick(void *data, float seconds)
         f->svg_texture=texture;
         obs_leave_graphics();
         if(!texture) blog(LOG_WARNING,"[NeonMask Studio] SVG SDF GPU allocation failed");
+    }else{
+        obs_enter_graphics();
+        if(f->svg_texture) gs_texture_destroy(f->svg_texture);
+        f->svg_texture=NULL;
+        obs_leave_graphics();
+        blog(LOG_WARNING,"[NeonMask Studio] SVG SDF raster failed closed");
     }
     bfree(pixels);
 }
