@@ -218,3 +218,27 @@ of the whole Phase C proposal. Reactor orbit, Tech HUD, Streamer/Chat,
 Electric and the full vector authoring/import pipeline remain future slices.
 Real OBS dark/light, 320×180 and displaced-mask captures, safe-fit, and
 measured GPU frame times remain mandatory before visual parity claims.
+
+
+## Phase C3/C4 — three additional authored families (implementation candidate)
+
+This slice extends the opt-in recipe enum without changing existing IDs:
+Reactor Ring uses deliberately unequal segmented concentric arcs, radial ticks
+and a localized orbit head; Tech HUD uses long orthogonal corner brackets and
+a cut support rail; Streamer Bubble uses a two-segment decorative tail and a
+small status-dot trio. Preset IDs 1–4 remain stable and IDs 5/6 add Tech HUD
+and Streamer. Selecting Reactor preset ID 2 now explicitly opts into its
+authored ornament; saved scenes without an ornament field remain legacy mode
+0. Source image/background remains inside its geometric mask: the bubble
+tail is an **ornament, not a person cutout or expanded image silhouette**.
+
+No runtime SVG parser or asset texture dependency is introduced: geometry is
+expressed as contour-relative analytical paths, with one existing effect
+pass and no video readback. Motion remains bounded in the existing phase
+model. Test on real OpenGL and D3D11 against transparent input to ensure
+ornaments are present ONLY when selected, while preserving existing alpha,
+mask X/Y, subject pan/zoom and Phase-B light tests.
+
+Real visual quality, corner-detail legibility, safe-fit, GPU frame timing and
+full user OBS comparison remain open G4-V/G5/G6 gates. Do not claim marketing
+board parity or a stable release from this preview build.

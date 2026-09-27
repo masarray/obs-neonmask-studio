@@ -226,3 +226,17 @@ GPU-evaluated and aligns to `half_size`, `corner_radius`,
 `shape_rotation` and `mask_offset`. Pixel-stage effects compose with
 premultiplied-over then return straight-alpha as before. Explicit settings
 and complete preset recipes preserve backwards-compatible scene identity.
+
+
+## ADR 015 — family-specific analytical ornament recipes
+
+Extend the stable ornament IDs rather than creating a second image overlay
+source. Reactor ID 2 is circle-only, Tech HUD ID 3 uses rectangle/rounded
+bounds and Streamer ID 4 is rounded-only. Every family is a separate branch
+with geometric anchors relative to its canonical mask; unsupported shape +
+recipe combinations render the base neon without malformed decoration.
+Reactors use distinct arc gates and sparse orbit ticks, HUD uses orthogonal
+brackets/cut rails, Streamer uses a deliberate line tail and dot trio.
+Decorations are composited *after* source image coverage is computed, and
+never alter base mask alpha. The complete recipe is stored in ordinary
+version-2 OBS settings; legacy enum IDs are not reinterpreted.

@@ -6,7 +6,10 @@
  * ID zero reproduces legacy custom scenes. Existing style/shape IDs are stable. */
 enum nm_ornament {
     NM_ORNAMENT_NONE = 0,
-    NM_ORNAMENT_CYBER = 1
+    NM_ORNAMENT_CYBER = 1,
+    NM_ORNAMENT_REACTOR = 2,
+    NM_ORNAMENT_TECH_HUD = 3,
+    NM_ORNAMENT_STREAMER = 4
 };
 
 /* Signed-distance contour coordinate in turns [0,1). Starts at the top-left

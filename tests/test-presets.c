@@ -16,9 +16,9 @@ int main(void)
     nm_preset p = {0};
     check("custom preset invalid", !nm_get_preset(0, &p));
     check("negative preset invalid", !nm_get_preset(-1, &p));
-    check("unknown preset invalid", !nm_get_preset(5, &p));
+    check("unknown preset invalid", !nm_get_preset(7, &p));
     check("null output invalid", !nm_get_preset(1, NULL));
-    for (int id = 1; id <= 4; ++id) {
+    for (int id = 1; id <= 6; ++id) {
         check("known preset", nm_get_preset(id, &p));
         check("valid shape", p.shape >= NM_SHAPE_ROUNDED && p.shape <= NM_SHAPE_POLYGON);
         check("valid animation", p.animation >= NM_ANIM_STATIC && p.animation <= NM_ANIM_FLOW);
@@ -45,7 +45,7 @@ int main(void)
     check("Cyber art visible", p.art_intensity > 0.80);
     nm_get_preset(2, &p);
     check("reactor ring shape", p.shape == NM_SHAPE_CIRCLE);
-    check("reactor not mislabeled Cyber", p.ornament_mode == NM_ORNAMENT_NONE);
+    check("reactor authored orbit", p.ornament_mode == NM_ORNAMENT_REACTOR);
     check("reactor segmented", p.segments == 10);
     check("reactor HUD style", p.style == NM_STYLE_HUD);
     nm_get_preset(3, &p);
@@ -53,7 +53,11 @@ int main(void)
     nm_get_preset(4, &p);
     check("ember static", p.animation == NM_ANIM_STATIC);
     check("ember minimal style", p.style == NM_STYLE_MINIMAL);
+    nm_get_preset(5, &p);
+    check("HUD authored rectangle", p.shape == NM_SHAPE_RECTANGLE && p.ornament_mode == NM_ORNAMENT_TECH_HUD);
+    nm_get_preset(6, &p);
+    check("Streamer authored bubble detail", p.shape == NM_SHAPE_ROUNDED && p.ornament_mode == NM_ORNAMENT_STREAMER);
     if (failures) return 1;
-    puts("PASS: four preset configurations and input validation");
+    puts("PASS: six preset configurations and art recipe validation");
     return 0;
 }

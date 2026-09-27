@@ -222,3 +222,19 @@ against the supplied proposal on light/dark and 320×180 scenes, including
 cropping near edges and skin-color preservation. Other proposed style
 families are not rebranded copies of Cyber; they need distinct geometry and
 their own visual proof.
+
+
+## Phase C additional signature targets
+
+- **Reactor Ring:** bright circular primary with two unequal supporting arc
+  spans, separated negative space, sparse ticks and an independently bright
+  moving orbit point. Static mode retains an authored circular composition.
+- **Tech HUD:** orthogonal bracket pairs, deliberate support-rail cuts,
+  small edge highlights and cyan/amber hierarchy; not a recolored rounded box.
+- **Streamer Bubble:** clear rounded body, a two-stroke decorative lower-left
+  speech tail and bounded small status dots, leaving the webcam intact.
+
+These are *first implementation targets*. Actual screenshots and clips on
+Windows OBS, light and dark backgrounds, 320×180 and the proposal comparison
+are the required visual acceptance. Tail ornament does not expand the
+underlying video mask; it can be clipped if safe-fit is not provided.

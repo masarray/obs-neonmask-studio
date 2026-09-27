@@ -150,3 +150,14 @@ visible paired corner traces, proportions, downscale readability and motion
 continuity on a non-square frame. Test extreme mask X/Y for clipping. Do not
 claim Phase C completion without verified Reactor/HUD/Streamer signatures,
 full G4-V/G5/G6 evidence and release acceptance.
+
+
+## Phase C additional direct-effect proof (partial G4)
+
+Add independently sampled shader fixtures for Reactor outer arc, Tech HUD
+bracket and Streamer speech tail. Each has a corresponding opt-out/legacy
+control where relevant, to detect accidental decoration of old scenes.
+The fixtures run against real libobs OpenGL/D3D11 render targets and do not
+claim final OBS frontend compositing, finished proposal aesthetics, safe-fit
+or measured performance. All original alpha/framing/light fixtures must
+remain green.

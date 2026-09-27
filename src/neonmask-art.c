@@ -40,7 +40,7 @@ float nm_rounded_contour_turn(float x, float y, float half_width,
 
 bool nm_art_recipe_valid(int mode, float track_gap, float intensity)
 {
-    return (mode == NM_ORNAMENT_NONE || mode == NM_ORNAMENT_CYBER) &&
+    return (mode >= NM_ORNAMENT_NONE && mode <= NM_ORNAMENT_STREAMER) &&
            isfinite(track_gap) && track_gap >= 1.0f && track_gap <= 16.0f &&
            isfinite(intensity) && intensity >= 0.0f && intensity <= 1.0f;
 }
