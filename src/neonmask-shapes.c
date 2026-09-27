@@ -197,18 +197,22 @@ static float hud_panel(nm_p2 p,nm_p2 b,float detail)
 {
     const float cut=fminf(fmaxf(2.0f,fminf(b.x,b.y)*detail*1.8f),
                           fminf(b.x,b.y)*0.45f);
-    const nm_p2 v[10]={
+    /* Bevel both transitions of the inset: the former two square stairs
+     * looked like a generic UI corner, not a purposely authored HUD path. */
+    const nm_p2 v[11]={
         {-b.x,-b.y},{b.x-cut,-b.y},{b.x,-b.y+cut},
         {b.x,b.y-cut*0.40f},{b.x-cut*0.35f,b.y},
-        {-b.x+cut*1.60f,b.y},{-b.x+cut*1.60f,b.y-cut*0.28f},
-        {-b.x+cut*0.85f,b.y-cut*0.28f},
-        {-b.x+cut*0.85f,b.y-cut*0.70f},
+        {-b.x+cut*1.80f,b.y},
+        {-b.x+cut*1.65f,b.y-cut*0.20f},
+        {-b.x+cut*1.13f,b.y-cut*0.20f},
+        {-b.x+cut*0.95f,b.y-cut*0.38f},
+        {-b.x+cut*0.95f,b.y-cut*0.70f},
         {-b.x,b.y-cut*0.70f}
     };
-    float ds=edge2(p,v[9],v[0]);
+    float ds=edge2(p,v[10],v[0]);
     int inside=0;
-    for(int i=0;i<10;++i){
-        const nm_p2 a=v[i],next=v[(i+1)%10];
+    for(int i=0;i<11;++i){
+        const nm_p2 a=v[i],next=v[(i+1)%11];
         ds=fminf(ds,edge2(p,a,next));
         inside^=ray_crosses(p,a,next);
     }
@@ -226,7 +230,30 @@ static float squircle(nm_p2 p,nm_p2 b,float detail)
     const float fx=powf(ax,exponent),fy=powf(ay,exponent);
     const float gx=exponent*powf(ax,exponent-1.0f)/b.x;
     const float gy=exponent*powf(ay,exponent-1.0f)/b.y;
-    const float d=(fx+fy-1.0f)/fmaxf(hypotf(gx,gy),1.0f/fminf(b.x,b.y));
+    float d=(fx+fy-1.0f)/fmaxf(hypotf(gx,gy),1.0f/fminf(b.x,b.y));
+    /* The long near-horizontal and near-vertical sections benefit from
+     * solving the implicit superellipse for the exact axis boundary.
+     * This prevents flat-rail speckling when gradient linearization sees
+     * subpixel changes; blend smoothly into the original corner distance. */
+    if(ax<0.72f && ay>0.72f){
+        const float rem=fmaxf(0.00001f,1.0f-fx);
+        const float edge=b.y*powf(rem,1.0f/exponent);
+        const float slope=(b.y/b.x)*powf(ax,exponent-1.0f)*
+                          powf(rem,1.0f/exponent-1.0f);
+        const float axis=(fabsf(p.y)-edge)/hypotf(1.0f,slope);
+        const float t=nm_clamp((ax-0.58f)/0.14f,0.0f,1.0f);
+        const float blend=t*t*(3.0f-2.0f*t);
+        d=axis*(1.0f-blend)+d*blend;
+    }else if(ay<0.72f && ax>0.72f){
+        const float rem=fmaxf(0.00001f,1.0f-fy);
+        const float edge=b.x*powf(rem,1.0f/exponent);
+        const float slope=(b.x/b.y)*powf(ay,exponent-1.0f)*
+                          powf(rem,1.0f/exponent-1.0f);
+        const float axis=(fabsf(p.x)-edge)/hypotf(1.0f,slope);
+        const float t=nm_clamp((ay-0.58f)/0.14f,0.0f,1.0f);
+        const float blend=t*t*(3.0f-2.0f*t);
+        d=axis*(1.0f-blend)+d*blend;
+    }
     return fmaxf(d,-fminf(b.x,b.y));
 }
 

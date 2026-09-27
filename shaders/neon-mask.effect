@@ -294,17 +294,19 @@ bool hudRayCrosses(float2 p,float2 a,float2 b)
 float hudPanelDistance(float2 p,float2 b,float detail)
 {
     float cut=min(max(2.0,min(b.x,b.y)*detail*1.8),min(b.x,b.y)*0.45);
+    // Art-directed bevels at both notch shoulders, not blocky stairs.
     float2 v0=float2(-b.x,-b.y);
     float2 v1=float2(b.x-cut,-b.y);
     float2 v2=float2(b.x,-b.y+cut);
     float2 v3=float2(b.x,b.y-cut*0.40);
     float2 v4=float2(b.x-cut*0.35,b.y);
-    float2 v5=float2(-b.x+cut*1.60,b.y);
-    float2 v6=float2(-b.x+cut*1.60,b.y-cut*0.28);
-    float2 v7=float2(-b.x+cut*0.85,b.y-cut*0.28);
-    float2 v8=float2(-b.x+cut*0.85,b.y-cut*0.70);
-    float2 v9=float2(-b.x,b.y-cut*0.70);
-    float ds=edgeDistanceSquared(p,v9,v0);
+    float2 v5=float2(-b.x+cut*1.80,b.y);
+    float2 v6=float2(-b.x+cut*1.65,b.y-cut*0.20);
+    float2 v7=float2(-b.x+cut*1.13,b.y-cut*0.20);
+    float2 v8=float2(-b.x+cut*0.95,b.y-cut*0.38);
+    float2 v9=float2(-b.x+cut*0.95,b.y-cut*0.70);
+    float2 v10=float2(-b.x,b.y-cut*0.70);
+    float ds=edgeDistanceSquared(p,v10,v0);
     bool inside=false;
     ds=min(ds,edgeDistanceSquared(p,v0,v1));
     if(hudRayCrosses(p,v0,v1)) inside=!inside;
@@ -324,8 +326,10 @@ float hudPanelDistance(float2 p,float2 b,float detail)
     if(hudRayCrosses(p,v7,v8)) inside=!inside;
     ds=min(ds,edgeDistanceSquared(p,v8,v9));
     if(hudRayCrosses(p,v8,v9)) inside=!inside;
-    ds=min(ds,edgeDistanceSquared(p,v9,v0));
-    if(hudRayCrosses(p,v9,v0)) inside=!inside;
+    ds=min(ds,edgeDistanceSquared(p,v9,v10));
+    if(hudRayCrosses(p,v9,v10)) inside=!inside;
+    ds=min(ds,edgeDistanceSquared(p,v10,v0));
+    if(hudRayCrosses(p,v10,v0)) inside=!inside;
     return sqrt(ds)*(inside ? -1.0 : 1.0);
 }
 
@@ -339,6 +343,25 @@ float squircleDistance(float2 p,float2 b,float detail)
     float2 gradient=float2(exponent*pow(a.x,exponent-1.0)/b.x,
                             exponent*pow(a.y,exponent-1.0)/b.y);
     float d=(f.x+f.y-1.0)/max(length(gradient),1.0/min(b.x,b.y));
+    // Exact near-axis superellipse intersection stabilizes long luminous
+    // top/side rails; smooth blend retains the curved corner SDF.
+    if(a.x<0.72 && a.y>0.72) {
+        float rem=max(0.00001,1.0-f.x);
+        float edge=b.y*pow(rem,1.0/exponent);
+        float slope=(b.y/b.x)*pow(a.x,exponent-1.0)*
+                    pow(rem,1.0/exponent-1.0);
+        float axis=(abs(p.y)-edge)/length(float2(1.0,slope));
+        float t=smoothstep(0.58,0.72,a.x);
+        d=lerp(axis,d,t);
+    } else if(a.y<0.72 && a.x>0.72) {
+        float rem=max(0.00001,1.0-f.y);
+        float edge=b.x*pow(rem,1.0/exponent);
+        float slope=(b.x/b.y)*pow(a.y,exponent-1.0)*
+                    pow(rem,1.0/exponent-1.0);
+        float axis=(abs(p.x)-edge)/length(float2(1.0,slope));
+        float t=smoothstep(0.58,0.72,a.y);
+        d=lerp(axis,d,t);
+    }
     return max(d,-min(b.x,b.y));
 }
 
@@ -672,6 +695,24 @@ float4 drawNeonMask(VertData v_in) : TARGET
                             (0.24+0.64*selective));
             glintA = saturate(glintA+art_intensity*rail*
                               (0.22*topZone+0.53*notchZone));
+
+            // Asymmetric accent grammar distinct from a generic extra
+            // contour: one short isolated top trace and one vertical
+            // right-hand calibration bracket. Geometry derives from the
+            // actual chamfer dimensions; leave the portrait center clear.
+            float gap=art_gap+2.8;
+            float2 topA=float2(-half_size.x+cut*0.38,-half_size.y-gap);
+            float2 topB=float2(-half_size.x+cut*1.10,-half_size.y-gap);
+            float2 sideA=float2(half_size.x+gap,-half_size.y+cut*0.73);
+            float2 sideB=float2(half_size.x+gap,-half_size.y+cut*1.33);
+            float traceD=min(segmentDistance(q,topA,topB),
+                             segmentDistance(q,sideA,sideB));
+            float trace=1.0-smoothstep(0.10,1.25,traceD);
+            artBarA=saturate(artBarA+trace*art_intensity*0.88);
+            if(glow_enabled != 0)
+                artBarGlowA=saturate(artBarGlowA+
+                           art_intensity*glow_strength*0.26*
+                           (1.0-smoothstep(0.0,4.2,traceD)));
         }
 
         // Streamer: an intentional two-segment speech-tail line with a

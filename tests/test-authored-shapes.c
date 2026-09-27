@@ -117,6 +117,10 @@ int main(void)
           D(hud,-bx+hud_cut*1.25f,by-hud_cut*0.50f)<-0.5f);
     check("HUD exposed bottom rail is contour",
           fabsf(D(hud,0,by))<0.001f);
+    /* Both deliberately bevelled notch transitions remain source-aligned. */
+    check("HUD double bevel carries a continuous signed contour",
+          fabsf(D(hud,-bx+hud_cut*1.65f,by-hud_cut*0.20f))<0.002f &&
+          fabsf(D(hud,-bx+hud_cut*0.95f,by-hud_cut*0.38f))<0.002f);
     check("HUD upper rail is contour",
           fabsf(D(hud,0,-by))<0.001f);
     check("HUD detail changes cut size",
