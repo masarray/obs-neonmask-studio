@@ -14,6 +14,8 @@ typedef struct nm_config {
     float scale;
     float mask_width;
     float mask_height;
+    /* D3a opt-in: reduce mask extents, never subject UV, to fit light in canvas. */
+    bool safe_fit;
     float mask_x_px;
     float mask_y_px;
     float subject_pan_x_px;

@@ -256,3 +256,15 @@ Keep existing shape IDs and schema v2; new `shape_detail` has an additive
 validated/persisted default. Build authored SVG files as independent design
 sources only; adding SVG runtime needs an explicit bounded local decoder,
 safe failure, cache and distance-field provider. See PHASE_D_IMPLEMENTATION.
+
+## D3a additive source-canvas safe-fit (preview)
+
+The opt-in `safe_fit` setting preserves the old output dimensions and existing
+scene defaults. The canonical pure-C support computation constrains a uniformly
+scaled mask silhouette and its current light envelope inside the target texture.
+It never changes subject pan/zoom, mask center or stored normalized dimensions.
+A placement that cannot accommodate the envelope renders transparent with one
+warning; no implicit image repositioning or unmasked bypass. SVG raster sizing
+uses the same effective mask dimensions as render. This conservative contained
+AABB is intentionally not expanded-output implementation; retain D3b/G4-V/G5
+for actual OBS scene-origin/filter-chain proof and exact coverage.

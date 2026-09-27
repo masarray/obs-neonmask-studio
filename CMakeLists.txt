@@ -5,7 +5,7 @@ option(NEONMASK_BUILD_PLUGIN "Build the native OBS filter" ON)
 option(NEONMASK_BUILD_TESTS "Build headless geometry tests" ON)
 option(NEONMASK_BUILD_SHADER_SMOKE "Compile effect on a live libobs graphics device" OFF)
 
-add_library(neonmask-math STATIC src/neonmask-math.c src/neonmask-presets.c src/neonmask-config.c src/neonmask-motion.c src/neonmask-art.c src/neonmask-shapes.c src/neonmask-svg.c)
+add_library(neonmask-math STATIC src/neonmask-math.c src/neonmask-presets.c src/neonmask-config.c src/neonmask-motion.c src/neonmask-art.c src/neonmask-shapes.c src/neonmask-svg.c src/neonmask-safe-fit.c)
 target_include_directories(neonmask-math PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_features(neonmask-math PUBLIC c_std_11)
 # The art/perimeter helper adds atan2f/fmodf to the shared static library.
@@ -84,6 +84,9 @@ if(NEONMASK_BUILD_TESTS)
   add_executable(neonmask-authored-shapes-tests tests/test-authored-shapes.c)
   target_link_libraries(neonmask-authored-shapes-tests PRIVATE neonmask-math)
   add_test(NAME neonmask-authored-shapes-tests COMMAND neonmask-authored-shapes-tests)
+  add_executable(neonmask-safe-fit-tests tests/test-safe-fit.c)
+  target_link_libraries(neonmask-safe-fit-tests PRIVATE neonmask-math)
+  add_test(NAME neonmask-safe-fit-tests COMMAND neonmask-safe-fit-tests)
   add_executable(neonmask-svg-tests tests/test-svg.c)
   target_link_libraries(neonmask-svg-tests PRIVATE neonmask-math)
   add_test(NAME neonmask-svg-tests COMMAND neonmask-svg-tests
