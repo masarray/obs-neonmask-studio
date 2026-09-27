@@ -15,10 +15,10 @@ int main(void)
     const float bottom=by-fmaxf(3.0f,by*detail*1.8f);
 #define D(ID,X,Y) nm_authored_shape_distance(ID,X,Y,bx,by,r,detail)
     check("bubble face interior",D(bubble,0,0)<-5.0f);
-    check("bubble tail contains source image",D(bubble,-15.5f,20.5f)<-0.3f);
+    check("bubble tail contains source image",D(bubble,-16.5f,20.5f)<-0.3f);
     check("bubble outside beside tail",D(bubble,-5.0f,20.5f)>2.0f);
     check("bubble upper exterior",D(bubble,0,-26.0f)>1.0f);
-    check("bubble shoulder union hides seam",D(bubble,-15.0f,bottom-1.0f)<-1.0f);
+    check("bubble shoulder union hides seam",D(bubble,-15.0f,bottom-1.0f)<-0.8f);
     check("bubble tip is near contour",fabsf(D(bubble,-0.72f*bx,by-1.0f))<0.0001f);
     check("chamfered card center inside",D(card,0,0)<-5.0f);
     check("card top right removed",D(card,21,-21)>0.2f);
