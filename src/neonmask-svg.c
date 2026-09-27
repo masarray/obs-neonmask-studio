@@ -160,10 +160,21 @@ static bool attr_tag(const char **cursor,bool root,nm_svg_shape *shape,
         }else if(root && !strcmp(key,"xmlns")){
             static const char uri[]="http://www.w3.org/2000/svg";
             if(n!=sizeof(uri)-1 || strncmp(a,uri,n)) return false;
-        }else if(root && (!strcmp(key,"width") || !strcmp(key,"height") ||
-                           !strcmp(key,"version"))){
-            /* Ignored presentation metadata; viewBox is authoritative. */
-            if(n>32) return false;
+        }else if(root && (!strcmp(key,"width") || !strcmp(key,"height"))){
+            /* Presentation metadata cannot smuggle URLs or CSS; the viewBox
+             * remains authoritative for aspect-preserving contain. */
+            if(n<1 || n>24) return false;
+            char number_text[32]={0};
+            memcpy(number_text,a,n);
+            const char *value=number_text;
+            float dimension=0;
+            if(!number(&value,&dimension) || dimension<=0 || dimension>10000)
+                return false;
+            if(!strcmp(value,"px")) value+=2;
+            while(isspace((unsigned char)*value)) ++value;
+            if(*value) return false;
+        }else if(root && !strcmp(key,"version")){
+            if(n!=3 || strncmp(a,"1.1",n)) return false;
         }else if(!root && !strcmp(key,"d")){
             if(data[0] || !copy_value(data,dcap,a,n)) return false;
         }else if(!root && !strcmp(key,"fill-rule")){
@@ -183,6 +194,21 @@ static bool attr_tag(const char **cursor,bool root,nm_svg_shape *shape,
         }else return false; /* No style, script, href, transform, event attrs. */
     }
 }
+/* Comments may carry original license/provenance. They are inert XML text;
+ * no DOCTYPE, external subset or arbitrary processing instructions allowed. */
+static bool skip_inert(const char **cursor)
+{
+    const char *p=*cursor;
+    while(1){
+        while(isspace((unsigned char)*p)) ++p;
+        if(strncmp(p,"<!--",4)) break;
+        const char *end=strstr(p+4,"-->");
+        if(!end) return false;
+        p=end+3;
+    }
+    *cursor=p;
+    return true;
+}
 bool nm_svg_parse(const char *bytes,size_t length,nm_svg_shape *out,
                   char *why,size_t why_size)
 {
@@ -197,13 +223,17 @@ bool nm_svg_parse(const char *bytes,size_t length,nm_svg_shape *out,
     nm_svg_shape parsed={0};
     char view[128]={0},path[8192]={0};
     bool selfclose=false,ok=false;
-    while(isspace((unsigned char)*p)) ++p;
-    if(!strncmp(p,"<?xml",5)){
-        const char *end=strstr(p,"?>");
-        if(!end){bad(why,why_size,"invalid XML declaration");goto done;}
-        p=end+2;
-        while(isspace((unsigned char)*p)) ++p;
+    if(!skip_inert(&p)){bad(why,why_size,"invalid SVG comment");goto done;}
+    static const char declaration[]="<?xml version=\\"1.0\\" encoding=\\"UTF-8\\"?>";
+    static const char minimal_declaration[]="<?xml version=\\"1.0\\"?>";
+    if(!strncmp(p,declaration,sizeof(declaration)-1))
+        p+=sizeof(declaration)-1;
+    else if(!strncmp(p,minimal_declaration,sizeof(minimal_declaration)-1))
+        p+=sizeof(minimal_declaration)-1;
+    else if(!strncmp(p,"<?",2)){
+        bad(why,why_size,"unsupported processing instruction");goto done;
     }
+    if(!skip_inert(&p)){bad(why,why_size,"invalid SVG comment");goto done;}
     if(strncmp(p,"<svg",4) || (!isspace((unsigned char)p[4]) && p[4]!='>')){
         bad(why,why_size,"only root svg is allowed");goto done;
     }
@@ -224,7 +254,7 @@ bool nm_svg_parse(const char *bytes,size_t length,nm_svg_shape *out,
     }
     unsigned paths=0;
     while(1){
-        while(isspace((unsigned char)*p)) ++p;
+        if(!skip_inert(&p)){bad(why,why_size,"invalid SVG comment");goto done;}
         if(!strncmp(p,"</svg>",6)){
             p+=6;
             while(isspace((unsigned char)*p)) ++p;
