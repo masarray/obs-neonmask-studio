@@ -108,7 +108,9 @@ jobs:
             "package-win/obs-plugins/64bit/obs-neonmask.dll",
             "package-win/data/obs-plugins/obs-neonmask/shaders/neon-mask.effect",
             "package-win/data/obs-plugins/obs-neonmask/locale/en-US.ini",
-            "package-win/data/obs-plugins/obs-neonmask/locale/id-ID.ini"
+            "package-win/data/obs-plugins/obs-neonmask/locale/id-ID.ini",
+            "package-win/data/obs-plugins/obs-neonmask/designs/chat-bubble.svg",
+            "package-win/data/obs-plugins/obs-neonmask/designs/angled-card.svg"
           )
           foreach ($file in $files) {
             if (!(Test-Path $file)) { throw "Missing staged file: $file" }
