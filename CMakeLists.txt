@@ -47,6 +47,9 @@ if(NEONMASK_BUILD_PLUGIN)
   install(TARGETS obs-neonmask LIBRARY DESTINATION "${NEONMASK_PLUGIN_DIR}" RUNTIME DESTINATION "${NEONMASK_PLUGIN_DIR}")
   install(DIRECTORY shaders/ DESTINATION "${NEONMASK_DATA_DIR}/shaders")
   install(DIRECTORY data/locale/ DESTINATION "${NEONMASK_DATA_DIR}/locale")
+  # Original local-only shape examples can be browsed from the SVG property.
+  install(DIRECTORY assets/designs/ DESTINATION "${NEONMASK_DATA_DIR}/designs"
+          FILES_MATCHING PATTERN "*.svg")
 endif()
 
 if(NEONMASK_BUILD_TESTS)
