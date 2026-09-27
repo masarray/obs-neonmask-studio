@@ -267,6 +267,8 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(preset, obs_module_text("Preset.Reactor"), 2);
     obs_property_list_add_int(preset, obs_module_text("Preset.Emerald"), 3);
     obs_property_list_add_int(preset, obs_module_text("Preset.Ember"), 4);
+    obs_property_list_add_int(preset, obs_module_text("Preset.TechHUD"), 5);
+    obs_property_list_add_int(preset, obs_module_text("Preset.Streamer"), 6);
     obs_property_set_modified_callback(preset, nm_preset_changed);
 
     obs_property_t *shape = obs_properties_add_list(props, "shape", obs_module_text("Shape"),
@@ -314,6 +316,9 @@ static obs_properties_t *nm_properties(void *data)
                          obs_module_text("Art.Mode"), OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
     obs_property_list_add_int(ornament, obs_module_text("Art.None"), NM_ORNAMENT_NONE);
     obs_property_list_add_int(ornament, obs_module_text("Art.Cyber"), NM_ORNAMENT_CYBER);
+    obs_property_list_add_int(ornament, obs_module_text("Art.Reactor"), NM_ORNAMENT_REACTOR);
+    obs_property_list_add_int(ornament, obs_module_text("Art.TechHUD"), NM_ORNAMENT_TECH_HUD);
+    obs_property_list_add_int(ornament, obs_module_text("Art.Streamer"), NM_ORNAMENT_STREAMER);
     obs_property_set_modified_callback(ornament, nm_custom_changed);
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "art_intensity",
                          obs_module_text("Art.Intensity"), 0.0, 1.0, 0.01));
