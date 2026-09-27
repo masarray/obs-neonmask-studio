@@ -9,6 +9,8 @@ The ZIP contains these OBS paths:
 - data/obs-plugins/obs-neonmask/shaders/neon-mask.effect
 - data/obs-plugins/obs-neonmask/locale/en-US.ini
 - data/obs-plugins/obs-neonmask/locale/id-ID.ini
+- data/obs-plugins/obs-neonmask/designs/chat-bubble.svg (original local-only import example)
+- data/obs-plugins/obs-neonmask/designs/angled-card.svg (original local-only import example)
 
 Extract contents of the **inner plugin ZIP** into the root of an OBS Studio portable installation and merge folders. Do not extract the outer Actions archive directly into OBS. Restart OBS and add the filter to a video source via Filters > Effect Filters > +.
 
