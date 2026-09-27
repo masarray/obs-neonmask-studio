@@ -695,6 +695,24 @@ float4 drawNeonMask(VertData v_in) : TARGET
                             (0.24+0.64*selective));
             glintA = saturate(glintA+art_intensity*rail*
                               (0.22*topZone+0.53*notchZone));
+
+            // Asymmetric accent grammar distinct from a generic extra
+            // contour: one short isolated top trace and one vertical
+            // right-hand calibration bracket. Geometry derives from the
+            // actual chamfer dimensions; leave the portrait center clear.
+            float gap=art_gap+2.8;
+            float2 topA=float2(-half_size.x+cut*0.38,-half_size.y-gap);
+            float2 topB=float2(-half_size.x+cut*1.10,-half_size.y-gap);
+            float2 sideA=float2(half_size.x+gap,-half_size.y+cut*0.73);
+            float2 sideB=float2(half_size.x+gap,-half_size.y+cut*1.33);
+            float traceD=min(segmentDistance(q,topA,topB),
+                             segmentDistance(q,sideA,sideB));
+            float trace=1.0-smoothstep(0.10,1.25,traceD);
+            artBarA=saturate(artBarA+trace*art_intensity*0.88);
+            if(glow_enabled != 0)
+                artBarGlowA=saturate(artBarGlowA+
+                           art_intensity*glow_strength*0.26*
+                           (1.0-smoothstep(0.0,4.2,traceD)));
         }
 
         // Streamer: an intentional two-segment speech-tail line with a
