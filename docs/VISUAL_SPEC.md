@@ -249,3 +249,15 @@ removes top-right and bottom-left image corners along a true diagonal. Its
 neon and glow follow those diagonal segments, not an uncut rectangle. D1
 implements these contours; actual proposal image #8/#9 similarity remains
 subject to OBS screenshots with safe-fit, light/dark and small-facecam checks.
+
+
+## Angled Card: selective geometric-to-leaf roundness
+
+Keep the current asymmetrical diagonal cuts. The existing **Roundness**
+control adjusts only their ends: top-right and bottom-left diagonal cuts
+become softly filleted/leaf-like, while the other two right-angle corners
+(top-left and bottom-right) stay **sharp at all settings**. Roundness 0
+reproduces the original geometric card. Do not globally round the card,
+stretch the webcam, or implement a separate ornamental overlay. Source alpha
+and luminous border/glow must agree on each selective fillet. Cut depth
+(`shape_detail`) and rounding (`roundness`) are independently adjustable.

@@ -173,3 +173,15 @@ bubble-tip border over transparent input, missing angled-card corner and
 neon following a diagonal; include legacy rounded/rectangle controls. This
 only covers effect-level G4; real OBS post-filter output, safe-fit and
 concept-art parity still need human/image evidence.
+
+
+## Selective Angled Card Roundness (D2.1)
+
+Do not mark this feature complete from the unchanged rectangle test. Exercise
+the EXISTING `roundness` key through zero and nonzero settings for shape ID
+9. Pure-C and actual OpenGL/D3D11 GPU fixtures must prove the straight
+D1 cut at zero, removal of the previous diagonal endpoint at higher values,
+and preserved 90-degree top-left/bottom-right corners. Ensure the neon
+uses the same rounded contour (no detached line) and shape-detail still
+changes cut depth independently. Actual OBS screenshots at zero, midpoint
+and maximum are needed to judge leaf-like visual quality.

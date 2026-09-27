@@ -300,6 +300,9 @@ static obs_properties_t *nm_properties(void *data)
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_width", obs_module_text("Mask.Width"), 0.10, 0.98, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_height", obs_module_text("Mask.Height"), 0.10, 0.98, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "shape_detail", obs_module_text("Mask.Detail"), 0.08, 0.35, 0.01));
+    /* Reuse existing persisted Roundness key. Angled Card only fillets the
+     * two diagonal cut endpoints; the other corners stay right angles. */
+    NM_CUSTOM(obs_properties_add_float_slider(mask_group, "roundness", obs_module_text("Roundness"), 0.0, 1.0, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_x", obs_module_text("Mask.PositionX"), -4096.0, 4096.0, 1.0));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_y", obs_module_text("Mask.PositionY"), -4096.0, 4096.0, 1.0));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "shape_rotation", obs_module_text("Mask.Rotation"), -180.0, 180.0, 1.0));
@@ -313,7 +316,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_properties_add_button2(subject_group, "reset_framing", obs_module_text("Subject.ResetFraming"), nm_reset_framing, data);
     obs_properties_add_group(props, "subject_framing", obs_module_text("Group.SubjectFraming"), OBS_GROUP_NORMAL, subject_group);
 
-    NM_CUSTOM(obs_properties_add_float_slider(props, "roundness", obs_module_text("Roundness"), 0.0, 1.0, 0.01));
+
     NM_CUSTOM(obs_properties_add_float_slider(props, "feather", obs_module_text("Feather"), 0.5, 30.0, 0.5));
     NM_CUSTOM(obs_properties_add_bool(props, "border_enabled", obs_module_text("Border.Enabled")));
     NM_CUSTOM(obs_properties_add_float_slider(props, "border_width", obs_module_text("Border.Width"), 0.5, 32.0, 0.5));

@@ -80,3 +80,31 @@ the feature independently. All current D1 code/art is original.
 D1 is a code-level preview only after headless + native Linux + real
 OpenGL/D3D11 GPU pixel tests pass. Entire Phase D is complete only when D2/D3
 deliverables and the visual/functional/performance gates have real evidence.
+
+
+## D2.1 — existing Roundness slider, selective Angled Card fillets
+
+The maintainer clarified that Angled Card's *existing* diagonal geometry is
+already desirable. Reuse the existing persisted `roundness` slider; do not
+replace the shape with a fully rounded rectangle, and do not add another
+competing slider. At **0**, the six-edge D1 geometric cut remains exactly as
+before. Increasing Roundness introduces circular tangent fillets ONLY at
+the four endpoints of the two diagonal cuts (top-right and bottom-left),
+transitioning toward a leaf/petal-like cut. The top-left and bottom-right
+90-degree vertices MUST remain mathematically sharp for the entire range.
+
+`shape_detail` continues to control cut depth independently of `roundness`.
+The effective fillet radius is bounded by cut depth to avoid crossing
+tangencies on small frames. The same signed Euclidean distance drives image
+alpha, border, glow and secondary rails. The native OBS slider is surfaced
+with the mask geometry controls and an explicit Angled Card explanation.
+New Angled Card preset selection defaults to Roundness 0 (geometric form),
+while explicitly saved user roundness remains intact. No schema/enum migration
+is needed. Both shader and pure-C reference implement the same clipped
+segments and four arcs.
+
+Tests must prove zero preserves the original shape, a rounded cut removes
+the former diagonal vertices, the two square corners stay intact, both cuts
+remain symmetric, the input image and border follow the rounded contour,
+and existing bubble/other shapes do not regress. Actual OBS aesthetic
+acceptance of the leaf-like appearance is still pending.
