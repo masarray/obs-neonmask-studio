@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #define NM_CONFIG_SCHEMA_VERSION 2u
+#define NM_SVG_PATH_MAX 1024u
 
 typedef struct nm_config {
     uint32_t schema_version;
@@ -43,6 +44,8 @@ typedef struct nm_config {
     int style_id;
     bool show_border;
     bool show_glow;
+    /* Additive v2 field: one local file, never a URL/resource loader. */
+    char svg_path[NM_SVG_PATH_MAX];
 } nm_config;
 
 /* Pure-C canonical state. No OBS or graphics dependencies. */
