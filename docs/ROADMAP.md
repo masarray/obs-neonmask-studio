@@ -194,3 +194,27 @@ frontend image/animation comparison. Actual screenshots/clips against the
 proposal, filter-chain tests, safe-fit for displaced masks and performance
 on named hardware remain open G4-V/G5/G6 gates. Existing angle-based Flow
 is still provisional; arc-length routing is a follow-up.
+
+
+## Phase C1/C2 — art recipe foundation + Cyber Rounded (implementation candidate)
+
+The first art-directed renderer slice adds an opt-in ornament recipe separate
+from mask coverage. Existing scenes and Custom settings default to no new
+ornament; explicitly selecting Cyber Rounded applies the new complete recipe.
+The source image, Phase-A mask X/Y and subject pan/zoom remain independent.
+Cyber Rounded gains paired geometric corner traces, a deliberately broken
+outer support track and arc-length-based Flow around its rounded perimeter.
+This is analytical contour/path grammar authored in code, **not** a PNG pasted
+over the source, and does not require SVG parsing at OBS runtime.
+
+New controls: ornament mode (None/Cyber), accent intensity and outer-track
+gap; parameter limits are validated centrally and saved explicitly. Existing
+shape IDs, border-style IDs and config schema v2 remain stable. Art details
+cannot change image-mask coverage. Pure-C perimeter tests and direct-effect
+OpenGL/D3D11 pixel fixtures must pass before merge.
+
+**Scope boundary:** This is the first hero *implementation*, not acceptance
+of the whole Phase C proposal. Reactor orbit, Tech HUD, Streamer/Chat,
+Electric and the full vector authoring/import pipeline remain future slices.
+Real OBS dark/light, 320×180 and displaced-mask captures, safe-fit, and
+measured GPU frame times remain mandatory before visual parity claims.

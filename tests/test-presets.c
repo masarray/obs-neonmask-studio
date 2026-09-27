@@ -34,13 +34,18 @@ int main(void)
         check("hotspot range", p.hotspot_strength >= 0.0 && p.hotspot_strength <= 1.0);
         check("hotspot size range", p.hotspot_size >= 0.04 && p.hotspot_size <= 0.25);
         check("speed range", p.speed >= 0.0 && p.speed <= 5.0);
+        check("art recipe valid", nm_art_recipe_valid(p.ornament_mode, (float)p.art_gap, (float)p.art_intensity));
         check("border enabled", p.border_enabled);
         check("glow enabled", p.glow_enabled);
         check("segments range", p.segments >= 0 && p.segments <= 48);
         check("border style range", p.style >= NM_STYLE_CLASSIC && p.style <= NM_STYLE_MINIMAL);
     }
+    nm_get_preset(1, &p);
+    check("Cyber has authored ornament", p.ornament_mode == NM_ORNAMENT_CYBER);
+    check("Cyber art visible", p.art_intensity > 0.80);
     nm_get_preset(2, &p);
     check("reactor ring shape", p.shape == NM_SHAPE_CIRCLE);
+    check("reactor not mislabeled Cyber", p.ornament_mode == NM_ORNAMENT_NONE);
     check("reactor segmented", p.segments == 10);
     check("reactor HUD style", p.style == NM_STYLE_HUD);
     nm_get_preset(3, &p);

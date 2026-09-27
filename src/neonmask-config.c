@@ -27,6 +27,9 @@ void nm_config_defaults(nm_config *cfg)
         .bloom_strength = 0.92f,
         .hotspot_strength = 0.95f,
         .hotspot_size = 0.10f,
+        .art_intensity = 0.0f,
+        .art_gap = 2.0f,
+        .ornament_mode = NM_ORNAMENT_NONE,
         .animation_speed = 0.65f,
         .primary = 0xFFDD31FFu,
         .secondary = 0xFFFFDB36u,
@@ -39,6 +42,10 @@ void nm_config_defaults(nm_config *cfg)
     };
 
     (void)nm_config_apply_preset(cfg, 1);
+    /* Existing custom scenes retain their unornamented appearance. Cyber
+     * artwork is opt-in through the explicit Cyber preset or design control. */
+    cfg->ornament_mode = NM_ORNAMENT_NONE;
+    cfg->art_intensity = 0.0f;
 }
 
 void nm_config_validate(nm_config *cfg)
@@ -66,6 +73,10 @@ void nm_config_validate(nm_config *cfg)
     cfg->bloom_strength = nm_clamp(cfg->bloom_strength, 0.0f, 1.0f);
     cfg->hotspot_strength = nm_clamp(cfg->hotspot_strength, 0.0f, 1.0f);
     cfg->hotspot_size = nm_clamp(cfg->hotspot_size, 0.04f, 0.25f);
+    cfg->art_gap = nm_clamp(cfg->art_gap, 1.0f, 16.0f);
+    cfg->art_intensity = nm_clamp(cfg->art_intensity, 0.0f, 1.0f);
+    if (cfg->ornament_mode < NM_ORNAMENT_NONE || cfg->ornament_mode > NM_ORNAMENT_CYBER)
+        cfg->ornament_mode = NM_ORNAMENT_NONE;
     cfg->animation_speed = nm_clamp(cfg->animation_speed, 0.0f, 5.0f);
 
     cfg->primary |= 0xFF000000u;
@@ -104,6 +115,9 @@ bool nm_config_apply_preset(nm_config *cfg, int preset_id)
     cfg->bloom_strength = (float)preset.bloom_strength;
     cfg->hotspot_strength = (float)preset.hotspot_strength;
     cfg->hotspot_size = (float)preset.hotspot_size;
+    cfg->ornament_mode = preset.ornament_mode;
+    cfg->art_intensity = (float)preset.art_intensity;
+    cfg->art_gap = (float)preset.art_gap;
     cfg->animation_speed = (float)preset.speed;
     cfg->segment_count = preset.segments;
     cfg->style_id = preset.style;
