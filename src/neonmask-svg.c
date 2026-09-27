@@ -224,8 +224,8 @@ bool nm_svg_parse(const char *bytes,size_t length,nm_svg_shape *out,
     char view[128]={0},path[8192]={0};
     bool selfclose=false,ok=false;
     if(!skip_inert(&p)){bad(why,why_size,"invalid SVG comment");goto done;}
-    static const char declaration[]="<?xml version=\\"1.0\\" encoding=\\"UTF-8\\"?>";
-    static const char minimal_declaration[]="<?xml version=\\"1.0\\"?>";
+    static const char declaration[]="<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+    static const char minimal_declaration[]="<?xml version=\"1.0\"?>";
     if(!strncmp(p,declaration,sizeof(declaration)-1))
         p+=sizeof(declaration)-1;
     else if(!strncmp(p,minimal_declaration,sizeof(minimal_declaration)-1))
