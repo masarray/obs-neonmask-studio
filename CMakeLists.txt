@@ -5,7 +5,7 @@ option(NEONMASK_BUILD_PLUGIN "Build the native OBS filter" ON)
 option(NEONMASK_BUILD_TESTS "Build headless geometry tests" ON)
 option(NEONMASK_BUILD_SHADER_SMOKE "Compile effect on a live libobs graphics device" OFF)
 
-add_library(neonmask-math STATIC src/neonmask-math.c src/neonmask-presets.c src/neonmask-config.c src/neonmask-motion.c src/neonmask-art.c src/neonmask-shapes.c)
+add_library(neonmask-math STATIC src/neonmask-math.c src/neonmask-presets.c src/neonmask-config.c src/neonmask-motion.c src/neonmask-art.c src/neonmask-shapes.c src/neonmask-svg.c)
 target_include_directories(neonmask-math PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_features(neonmask-math PUBLIC c_std_11)
 # The art/perimeter helper adds atan2f/fmodf to the shared static library.
@@ -47,6 +47,9 @@ if(NEONMASK_BUILD_PLUGIN)
   install(TARGETS obs-neonmask LIBRARY DESTINATION "${NEONMASK_PLUGIN_DIR}" RUNTIME DESTINATION "${NEONMASK_PLUGIN_DIR}")
   install(DIRECTORY shaders/ DESTINATION "${NEONMASK_DATA_DIR}/shaders")
   install(DIRECTORY data/locale/ DESTINATION "${NEONMASK_DATA_DIR}/locale")
+  # Original local-only shape examples can be browsed from the SVG property.
+  install(DIRECTORY assets/designs/ DESTINATION "${NEONMASK_DATA_DIR}/designs"
+          FILES_MATCHING PATTERN "*.svg")
 endif()
 
 if(NEONMASK_BUILD_TESTS)
@@ -81,6 +84,12 @@ if(NEONMASK_BUILD_TESTS)
   add_executable(neonmask-authored-shapes-tests tests/test-authored-shapes.c)
   target_link_libraries(neonmask-authored-shapes-tests PRIVATE neonmask-math)
   add_test(NAME neonmask-authored-shapes-tests COMMAND neonmask-authored-shapes-tests)
+  add_executable(neonmask-svg-tests tests/test-svg.c)
+  target_link_libraries(neonmask-svg-tests PRIVATE neonmask-math)
+  add_test(NAME neonmask-svg-tests COMMAND neonmask-svg-tests
+           "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/d24-local-mask.svg"
+           "${CMAKE_CURRENT_SOURCE_DIR}/assets/designs/chat-bubble.svg"
+           "${CMAKE_CURRENT_SOURCE_DIR}/assets/designs/angled-card.svg")
   if(NEONMASK_BUILD_PLUGIN AND NEONMASK_BUILD_SHADER_SMOKE)
     add_executable(neonmask-gpu-smoke tests/test-gpu-smoke.c)
     target_link_libraries(neonmask-gpu-smoke PRIVATE OBS::libobs)

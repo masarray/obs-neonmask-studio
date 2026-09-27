@@ -43,7 +43,7 @@ the feature independently. All current D1 code/art is original.
   actual libobs OpenGL and D3D11 fixture tests verify source alpha **inside**
   tail, transparency beside it, neon at tip/diagonal and legacy controls.
 
-## D2: diverse geometry and bounded SVG provider (not yet implemented)
+## D2: diverse geometry and bounded SVG provider (partial implementation; see D2.3/D2.4)
 
 1. Curate original vector silhouettes from the proposal: HUD cut-corner,
    portrait capsule, star, heart, rounded polygon and squircle/superellipse.
@@ -59,7 +59,9 @@ the feature independently. All current D1 code/art is original.
 5. Select fill-rule, antialias semantics and aspect-ratio fit policy, with
    deterministic save/reload and resize behavior.
 6. Preserve copyright/license metadata for every bundled artwork. SVG files
-   in assets/designs are **authoring samples**, not yet runtime-loadable.
+   in assets/designs are **authoring samples**. From D2.4 the original
+   simple path samples are also local-file import examples; general SVG
+   rendering remains unsupported.
 
 ## D3: art polish, safe-fit and acceptance (not yet implemented)
 
@@ -183,3 +185,42 @@ Polygon and D3 safe-fit/motion/performance remain explicitly open.
 ## D2.3c — maintainer OBS audit and refinement
 
 The 2026-09-27 user OBS captures are direct visual evidence: the angled maximum arc is accepted; the user manually changed **Mask shape** while **Apply design preset** remained *Custom/current settings*. That does not apply the curated HUD/Squircle light recipe and may retain an earlier segmented/ornament configuration. Explicitly select Preset 8/9 for signature lighting, or customize intentionally; do not silently overwrite the user's saved colors/segments when manually changing shape. HUD's two square staircase joins have been replaced with deliberately bevelled concave steps, and its opt-in Tech HUD preset adds two asymmetrical calibration traces. Squircle's near-horizontal/vertical signed distance uses exact axis intersection blended to the gradient distance at corners, to stabilize the luminous rail; the source shape and colored border remain one contour. Hide ineffective Roundness/Shape Detail/Polygon Sides native controls based on active shape while preserving persisted values. CPU+GPU regression and frontend screenshot on the revised build remain separate evidence gates; no blanket claim of image #9 parity.
+
+## D2.4 — bounded local SVG path-to-SDF provider (preview candidate)
+
+A file picker on the appended SVG shape ID 12 accepts **local files only**.
+This initial secure subset deliberately supports a standalone `<svg viewBox>`
+with one to eight self-closing, solid-fill `<path d=.../>` elements.
+Commands: M/m, L/l, H/h, V/v, Q/q, C/c and Z/z. Evenodd or nonzero
+fill rules, closed contours and multiple contours allow intentional holes.
+No group, transform, stroke, style, clipPath, gradients, arc command,
+filters, scripts, URL, DTD, XML entity, image, font or external resources.
+Unsupported/invalid features are refused; this is NOT a general SVG viewer.
+File size is limited to 64 KiB, flattened edge count to 512, viewBox width/
+height to 10000 and number of paths to eight. Cubics and quadratics use a
+bounded 24/16-step tessellation. All artwork must be original/appropriately
+licensed; never load or redistribute the proposal's portrait.
+
+A source-geometry-size dirty event rasterizes a 256² signed physical-pixel
+distance field using aspect-preserving **contain**, then uploads one R32F
+texture inside the libobs graphics context. File I/O occurs only on path
+selection/reload, rasterization and upload only on asset/size changes.
+No CPU video-frame processing and no synchronous GPU readback in production.
+One canonical sampled signed field controls webcam transparency and the same
+luminous line/core/glow. Rotation and manual mask/subject X/Y remain separate.
+No interpolated path data is constructed by untrusted shader source.
+
+**Failure policy:** invalid/missing assets immediately invalidate their
+previous cached texture; the SVG shape renders transparent, never silently
+revealing an unmasked facecam. Changing to a built-in shape still works;
+the saved file path is not silently discarded. A dedicated Reload button
+retries an edited file at the same path. Graphics resources are released
+on path change/destroy and replaced on resize. Do not claim asset decode
+fail-closed if the entire effect cannot be loaded: that pre-existing shader
+failure path needs an independent lifecycle audit.
+
+Automated exit: malformed/extreme/hostile paths, evenodd hole and cubic
+cases in pure C, direct OpenGL/D3D11 SVG alpha/border and empty-asset pixels,
+and reload/resize resource smoke. Final OBS source/filter-chain save/restart,
+light/dark 320×180 capture, complex-path fidelity and hardware timings are
+still pending G4-V/G5/G6; original advanced SVG features remain future work.

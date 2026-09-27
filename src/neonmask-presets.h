@@ -16,7 +16,8 @@ enum nm_shape {
     NM_SHAPE_CHAT_BUBBLE = 8,
     NM_SHAPE_ANGLED_CARD = 9,
     NM_SHAPE_HUD_PANEL = 10,
-    NM_SHAPE_SQUIRCLE = 11
+    NM_SHAPE_SQUIRCLE = 11,
+    NM_SHAPE_SVG_PATH = 12
 };
 
 enum nm_animation {

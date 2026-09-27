@@ -54,6 +54,7 @@ void nm_config_validate(nm_config *cfg)
     if (!cfg) return;
 
     cfg->schema_version = NM_CONFIG_SCHEMA_VERSION;
+    cfg->svg_path[NM_SVG_PATH_MAX-1] = 0;
     cfg->scale = nm_clamp(cfg->scale, 0.10f, 0.98f);
     cfg->mask_width = nm_clamp(cfg->mask_width, 0.10f, 0.98f);
     cfg->mask_height = nm_clamp(cfg->mask_height, 0.10f, 0.98f);
@@ -84,7 +85,7 @@ void nm_config_validate(nm_config *cfg)
     cfg->primary |= 0xFF000000u;
     cfg->secondary |= 0xFF000000u;
 
-    if (cfg->shape_id < NM_SHAPE_ROUNDED || cfg->shape_id > NM_SHAPE_SQUIRCLE)
+    if (cfg->shape_id < NM_SHAPE_ROUNDED || cfg->shape_id > NM_SHAPE_SVG_PATH)
         cfg->shape_id = NM_SHAPE_ROUNDED;
     if (cfg->animation_id < NM_ANIM_STATIC || cfg->animation_id > NM_ANIM_FLOW)
         cfg->animation_id = NM_ANIM_STATIC;

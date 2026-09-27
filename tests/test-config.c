@@ -120,6 +120,9 @@ int main(void)
     cfg.shape_id = NM_SHAPE_SQUIRCLE;
     nm_config_validate(&cfg);
     check("squircle enum accepted", cfg.shape_id == NM_SHAPE_SQUIRCLE);
+    cfg.shape_id = NM_SHAPE_SVG_PATH;
+    nm_config_validate(&cfg);
+    check("SVG provider shape ID accepted",cfg.shape_id == NM_SHAPE_SVG_PATH);
     check("animation fallback", cfg.animation_id == NM_ANIM_STATIC);
     check("style fallback", cfg.style_id == NM_STYLE_CLASSIC);
     check("segments clamp", cfg.segment_count == 48);

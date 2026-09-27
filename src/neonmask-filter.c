@@ -4,6 +4,8 @@
 #include "neonmask-presets.h"
 #include "neonmask-config.h"
 #include "neonmask-motion.h"
+#include "neonmask-svg.h"
+#include <string.h>
 #include <math.h>
 #include <graphics/vec2.h>
 #include <graphics/vec4.h>
@@ -43,6 +45,14 @@ struct nm_filter {
     gs_eparam_t *segments;
     gs_eparam_t *border_enabled;
     gs_eparam_t *glow_enabled;
+    gs_eparam_t *svg_sdf;
+    gs_eparam_t *svg_ready;
+    gs_texture_t *svg_texture; /* owned only inside graphics context */
+    nm_svg_shape svg_shape;
+    bool svg_ok;
+    bool svg_dirty;
+    uint32_t svg_width,svg_height;
+    float svg_mask_w,svg_mask_h;
     nm_config config;
     nm_motion motion;
 };
@@ -51,6 +61,28 @@ static const char *nm_get_name(void *unused)
 {
     (void)unused;
     return obs_module_text("Filter.Name");
+}
+
+/* Settings/reload-only file I/O: reject any invalid resource and retire its
+ * previous texture immediately. The normal video render never reads disk. */
+static void nm_refresh_svg(struct nm_filter *f)
+{
+    nm_svg_shape next={0};
+    char why[128]={0};
+    bool ok=false;
+    if(f->config.svg_path[0])
+        ok=nm_svg_read_local(f->config.svg_path,&next,why,sizeof(why));
+    if(f->config.svg_path[0] && !ok)
+        blog(LOG_WARNING,"[NeonMask Studio] SVG rejected (%s): %s",
+             f->config.svg_path,why);
+    f->svg_shape=next;
+    f->svg_ok=ok;
+    f->svg_dirty=true;
+    f->svg_width=f->svg_height=0;
+    obs_enter_graphics();
+    if(f->svg_texture) gs_texture_destroy(f->svg_texture);
+    f->svg_texture=NULL;
+    obs_leave_graphics();
 }
 
 static void nm_update(void *data, obs_data_t *settings)
@@ -109,8 +141,18 @@ static void nm_update(void *data, obs_data_t *settings)
         .show_border = obs_data_get_bool(settings, "border_enabled"),
         .show_glow = obs_data_get_bool(settings, "glow_enabled"),
     };
+    const char *file=obs_data_get_string(settings,"svg_path");
+    const size_t file_length=file?strlen(file):0u;
+    if(file_length>=NM_SVG_PATH_MAX){
+        blog(LOG_WARNING,"[NeonMask Studio] local SVG path too long; fail closed");
+        next.svg_path[0]=0;
+    }else if(file_length){
+        memcpy(next.svg_path,file,file_length+1);
+    }
     nm_config_validate(&next);
+    const bool asset_changed=strcmp(next.svg_path,f->config.svg_path)!=0;
     f->config = next;
+    if(asset_changed) nm_refresh_svg(f);
 
     /* Pin additive Phase-B defaults into saved v2 scenes once. Existing
      * explicit user values are never overwritten by a later preset/default
@@ -162,6 +204,7 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_int(settings, "schema_version", NM_CONFIG_SCHEMA_VERSION);
     obs_data_set_default_int(settings, "preset", 0);
     obs_data_set_default_int(settings, "shape", cfg.shape_id);
+    obs_data_set_default_string(settings, "svg_path", "");
     obs_data_set_default_double(settings, "scale", cfg.scale);
     obs_data_set_default_double(settings, "mask_width", cfg.mask_width);
     obs_data_set_default_double(settings, "mask_height", cfg.mask_height);
@@ -206,6 +249,8 @@ static void nm_geometry_visibility(obs_properties_t *props, int shape_id)
     obs_property_t *round=obs_properties_get(geometry,"roundness");
     obs_property_t *detail=obs_properties_get(geometry,"shape_detail");
     obs_property_t *sides=obs_properties_get(geometry,"polygon_sides");
+    obs_property_t *svg=obs_properties_get(geometry,"svg_path");
+    obs_property_t *reload=obs_properties_get(geometry,"svg_reload");
     const bool rounded=shape_id==NM_SHAPE_ROUNDED ||
                        shape_id==NM_SHAPE_CHAT_BUBBLE ||
                        shape_id==NM_SHAPE_ANGLED_CARD;
@@ -216,6 +261,8 @@ static void nm_geometry_visibility(obs_properties_t *props, int shape_id)
     if(round) obs_property_set_visible(round,rounded);
     if(detail) obs_property_set_visible(detail,authored);
     if(sides) obs_property_set_visible(sides,shape_id==NM_SHAPE_POLYGON);
+    if(svg) obs_property_set_visible(svg,shape_id==NM_SHAPE_SVG_PATH);
+    if(reload) obs_property_set_visible(reload,shape_id==NM_SHAPE_SVG_PATH);
 }
 
 /* Apply preset as real user-editable property values: no hidden runtime overrides. */
@@ -277,6 +324,16 @@ static bool nm_shape_changed(obs_properties_t *props, obs_property_t *property,
     return true;
 }
 
+static bool nm_reload_svg(obs_properties_t *props,obs_property_t *property,
+                          void *data)
+{
+    (void)props; (void)property;
+    struct nm_filter *f=data;
+    if(!f) return false;
+    nm_refresh_svg(f);
+    return true;
+}
+
 static bool nm_reset_framing(obs_properties_t *props, obs_property_t *property, void *data)
 {
     (void)props;
@@ -328,6 +385,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(shape, obs_module_text("Shape.AngledCard"), NM_SHAPE_ANGLED_CARD);
     obs_property_list_add_int(shape, obs_module_text("Shape.HUDPanel"), NM_SHAPE_HUD_PANEL);
     obs_property_list_add_int(shape, obs_module_text("Shape.Squircle"), NM_SHAPE_SQUIRCLE);
+    obs_property_list_add_int(shape, obs_module_text("Shape.SVG"), NM_SHAPE_SVG_PATH);
     obs_property_set_modified_callback(shape, nm_shape_changed);
 
 #define NM_CUSTOM(expr) obs_property_set_modified_callback((expr), nm_custom_changed)
@@ -343,6 +401,10 @@ static obs_properties_t *nm_properties(void *data)
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_y", obs_module_text("Mask.PositionY"), -4096.0, 4096.0, 1.0));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "shape_rotation", obs_module_text("Mask.Rotation"), -180.0, 180.0, 1.0));
     NM_CUSTOM(obs_properties_add_int_slider(mask_group, "polygon_sides", obs_module_text("Mask.PolygonSides"), 5, 12, 1));
+    NM_CUSTOM(obs_properties_add_path(mask_group, "svg_path", obs_module_text("SVG.Path"),
+                                      OBS_PATH_FILE, "SVG files (*.svg)", NULL));
+    obs_properties_add_button2(mask_group, "svg_reload", obs_module_text("SVG.Reload"),
+                               nm_reload_svg,data);
     obs_properties_add_group(props, "mask_geometry", obs_module_text("Group.MaskGeometry"), OBS_GROUP_NORMAL, mask_group);
 
     obs_properties_t *subject_group = obs_properties_create();
@@ -453,6 +515,8 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         NM_PARAM(segments, "segment_count");
         NM_PARAM(border_enabled, "border_enabled");
         NM_PARAM(glow_enabled, "glow_enabled");
+        NM_PARAM(svg_sdf, "svg_sdf");
+        NM_PARAM(svg_ready, "svg_ready");
 #undef NM_PARAM
         if (!valid) {
             gs_effect_destroy(f->effect);
@@ -473,6 +537,7 @@ static void nm_destroy(void *data)
     struct nm_filter *f = data;
     if (!f) return;
     obs_enter_graphics();
+    if (f->svg_texture) gs_texture_destroy(f->svg_texture);
     if (f->effect) gs_effect_destroy(f->effect);
     obs_leave_graphics();
     bfree(f);
@@ -483,6 +548,42 @@ static void nm_tick(void *data, float seconds)
     struct nm_filter *f = data;
     if (!f) return;
     nm_motion_tick(&f->motion, seconds, f->config.animation_speed, f->config.animation_id);
+    if(f->config.shape_id!=NM_SHAPE_SVG_PATH) return;
+    obs_source_t *target=obs_filter_get_target(f->context);
+    if(!target) return;
+    const uint32_t width=obs_source_get_base_width(target);
+    const uint32_t height=obs_source_get_base_height(target);
+    if(!width||!height) return;
+    const float bx=0.5f*(float)width*f->config.mask_width;
+    const float by=0.5f*(float)height*f->config.mask_height;
+    if(!f->svg_dirty && f->svg_width==width && f->svg_height==height &&
+       f->svg_mask_w==bx && f->svg_mask_h==by) return;
+    f->svg_dirty=false;
+    f->svg_width=width;f->svg_height=height;
+    f->svg_mask_w=bx;f->svg_mask_h=by;
+    /* One bounded CPU raster + GPU upload per asset/size change, not per frame.
+     * Failed raster/texture creation remains transparent until another edit. */
+    if(!f->svg_ok) return;
+    const unsigned n=NM_SVG_SDF_SIZE;
+    float *pixels=bmalloc((size_t)n*n*sizeof(float));
+    if(!pixels) return;
+    const bool valid=nm_svg_raster_sdf(&f->svg_shape,bx,by,pixels,n);
+    if(valid){
+        const uint8_t *layers[]={ (const uint8_t *)pixels };
+        obs_enter_graphics();
+        gs_texture_t *texture=gs_texture_create(n,n,GS_R32F,1,layers,0);
+        if(f->svg_texture) gs_texture_destroy(f->svg_texture);
+        f->svg_texture=texture;
+        obs_leave_graphics();
+        if(!texture) blog(LOG_WARNING,"[NeonMask Studio] SVG SDF GPU allocation failed");
+    }else{
+        obs_enter_graphics();
+        if(f->svg_texture) gs_texture_destroy(f->svg_texture);
+        f->svg_texture=NULL;
+        obs_leave_graphics();
+        blog(LOG_WARNING,"[NeonMask Studio] SVG SDF raster failed closed");
+    }
+    bfree(pixels);
 }
 
 static void nm_render(void *data, gs_effect_t *unused)
@@ -553,6 +654,11 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_int(f->segments, f->config.segment_count);
     gs_effect_set_int(f->border_enabled, f->config.show_border ? 1 : 0);
     gs_effect_set_int(f->glow_enabled, f->config.show_glow ? 1 : 0);
+    const bool svg_ready=f->svg_ok && f->svg_texture &&
+        f->svg_width==width && f->svg_height==height &&
+        f->svg_mask_w==half_width && f->svg_mask_h==half_height;
+    gs_effect_set_int(f->svg_ready,svg_ready ? 1 : 0);
+    gs_effect_set_texture(f->svg_sdf,svg_ready ? f->svg_texture : NULL);
     obs_source_process_filter_tech_end(f->context, f->effect, 0, 0, "Draw");
 }
 

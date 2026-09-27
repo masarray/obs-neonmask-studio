@@ -9,7 +9,7 @@ Start with the [product and engineering charter](docs/PRODUCT_SPEC.md). It links
 ## Implemented
 
 - One OBS video filter: `NeonMask Studio — Facecam Mask & Border`.
-- Rounded rectangle, circle, oval, rectangle, hexagon, diamond, triangle, polygon, **integrated Chat Bubble**, **Angled Card**, **HUD Cut Panel** and **Squircle**; independent mask size/X/Y, subject pan/zoom, rotation and feather.
+- Rounded rectangle, circle, oval, rectangle, hexagon, diamond, triangle, polygon, **integrated Chat Bubble**, **Angled Card**, **HUD Cut Panel**, **Squircle** and opt-in restricted **local SVG-path mask**; independent mask size/X/Y, subject pan/zoom, rotation and feather.
 - Dual-color neon, width, analytic halo radius/intensity, static/pulse/traveling-light modes, angular segmentation.
 - Four GPU-composited border styles: Classic Neon, Cyber Double Rim, Tech HUD, Minimal Glow.
 - Nine editable presets: Cyber Rounded, Reactor Ring, Emerald Hex, Ember Frame, Tech HUD, Streamer Bubble, Angled Card, HUD Cut Panel and Squircle. Existing IDs 1–7 are stable; HUD/Squircle append 8/9. Reselecting Streamer uses the integrated bubble; previously saved rounded Streamer scenes retain their stored shape. Explicit signature ornament recipes (Cyber corner traces, Reactor arcs, HUD brackets, legacy Streamer decorative bubble tail) are optional and follow the mask contour.
@@ -45,7 +45,7 @@ Right-click webcam source → **Filters** → **Effect Filters** → **+** → *
 ## Deliberate MVP limitations
 
 - Halo stays **within the original source rectangle**; use the built-in scale margin. Expanded output padding / companion frame source is next.
-- Custom alpha images, **SVG import** and source masks are **not yet implemented**. Original SVG design references in `assets/designs/` are authoring samples only. Bubble, Angled Card, stepped HUD Panel and superellipse Squircle are analytic GPU geometry, not imported SVG files. No graphical gallery, audio reactivity or GPU benchmark evidence yet.
+- Custom alpha images, unrestricted/general **SVG import** and source masks are **not yet implemented**. A strict local path-only SVG subset is available as a D2.4 preview; unsupported constructs are refused. Bubble, Angled Card, stepped HUD Panel and superellipse Squircle are analytic GPU geometry, not imported SVG files. No graphical gallery, audio reactivity or GPU benchmark evidence yet.
 - Ellipse and segmented non-circular paths remain approximate; Cyber Rounded has rounded-perimeter travel, while universal contour-length motion is not yet delivered. Actual visual parity with the concept artwork and final OBS output are **not yet verified**.
 - GPU compilation and direct-effect pixel smoke tests run on libobs OpenGL and D3D11. Real OBS frontend/final-output visual tests, filter-chain validation, compatibility matrix and performance measurements remain pending.
 
@@ -59,8 +59,29 @@ This implementation is newly written around the documented libobs filter/effect 
 
 ## Phase D: actual authored mask contours
 
-The Chat Bubble tail, Angled Card arcs, HUD Cut Panel notch and Squircle contour are **part of the source alpha mask and its shared neon contour**, not detached overlay ornaments. Shape detail changes tail depth, cut depth or Squircle curvature depending on the selected shape. [Phase D implementation contract](docs/PHASE_D_IMPLEMENTATION.md) separates the shipped code candidate from pending SVG importer, wider authored library, safe-fit and actual OBS concept comparison.
+The Chat Bubble tail, Angled Card arcs, HUD Cut Panel notch and Squircle contour are **part of the source alpha mask and its shared neon contour**, not detached overlay ornaments. Shape detail changes tail depth, cut depth or Squircle curvature depending on the selected shape. D2.4 adds a restricted local SVG-path SDF importer; unrestricted SVG, a wider authored library, safe-fit and actual OBS concept comparison remain pending. See [Phase D implementation contract](docs/PHASE_D_IMPLEMENTATION.md).
 
 ## Roadmap
 
 See the [canonical delivery roadmap and evidence ledger](docs/ROADMAP.md) for milestone order, active work and acceptance gates.
+
+## Local SVG path mask (D2.4 preview subset)
+
+Select **Mask shape → SVG File — local path mask**, choose a local
+`.svg` file under Mask Geometry, and use **Reload SVG file** after
+editing the file in place. Input must be a simple standalone SVG with a
+finite `viewBox` and closed, solid-filled `<path/>` shapes. Supported path
+commands are M/L/H/V/Q/C/Z (absolute/relative), up to eight paths and
+512 flattened line edges; evenodd/nonzero holes work. This is *not* a
+full SVG interpreter: groups, transforms, stroke/style, arcs, external
+resources, scripts/DTD/entities/fonts and URLs are explicitly rejected.
+No arbitrary image/background removal is performed. The shape is fitted
+within the mask with aspect ratio preserved (contain, not stretch).
+
+SVG is rasterized into a cached 256×256 signed distance field when the
+file or mask/source size changes. Invalid/missing files output **transparent**
+rather than silently exposing the original facecam. Unsupported path features
+are a known preview limitation; convert artwork to simple paths before
+importing. The optional import is distinct from the built-in analytic
+Bubble/Card/HUD/Squircle shapes. Always test in actual OBS and keep a
+backup of your scene before updating preview builds.

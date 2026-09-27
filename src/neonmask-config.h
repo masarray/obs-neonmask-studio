@@ -2,6 +2,7 @@
 #pragma once
 
 #include "neonmask-presets.h"
+#include "neonmask-svg.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -43,6 +44,8 @@ typedef struct nm_config {
     int style_id;
     bool show_border;
     bool show_glow;
+    /* Additive v2 field: one local file, never a URL/resource loader. */
+    char svg_path[NM_SVG_PATH_MAX];
 } nm_config;
 
 /* Pure-C canonical state. No OBS or graphics dependencies. */

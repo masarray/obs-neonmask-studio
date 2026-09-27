@@ -7,9 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
-assert len(names) == len(set(names)) == 31, f"Expected 31 unique bindings: {names!r}"
+assert len(names) == len(set(names)) == 33, f"Expected 33 unique bindings: {names!r}"
 uniforms = {name: kind for kind, name in re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader)}
-assert len(uniforms) == 33, f"Unexpected number of shader uniforms: {uniforms}"
+assert len(uniforms) == 35, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
     "Host/shader uniform drift: " + str(set(names) ^ (set(uniforms) - {"ViewProj", "image"}))
 )
@@ -21,6 +21,14 @@ assert uniforms["polygon_sides"] == "int"
 assert uniforms["shape_detail"] == "float"
 assert "NM_SHAPE_CHAT_BUBBLE" in host and "NM_SHAPE_ANGLED_CARD" in host
 assert "NM_SHAPE_HUD_PANEL" in host and "NM_SHAPE_SQUIRCLE" in host
+assert "NM_SHAPE_SVG_PATH" in host and "svgPathDistance(" in shader
+assert "nm_svg_read_local(" in host and "nm_svg_raster_sdf(" in host
+assert "shape_id == 12 && svg_ready == 0" in shader
+assert "gs_effect_set_texture(f->svg_sdf" in host
+assert "NM_PARAM(svg_sdf, \"svg_sdf\")" in host
+assert "NM_PARAM(svg_ready, \"svg_ready\")" in host
+assert "obs_properties_add_path(mask_group, \"svg_path\"" in host
+assert "obs_enter_graphics();" in host and "gs_texture_destroy(f->svg_texture)" in host
 assert "hudPanelDistance(" in shader and "squircleDistance(" in shader
 assert "return sqrt(ds)*(inside ? -1.0 : 1.0)" in shader
 assert "Preset.HUDCut" in host and "Preset.Squircle" in host
