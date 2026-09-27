@@ -54,5 +54,5 @@ typedef struct nm_preset {
     double art_gap;
 } nm_preset;
 
-/* IDs 1..4; 0 is Custom, not an editable preset. */
+/* IDs 1..4 preserved; 5=Tech HUD, 6=Streamer. 0 is Custom. */
 bool nm_get_preset(int id, nm_preset *out);
