@@ -7,7 +7,6 @@
 #include <stdint.h>
 
 #define NM_CONFIG_SCHEMA_VERSION 2u
-#define NM_SVG_PATH_MAX 1024u
 
 typedef struct nm_config {
     uint32_t schema_version;
