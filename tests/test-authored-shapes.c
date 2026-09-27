@@ -105,14 +105,61 @@ int main(void)
         check("cut pair central symmetry",fabsf(tr-bl)<0.0005f);
     }
 
+    /* D2.3: a truly clipped, concave HUD silhouette, not a rectangle
+     * with a decorative notch painted over the original source. */
+    const int hud=NM_SHAPE_HUD_PANEL,squircle=NM_SHAPE_SQUIRCLE;
+    const float hud_cut=fminf(fmaxf(2.0f,bx*detail*1.8f),bx*0.45f);
+    check("HUD center source remains visible",D(hud,0,0)<-2.0f);
+    check("HUD top-right corner truly clipped",D(hud,23,-23)>1.0f);
+    check("HUD stepped lower-left notch actually transparent",
+          D(hud,-bx+hud_cut*0.70f,by-hud_cut*0.50f)>0.8f);
+    check("HUD inner step remains filled",
+          D(hud,-bx+hud_cut*1.25f,by-hud_cut*0.50f)<-0.5f);
+    check("HUD exposed bottom rail is contour",
+          fabsf(D(hud,0,by))<0.001f);
+    check("HUD upper rail is contour",
+          fabsf(D(hud,0,-by))<0.001f);
+    check("HUD detail changes cut size",
+          fabsf(D(hud,23,-23)-
+                nm_authored_shape_distance(hud,23,-23,bx,by,r,0.35f))>0.20f);
+
+    /* Smooth superellipse has a continuous, aspect-correct implicit
+     * contour; its exponent changes with the existing shape_detail. */
+    check("squircle center contains source",D(squircle,0,0)<-10.0f);
+    check("squircle axis X on contour",fabsf(D(squircle,bx,0))<0.001f);
+    check("squircle axis Y on contour",fabsf(D(squircle,0,by))<0.001f);
+    check("squircle corner clipped",D(squircle,bx,by)>1.0f);
+    check("squircle diagonal inside",D(squircle,0.5f*bx,0.5f*by)<-2.0f);
+    check("squircle exponent distinguishes shape detail",
+          nm_authored_shape_distance(squircle,0.85f*bx,0.85f*by,
+                                     bx,by,r,0.08f)>0.0f &&
+          nm_authored_shape_distance(squircle,0.85f*bx,0.85f*by,
+                                     bx,by,r,0.35f)<0.0f);
+    check("squircle pixel-space X normal",
+          fabsf(D(squircle,bx+1.0f,0)-1.0f)<0.25f);
+    check("squircle pixel-space Y normal",
+          fabsf(D(squircle,0,by+1.0f)-1.0f)<0.25f);
+    for(int i=0;i<3;i++){
+        const float w=i==0?48.0f:24.0f;
+        const float h=i==1?48.0f:24.0f;
+        check("HUD remains finite on wide/portrait",
+              isfinite(nm_authored_shape_distance(hud,-w*0.8f,h*0.6f,
+                                                    w,h,r,0.35f)));
+        check("squircle remains finite on wide/portrait",
+              isfinite(nm_authored_shape_distance(squircle,w*0.8f,h*0.6f,
+                                                    w,h,r,0.35f)));
+    }
+
     check("non-D1 shape rejected",isnan(D(NM_SHAPE_CIRCLE,0,0)));
     for(int i=-80;i<=80;i++)for(int j=-80;j<=80;j++){
         const float x=i*.5f,y=j*.5f;
         check("bubble finite",isfinite(D(bubble,x,y)));
         check("card finite",isfinite(D(card,x,y)));
+        check("HUD finite",isfinite(D(hud,x,y)));
+        check("squircle finite",isfinite(D(squircle,x,y)));
     }
 #undef D
     if(failures)return 1;
-    puts("PASS: exterior-only bubble, fully tangent quarter-circle Angled Card, protected square corners");
+    puts("PASS: bubble/quarter-arc card, HUD notch and squircle authored distances");
     return 0;
 }
