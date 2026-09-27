@@ -310,3 +310,12 @@ Exit requires headless hostile-input and geometry tests, OpenGL/D3D11 image/SDF 
 ## D2.4 follow-up — local SVG edge safety
 
 The bounded local SVG subset was already merged in PR #35; no duplicate importer is started. A targeted audit caught negative SDF texel extrapolation outside a filled viewBox under Clamp sampling. The shader now prevents local mask alpha from extending past the SVG bounds while permitting border/bloom outside. Added direct GPU subpixel-translation regression; UI/preset IDs, prior SVG assets and parser subset are unchanged. Complex SVG support, overlapping multi-path interpretation, actual OBS load/restart proof and D3 safe-fit still need separate acceptance.
+
+## D2.4 follow-up — unavailable shader must not reveal upstream video
+
+The filter render callback no longer calls OBS's unmasked-bypass operation
+when the main effect is missing or a source has transient zero dimensions.
+Instead it emits no draw; invalid SVG already renders transparent in the
+normal shader path. The structural host contract guards this invariant.
+Normal rendering and settings remain unchanged. Real OBS frontend failure
+injection/filter-chain tests and D3 safe-fit remain open; preview only.

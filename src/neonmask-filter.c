@@ -524,7 +524,7 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         }
     }
     obs_leave_graphics();
-    if (!f->effect) blog(LOG_ERROR, "[NeonMask Studio] effect unavailable; filter will bypass. %s",
+    if (!f->effect) blog(LOG_ERROR, "[NeonMask Studio] effect unavailable; filter will render transparent. %s",
                          error ? error : "Check shader path and uniforms");
     bfree(error);
     bfree(path);
@@ -591,17 +591,16 @@ static void nm_render(void *data, gs_effect_t *unused)
     (void)unused;
     struct nm_filter *f = data;
     obs_source_t *target = obs_filter_get_target(f->context);
-    if (!target || !f->effect) {
-        obs_source_skip_video_filter(f->context);
+    /* A missing effect must never expose the unmasked upstream source.
+     * No draw is transparent in OBS's filter composition. */
+    if (!target || !f->effect)
         return;
-    }
     /* Match the texrender dimensions used by libobs's filter capture. */
     const uint32_t width = obs_source_get_base_width(target);
     const uint32_t height = obs_source_get_base_height(target);
-    if (!width || !height) {
-        obs_source_skip_video_filter(f->context);
+    /* Transient zero-size targets must not bypass the mask either. */
+    if (!width || !height)
         return;
-    }
     const float half_width = 0.5f * (float)width * f->config.mask_width;
     const float half_height = 0.5f * (float)height * f->config.mask_height;
     const float rx = fminf(half_width, half_height);
