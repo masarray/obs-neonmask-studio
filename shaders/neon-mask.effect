@@ -109,10 +109,41 @@ float signedTriangle(float2 p, float2 a, float2 b, float2 c)
     return sqrt(ds) * (inside >= 0.0 ? -1.0 : 1.0);
 }
 
-// Authored asymmetry: top-right and bottom-left corners are diagonally
-// clipped. Signed distance is edge-Euclidean, including near vertices.
-float angledCardDistance(float2 p, float2 b, float detail)
+// Top-right and bottom-left have diagonal cuts. Round only the FOUR
+// vertices at the *ends* of those cuts; top-left and bottom-right remain
+// exactly 90 degrees. Zero radius returns the original straight chamfer.
+float arcDistanceSquared(float2 p, float2 start, float2 finish,
+                         float2 center, float radius)
 {
+    float2 rs = start-center, re = finish-center, v = p-center;
+    if (cross2(rs,v) >= 0.0 && cross2(v,re) >= 0.0) {
+        float d = length(v)-radius;
+        return d*d;
+    }
+    return min(dot(p-start,p-start),dot(p-finish,p-finish));
+}
+
+bool inTriangle(float2 p, float2 a, float2 b, float2 c)
+{
+    float x = cross2(b-a,p-a);
+    float y = cross2(c-b,p-b);
+    float z = cross2(a-c,p-c);
+    return (x >= 0.0 && y >= 0.0 && z >= 0.0) ||
+           (x <= 0.0 && y <= 0.0 && z <= 0.0);
+}
+
+bool excisedCorner(float2 p, float2 start, float2 vertex,
+                   float2 finish, float2 center, float radius)
+{
+    float2 q = p-center;
+    return inTriangle(p,start,vertex,finish) &&
+           dot(q,q) > radius*radius;
+}
+
+float angledCardDistance(float2 p, float2 b, float detail, float radius)
+{
+    const float INV_ROOT2 = 0.70710678118;
+    const float TAN_PI8 = 0.41421356237;
     float cut = max(1.0, min(b.x, b.y) * detail * 1.65);
     float2 a = float2(-b.x,-b.y);
     float2 c = float2(b.x-cut,-b.y);
@@ -120,19 +151,55 @@ float angledCardDistance(float2 p, float2 b, float detail)
     float2 e = float2(b.x,b.y);
     float2 f = float2(-b.x+cut,b.y);
     float2 g = float2(-b.x,b.y-cut);
-    float ds = edgeDistanceSquared(p,a,c);
-    ds = min(ds,edgeDistanceSquared(p,c,d));
-    ds = min(ds,edgeDistanceSquared(p,d,e));
-    ds = min(ds,edgeDistanceSquared(p,e,f));
-    ds = min(ds,edgeDistanceSquared(p,f,g));
-    ds = min(ds,edgeDistanceSquared(p,g,a));
-    float side = cross2(c-a,p-a);
-    side = min(side,cross2(d-c,p-c));
-    side = min(side,cross2(e-d,p-d));
-    side = min(side,cross2(f-e,p-e));
-    side = min(side,cross2(g-f,p-f));
-    side = min(side,cross2(a-g,p-g));
-    return sqrt(ds) * (side >= 0.0 ? -1.0 : 1.0);
+
+    float inside = cross2(c-a,p-a);
+    inside = min(inside,cross2(d-c,p-c));
+    inside = min(inside,cross2(e-d,p-d));
+    inside = min(inside,cross2(f-e,p-e));
+    inside = min(inside,cross2(g-f,p-f));
+    inside = min(inside,cross2(a-g,p-g));
+
+    // Exact pre-D2 geometry when slider is zero. A nonzero setting cannot
+    // accidentally round the two right-angle corners a/e.
+    float r = min(max(radius,0.0),cut*1.20);
+    if (r <= 0.0001) {
+        float ds = edgeDistanceSquared(p,a,c);
+        ds = min(ds,edgeDistanceSquared(p,c,d));
+        ds = min(ds,edgeDistanceSquared(p,d,e));
+        ds = min(ds,edgeDistanceSquared(p,e,f));
+        ds = min(ds,edgeDistanceSquared(p,f,g));
+        ds = min(ds,edgeDistanceSquared(p,g,a));
+        return sqrt(ds) * (inside >= 0.0 ? -1.0 : 1.0);
+    }
+    float t = r*TAN_PI8;
+    float k = t*INV_ROOT2;
+    float2 cs = c-float2(t,0.0), ce = c+float2(k,k);
+    float2 ds = d-float2(k,k), de = d+float2(0.0,t);
+    float2 fs = f+float2(t,0.0), fe = f-float2(k,k);
+    float2 gs = g+float2(k,k), ge = g-float2(0.0,t);
+    float2 cc = cs+float2(0.0,r);
+    float2 dc = de+float2(-r,0.0);
+    float2 fc = fs+float2(0.0,-r);
+    float2 gc = ge+float2(r,0.0);
+
+    // Euclidean distance to six trimmed edges and four *actual* circular
+    // fillets. Both square corners retain the original sharp vertex.
+    float dist2 = edgeDistanceSquared(p,a,cs);
+    dist2 = min(dist2,edgeDistanceSquared(p,ce,ds));
+    dist2 = min(dist2,edgeDistanceSquared(p,de,e));
+    dist2 = min(dist2,edgeDistanceSquared(p,e,fs));
+    dist2 = min(dist2,edgeDistanceSquared(p,fe,gs));
+    dist2 = min(dist2,edgeDistanceSquared(p,ge,a));
+    dist2 = min(dist2,arcDistanceSquared(p,cs,ce,cc,r));
+    dist2 = min(dist2,arcDistanceSquared(p,ds,de,dc,r));
+    dist2 = min(dist2,arcDistanceSquared(p,fs,fe,fc,r));
+    dist2 = min(dist2,arcDistanceSquared(p,gs,ge,gc,r));
+
+    bool removed = excisedCorner(p,cs,c,ce,cc,r) ||
+                   excisedCorner(p,ds,d,de,dc,r) ||
+                   excisedCorner(p,fs,f,fe,fc,r) ||
+                   excisedCorner(p,gs,g,ge,gc,r);
+    return sqrt(dist2) * (inside >= 0.0 && !removed ? -1.0 : 1.0);
 }
 
 float chatBubbleDistance(float2 p, float2 b, float radius, float detail)
@@ -160,7 +227,7 @@ float shapeDistance(float2 p)
                                   corner_radius,shape_detail);
     if (shape_id == 9)
         return angledCardDistance(rotatePoint(p,shape_rotation),half_size,
-                                  shape_detail);
+                                  shape_detail,corner_radius);
     if (shape_id == 1) return length(p) - min(half_size.x, half_size.y);
     if (shape_id == 2) return ellipseDistance(rotatePoint(p, shape_rotation), half_size);
     if (shape_id == 3) {
