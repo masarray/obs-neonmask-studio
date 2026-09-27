@@ -238,3 +238,14 @@ These are *first implementation targets*. Actual screenshots and clips on
 Windows OBS, light and dark backgrounds, 320×180 and the proposal comparison
 are the required visual acceptance. Tail ornament does not expand the
 underlying video mask; it can be clipped if safe-fit is not provided.
+
+
+## Phase D: mask silhouette is the artwork
+
+A Chat Bubble is NOT a rounded rectangle with an outside speech-pointer
+ornament: webcam pixels must occupy the tail, the body/tail join has no
+internal border, and neon follows the outer joined silhouette. Angled Card
+removes top-right and bottom-left image corners along a true diagonal. Its
+neon and glow follow those diagonal segments, not an uncut rectangle. D1
+implements these contours; actual proposal image #8/#9 similarity remains
+subject to OBS screenshots with safe-fit, light/dark and small-facecam checks.
