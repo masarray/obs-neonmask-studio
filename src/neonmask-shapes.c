@@ -197,18 +197,22 @@ static float hud_panel(nm_p2 p,nm_p2 b,float detail)
 {
     const float cut=fminf(fmaxf(2.0f,fminf(b.x,b.y)*detail*1.8f),
                           fminf(b.x,b.y)*0.45f);
-    const nm_p2 v[10]={
+    /* Bevel both transitions of the inset: the former two square stairs
+     * looked like a generic UI corner, not a purposely authored HUD path. */
+    const nm_p2 v[11]={
         {-b.x,-b.y},{b.x-cut,-b.y},{b.x,-b.y+cut},
         {b.x,b.y-cut*0.40f},{b.x-cut*0.35f,b.y},
-        {-b.x+cut*1.60f,b.y},{-b.x+cut*1.60f,b.y-cut*0.28f},
-        {-b.x+cut*0.85f,b.y-cut*0.28f},
-        {-b.x+cut*0.85f,b.y-cut*0.70f},
+        {-b.x+cut*1.80f,b.y},
+        {-b.x+cut*1.65f,b.y-cut*0.20f},
+        {-b.x+cut*1.13f,b.y-cut*0.20f},
+        {-b.x+cut*0.95f,b.y-cut*0.38f},
+        {-b.x+cut*0.95f,b.y-cut*0.70f},
         {-b.x,b.y-cut*0.70f}
     };
-    float ds=edge2(p,v[9],v[0]);
+    float ds=edge2(p,v[10],v[0]);
     int inside=0;
-    for(int i=0;i<10;++i){
-        const nm_p2 a=v[i],next=v[(i+1)%10];
+    for(int i=0;i<11;++i){
+        const nm_p2 a=v[i],next=v[(i+1)%11];
         ds=fminf(ds,edge2(p,a,next));
         inside^=ray_crosses(p,a,next);
     }
