@@ -166,7 +166,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *cyber_bar = mapped + 3u * stride + 52u * 4u;
     const uint8_t *reactor_arc = mapped + 1u * stride + 32u * 4u;
     const uint8_t *streamer_tail = mapped + 63u * stride + 17u * 4u;
-    const uint8_t *bubble_tip_fill = mapped + 52u * stride + 16u * 4u;
+    const uint8_t *bubble_tip_fill = mapped + 52u * stride + 15u * 4u;
     const uint8_t *bubble_beside = mapped + 52u * stride + 27u * 4u;
     const uint8_t *bubble_tip_neon = mapped + 55u * stride + 15u * 4u;
     const uint8_t *card_cut_corner = mapped + 11u * stride + 53u * 4u;
