@@ -32,7 +32,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t red = variant == 0 ? 255 : variant == 1 ? 128 :
                         (variant == 3 || variant == 4 || variant == 18 ||
                          variant == 19 || variant == 21 || variant == 22 ||
-                         variant == 24 || variant == 25 || variant == 27 ? 255 : 0);
+                         variant == 24 || variant == 25 || variant == 27 || variant == 28 ? 255 : 0);
     const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
                           (variant == 3 || variant == 4 || variant == 18 ||
                            variant == 19 || variant == 21 || variant == 22 ||
@@ -79,7 +79,8 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_detail"), 0.23f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "corner_radius"),
                         variant == 24 ? 0.0f :
-                        (variant == 25 || variant == 26 ? 10.5f : 5.0f));
+                        (variant == 25 || variant == 26 ? 10.5f :
+                          variant == 28 || variant == 29 ? 24.0f : 5.0f));
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "shape_id"),
                       variant == 13 || variant == 14 ? 1 :
                       variant == 15 || variant == 22 ? 5 :
@@ -112,7 +113,8 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "segment_count"), 0);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "border_enabled"),
                       variant == 2 || (variant >= 5 && variant <= 17) ||
-                      variant == 20 || variant == 23 || variant == 26 || variant == 27);
+                      variant == 20 || variant == 23 || variant == 26 ||
+                       variant == 27 || variant == 29);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), glow_case);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "image"), input);
 
@@ -178,6 +180,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *bubble_internal_seam = mapped + 46u * stride + 19u * 4u;
     const uint8_t *bubble_exposed_bottom = mapped + 46u * stride + 27u * 4u;
     const uint8_t *card_cut_corner = mapped + 11u * stride + 53u * 4u;
+    const uint8_t *full_arc_middle = mapped + 13u * stride + 51u * 4u;
     const uint8_t *card_diag_neon = mapped + 12u * stride + 52u * 4u;
     const uint8_t *fillet_endpoint = mapped + 8u * stride + 46u * 4u;
     const uint8_t *square_top_left = mapped + 8u * stride + 8u * 4u;
@@ -316,6 +319,20 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                 bubble_internal_seam[2],bubble_internal_seam[3],
                 bubble_exposed_bottom[2]);
         failed = 1;
+    } else if (variant == 28 &&
+               (fillet_endpoint[3] > 3 ||
+                full_arc_middle[0] < 240 || full_arc_middle[3] < 245 ||
+                square_top_left[3] < 245 || square_bottom_right[3] < 245)) {
+        fprintf(stderr, "FAIL: full Angled Card arc must clip old shoulder, keep middle and square corners: old=%u mid=%u TL=%u BR=%u\\n",
+                fillet_endpoint[3], full_arc_middle[3],
+                square_top_left[3], square_bottom_right[3]);
+        failed = 1;
+    } else if (variant == 29 &&
+               (full_arc_middle[0] < 150 || full_arc_middle[2] < 150 ||
+                full_arc_middle[3] < 120)) {
+        fprintf(stderr, "FAIL: neon must follow full quarter arc at max roundness alpha=%u\\n",
+                full_arc_middle[3]);
+        failed = 1;
     }
 
     gs_stagesurface_unmap(stage);
@@ -417,7 +434,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 28; ++variant)
+            for (int variant = 0; variant < 30; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
