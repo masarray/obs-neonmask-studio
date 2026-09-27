@@ -282,6 +282,66 @@ float chatBubbleDistance(float2 p, float2 b, float radius, float detail)
     return sqrt(ds)*(inside && !removed ? -1.0 : 1.0);
 }
 
+// D2.3 authored masks: the actual image and neon share these contours.
+// A non-convex step is intentional; no separate PNG/chat-style overlay.
+bool hudRayCrosses(float2 p,float2 a,float2 b)
+{
+    if ((a.y > p.y) != (b.y > p.y))
+        return p.x < a.x+(p.y-a.y)*(b.x-a.x)/(b.y-a.y);
+    return false;
+}
+
+float hudPanelDistance(float2 p,float2 b,float detail)
+{
+    float cut=min(max(2.0,min(b.x,b.y)*detail*1.8),min(b.x,b.y)*0.45);
+    float2 v0=float2(-b.x,-b.y);
+    float2 v1=float2(b.x-cut,-b.y);
+    float2 v2=float2(b.x,-b.y+cut);
+    float2 v3=float2(b.x,b.y-cut*0.40);
+    float2 v4=float2(b.x-cut*0.35,b.y);
+    float2 v5=float2(-b.x+cut*1.60,b.y);
+    float2 v6=float2(-b.x+cut*1.60,b.y-cut*0.28);
+    float2 v7=float2(-b.x+cut*0.85,b.y-cut*0.28);
+    float2 v8=float2(-b.x+cut*0.85,b.y-cut*0.70);
+    float2 v9=float2(-b.x,b.y-cut*0.70);
+    float ds=edgeDistanceSquared(p,v9,v0);
+    bool inside=false;
+    ds=min(ds,edgeDistanceSquared(p,v0,v1));
+    if(hudRayCrosses(p,v0,v1)) inside=!inside;
+    ds=min(ds,edgeDistanceSquared(p,v1,v2));
+    if(hudRayCrosses(p,v1,v2)) inside=!inside;
+    ds=min(ds,edgeDistanceSquared(p,v2,v3));
+    if(hudRayCrosses(p,v2,v3)) inside=!inside;
+    ds=min(ds,edgeDistanceSquared(p,v3,v4));
+    if(hudRayCrosses(p,v3,v4)) inside=!inside;
+    ds=min(ds,edgeDistanceSquared(p,v4,v5));
+    if(hudRayCrosses(p,v4,v5)) inside=!inside;
+    ds=min(ds,edgeDistanceSquared(p,v5,v6));
+    if(hudRayCrosses(p,v5,v6)) inside=!inside;
+    ds=min(ds,edgeDistanceSquared(p,v6,v7));
+    if(hudRayCrosses(p,v6,v7)) inside=!inside;
+    ds=min(ds,edgeDistanceSquared(p,v7,v8));
+    if(hudRayCrosses(p,v7,v8)) inside=!inside;
+    ds=min(ds,edgeDistanceSquared(p,v8,v9));
+    if(hudRayCrosses(p,v8,v9)) inside=!inside;
+    ds=min(ds,edgeDistanceSquared(p,v9,v0));
+    if(hudRayCrosses(p,v9,v0)) inside=!inside;
+    return sqrt(ds)*(inside ? -1.0 : 1.0);
+}
+
+float squircleDistance(float2 p,float2 b,float detail)
+{
+    // Superellipse F=|x/a|^n+|y/b|^n-1; normalized gradient controls
+    // pixel-space core thickness close to the boundary on 16:9 and portrait.
+    float exponent=4.0+(detail-0.08)/0.27;
+    float2 a=min(abs(p)/b,float2(32.0,32.0));
+    float2 f=pow(a,float2(exponent,exponent));
+    float2 gradient=float2(exponent*pow(a.x,exponent-1.0)/b.x,
+                            exponent*pow(a.y,exponent-1.0)/b.y);
+    float d=(f.x+f.y-1.0)/max(length(gradient),1.0/min(b.x,b.y));
+    return max(d,-min(b.x,b.y));
+}
+
 float shapeDistance(float2 p)
 {
     if (shape_id == 8)
@@ -290,6 +350,12 @@ float shapeDistance(float2 p)
     if (shape_id == 9)
         return angledCardDistance(rotatePoint(p,shape_rotation),half_size,
                                   shape_detail,corner_radius);
+    if (shape_id == 10)
+        return hudPanelDistance(rotatePoint(p,shape_rotation),half_size,
+                                shape_detail);
+    if (shape_id == 11)
+        return squircleDistance(rotatePoint(p,shape_rotation),half_size,
+                                shape_detail);
     if (shape_id == 1) return length(p) - min(half_size.x, half_size.y);
     if (shape_id == 2) return ellipseDistance(rotatePoint(p, shape_rotation), half_size);
     if (shape_id == 3) {
