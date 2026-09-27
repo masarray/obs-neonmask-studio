@@ -145,6 +145,13 @@ float roundedContourTurn(float2 q, float2 bounds, float r)
     return frac(lengthAt / lengthAll + 1.0);
 }
 
+float segmentDistance(float2 p, float2 a, float2 b)
+{
+    float2 ab = b - a;
+    float t = saturate(dot(p-a, ab) / max(dot(ab, ab), 0.0001));
+    return length(p - a - t*ab);
+}
+
 float4 drawNeonMask(VertData v_in) : TARGET
 {
     const float TAU = 6.28318530718;
@@ -308,6 +315,103 @@ float4 drawNeonMask(VertData v_in) : TARGET
                            smoothstep(0.70, 0.91, normq.y);
             glintA = saturate(glintA +
                               outerTrack * corner * art_intensity * 0.62);
+        }
+
+        // Reactor: two nonuniform luminous arcs, a sparse radial tick rail,
+        // and a local orbit head. Its circle has a genuinely different static
+        // silhouette grammar from the Cyber corner-trace recipe.
+        if (ornament_mode == 2 && shape_id == 1 && art_intensity > 0.0) {
+            float t = frac(angle / TAU + 1.0);
+            float arcA = smoothstep(0.05, 0.095, t) *
+                         (1.0 - smoothstep(0.33, 0.375, t));
+            float arcB = smoothstep(0.54, 0.585, t) *
+                         (1.0 - smoothstep(0.82, 0.865, t));
+            float gap = halfCore + art_gap + 3.0;
+            float outerRail = 1.0 - smoothstep(0.25, 1.25, abs(d-gap));
+            float innerRail = 1.0 - smoothstep(0.25, 1.25, abs(d+gap*0.68));
+            float ticks = frac(t*12.0);
+            float tickGate = 1.0 - smoothstep(0.07, 0.16, ticks);
+            float tickRail = 1.0 - smoothstep(0.30, 1.25, abs(d-gap-2.4));
+            rimA = saturate(rimA*0.32 + art_intensity *
+                   (outerRail*(arcA*0.90+arcB*0.62) +
+                    innerRail*(arcA*0.28+arcB*0.42)));
+            artBarA = art_intensity*0.42*tickGate*tickRail;
+            float moving = 0.0;
+            if (animation_id == 2) {
+                float delta = frac(t - flow_phase + 1.5) - 0.5;
+                moving = exp2(-3.0*delta*delta /
+                               max(hotspot_size*hotspot_size,0.0016));
+            }
+            artBarA = saturate(artBarA + outerRail * moving *
+                               art_intensity * hotspot_strength * 0.67);
+            if (glow_enabled != 0)
+                artBarGlowA = artBarA * glow_strength * 0.22;
+        }
+
+        // Tech HUD: rigid orthogonal brackets, sparse track cuts and strong
+        // legible corner anchors. Coordinates follow independent mask X/Y,
+        // width/height and shape rotation rather than fixed source pixels.
+        if (ornament_mode == 3 && (shape_id == 5 || shape_id == 0) &&
+            art_intensity > 0.0) {
+            float2 q = abs(rotatePoint(p, shape_rotation));
+            float gap = art_gap + 3.0;
+            float xBar = half_size.x - min(half_size.x*0.28, 38.0);
+            float yBar = half_size.y - min(half_size.y*0.28, 34.0);
+            float dH = roundedBoxDistance(
+                float2(q.x-xBar, q.y-half_size.y-gap),
+                float2(min(half_size.x*0.24, 32.0), 0.75), 0.15);
+            float dV = roundedBoxDistance(
+                float2(q.x-half_size.x-gap, q.y-yBar),
+                float2(0.75, min(half_size.y*0.24, 30.0)), 0.15);
+            float bracketD = min(dH, dV);
+            artBarA = art_intensity * 0.92 *
+                       (1.0 - smoothstep(0.10, 1.30, bracketD));
+            if (glow_enabled != 0)
+                artBarGlowA = art_intensity * glow_strength * 0.22 *
+                          (1.0 - smoothstep(0.0, 3.8, bracketD));
+            float trackGap = halfCore + gap;
+            float rail = 1.0 - smoothstep(0.25, 1.25, abs(d-trackGap));
+            float slot = frac(roundedContourTurn(rotatePoint(p,shape_rotation),
+                             half_size, shape_id == 5 ? 0.0 : corner_radius)
+                             * 8.0 + 0.025);
+            float gate = smoothstep(0.08, 0.13, slot) *
+                         (1.0 - smoothstep(0.68, 0.74, slot));
+            rimA = saturate(rimA * 0.18 +
+                            rail * gate * art_intensity * 0.78);
+        }
+
+        // Streamer: an intentional two-segment speech-tail line with a
+        // restrained status-dot trio. The tail is decorative, NOT a change
+        // to portrait mask coverage. It follows the lower-left contour.
+        if (ornament_mode == 4 && shape_id == 0 && art_intensity > 0.0) {
+            float2 q = rotatePoint(p, shape_rotation);
+            float2 a = float2(-half_size.x*0.70, half_size.y+0.5);
+            float2 tip = float2(-half_size.x*0.60,
+                                 half_size.y+art_gap+7.0);
+            float2 b = float2(-half_size.x*0.34, half_size.y+0.5);
+            float tailD = min(segmentDistance(q,a,tip),
+                              segmentDistance(q,tip,b));
+            float tail = 1.0 - smoothstep(0.20, 1.35, tailD);
+            float3 dotX = float3(-0.74,-0.64,-0.54) * half_size.x;
+            float dotY = half_size.y - max(3.5,border_width*1.25);
+            float dots = 0.0;
+            dots = max(dots, 1.0-smoothstep(1.2,2.15,
+                 length(q-float2(dotX.x,dotY))));
+            dots = max(dots, 1.0-smoothstep(1.2,2.15,
+                 length(q-float2(dotX.y,dotY))));
+            dots = max(dots, 1.0-smoothstep(1.2,2.15,
+                 length(q-float2(dotX.z,dotY))));
+            artBarA = art_intensity * saturate(tail*0.93+dots*0.84);
+            if (glow_enabled != 0)
+                artBarGlowA = art_intensity * glow_strength * 0.22 *
+                              (1.0-smoothstep(0.0,3.7,tailD));
+            float trackGap = halfCore + art_gap + 2.0;
+            float guide = 1.0-smoothstep(0.25,1.25,abs(d-trackGap));
+            float t = roundedContourTurn(q,half_size,corner_radius);
+            float gate = smoothstep(0.05,0.10,t) *
+                        (1.0-smoothstep(0.88,0.94,t));
+            rimA = saturate(rimA*0.36 +
+                            guide*gate*art_intensity*0.54);
         }
 
         // Premultiplied 'over', from broadest envelope to fine bright line.
