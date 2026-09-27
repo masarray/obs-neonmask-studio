@@ -33,6 +33,10 @@ static float nm_light_envelope(const nm_config *cfg)
     return margin;
 }
 
+/* Bounded relative to the CAPTURED target. This prevents an extreme mask X/Y
+ * from requesting an unbounded render target through get_width/get_height. */
+enum { NM_MAX_PAD_SIDE = 512u, NM_MAX_OUTPUT_SIDE = 8192u };
+
 bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
                            uint32_t height, nm_fit_result *out)
 {
@@ -47,27 +51,63 @@ bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
     out->half_height = hy;
     out->scale = 1.0f;
     out->fits = true;
-    if (!cfg->safe_fit) return true; /* Saved legacy scenes are untouched. */
+    out->output_width = width;
+    out->output_height = height;
+    if (!cfg->safe_fit && !cfg->expand_canvas)
+        return true; /* All saved legacy scenes retain their exact dimensions. */
 
     const float envelope = nm_light_envelope(cfg);
+    out->envelope_px = envelope;
+    if (!isfinite(envelope)) return false;
+    /* Conservative shape AABB: covers the tail and every rotated silhouette.
+     * No change to authored X/Y, image pan/zoom or source dimensions. */
+    const float angle = cfg->shape_rotation_deg * 0.01745329251994329577f;
+    const float c = fabsf(cosf(angle)), s = fabsf(sinf(angle));
+    const float box_x = c * hx + s * hy;
+    const float box_y = s * hx + c * hy;
+
+    if (cfg->expand_canvas) {
+        /* The OBS filter callback exposes a new top-left-anchored width/height;
+         * it has NO API to add a negative scene-space origin. The shader uses
+         * pad_left/top to restore input-relative coordinates, but the scene
+         * item content moves by that amount unless manually compensated. */
+        const float center_x = 0.5f * (float)width + cfg->mask_x_px;
+        const float center_y = 0.5f * (float)height + cfg->mask_y_px;
+        const float left = ceilf(fmaxf(0.0f, box_x + envelope - center_x));
+        const float top = ceilf(fmaxf(0.0f, box_y + envelope - center_y));
+        const float right = ceilf(fmaxf(0.0f, center_x + box_x + envelope - (float)width));
+        const float bottom = ceilf(fmaxf(0.0f, center_y + box_y + envelope - (float)height));
+        if (!isfinite(left) || !isfinite(top) || !isfinite(right) || !isfinite(bottom) ||
+            left > NM_MAX_PAD_SIDE || top > NM_MAX_PAD_SIDE ||
+            right > NM_MAX_PAD_SIDE || bottom > NM_MAX_PAD_SIDE) {
+            out->fits = false;
+            return true;
+        }
+        out->pad_left = (uint32_t)left;
+        out->pad_top = (uint32_t)top;
+        out->pad_right = (uint32_t)right;
+        out->pad_bottom = (uint32_t)bottom;
+        const uint64_t ow = (uint64_t)width + out->pad_left + out->pad_right;
+        const uint64_t oh = (uint64_t)height + out->pad_top + out->pad_bottom;
+        if (ow > NM_MAX_OUTPUT_SIDE || oh > NM_MAX_OUTPUT_SIDE) {
+            out->fits = false;
+            return true;
+        }
+        out->output_width = (uint32_t)ow;
+        out->output_height = (uint32_t)oh;
+        return true;
+    }
+
+    /* D3a safe-fit: shrink the mask uniformly within the existing canvas. */
     const float available_x = 0.5f * (float)width -
                               fabsf(cfg->mask_x_px) - envelope;
     const float available_y = 0.5f * (float)height -
                               fabsf(cfg->mask_y_px) - envelope;
-    out->envelope_px = envelope;
     if (!isfinite(available_x) || !isfinite(available_y) ||
         available_x <= 0.0f || available_y <= 0.0f) {
         out->fits = false;
         return true;
     }
-
-    /* Every authored/parametric silhouette is contained in its unrotated
-     * half-size rectangle (Chat Bubble tail included). A rotated AABB is
-     * deliberately conservative for circles and empty cut corners. */
-    const float angle = cfg->shape_rotation_deg * 0.01745329251994329577f;
-    const float c = fabsf(cosf(angle)), s = fabsf(sinf(angle));
-    const float box_x = c * hx + s * hy;
-    const float box_y = s * hx + c * hy;
     const float factor = fminf(1.0f,
                          fminf(available_x / box_x, available_y / box_y));
     if (!isfinite(factor) || factor <= 0.0f) {

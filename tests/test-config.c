@@ -32,6 +32,7 @@ int main(void)
     near("default mask width", cfg.mask_width, 0.81f);
     near("default mask height", cfg.mask_height, 0.81f);
     check("safe-fit opt-in by default", !cfg.safe_fit);
+    check("expanded output opt-in by default", !cfg.expand_canvas);
     near("default mask x", cfg.mask_x_px, 0.0f);
     near("default mask y", cfg.mask_y_px, 0.0f);
     near("default subject pan x", cfg.subject_pan_x_px, 0.0f);
@@ -161,6 +162,8 @@ int main(void)
     check("preset restores glow", cfg.show_glow);
     cfg.safe_fit = true;
     check("presets preserve opt-in safe-fit", nm_config_apply_preset(&cfg, 2) && cfg.safe_fit);
+    cfg.expand_canvas = true;
+    check("presets preserve expanded-output selection", nm_config_apply_preset(&cfg, 2) && cfg.expand_canvas);
     check("Streamer selects actual bubble", nm_config_apply_preset(&cfg, 6) && cfg.shape_id == NM_SHAPE_CHAT_BUBBLE);
     check("Angled preset selects diagonal mask", nm_config_apply_preset(&cfg, 7) && cfg.shape_id == NM_SHAPE_ANGLED_CARD);
 

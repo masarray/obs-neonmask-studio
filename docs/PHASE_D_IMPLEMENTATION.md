@@ -265,3 +265,36 @@ at off-center framing, source resize, SVG reload, filter-chain order and the
 320×180 downscale still require G4-V/G5. Expanded output (dimension callbacks,
 source-origin translation, exact per-shape envelope and downstream transforms)
 remains D3b, and hardware timing/soak remains G6. No premature #24/#26 closure.
+
+## D3b — opt-in expanded OBS filter output (code preview)
+
+The pinned OBS 31.1.1 libobs `get_base_width/height` uses enabled filter
+`get_width/get_height` callbacks, while `obs_source_process_filter_begin`
+captures the target at its own base dimensions and `tech_end` draws the
+final sprite using the requested dimensions. D3b uses a **shared pure-C
+bounds calculation** across dimension callbacks, SVG tick and video render:
+compute a conservative rotated silhouette AABB, include the D3a light
+support envelope, and ceil separate left/top/right/bottom padding. Output
+= input + these pads; input is mapped to expanded pixel (L,T) in shader,
+while subject sampling stays input-relative and outside-source UV is
+transparent, not Clamp-smear. Source mask width/height, X/Y, subject pan/zoom,
+SVG raster resolution, enum IDs and schema v2 are unchanged. Existing scenes
+have `expand_canvas=false` by default. When both checkboxes are selected,
+expanded output takes precedence over shrinking safe-fit.
+
+Explicit limits: <=512 extra pixels per side and <=8192 total pixels per
+axis. Impossible offsets/dimensions return original callback dimensions but
+render no draw (transparent) with one warning; never make a half-cropped
+approximation or reveal an unmasked feed. The renderer logs actual pad L/T/R/B
+on changes. A **normal OBS filter has no negative scene origin callback**:
+expanded content appears shifted by (+L,+T) within the reported output;
+for unchanged scene-world placement compensate the scene item's position
+by (-L,-T) in source-local units, accounting for scene scaling/rotation.
+Do not silently mutate scenes or claim their transforms are preserved.
+A source used by multiple scenes or filter chains needs manual review.
+
+Tests: canonical bounds/rotation/offset/limits/legacy behavior and shader
+input-origin pixel probes (OpenGL and D3D11). This is partial G4 GPU proof;
+real OBS scene item anchor, filter order, source resize/restart, SVG reload,
+320x180 dark/light captures, render lag and soak are pending G4-V/G5/G6.
+Issue #24/#26 stay open. No claim of final automatic scene-origin parity.

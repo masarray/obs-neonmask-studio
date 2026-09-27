@@ -16,6 +16,8 @@ struct nm_filter {
     obs_source_t *context;
     gs_effect_t *effect;
     gs_eparam_t *uv_size;
+    gs_eparam_t *output_size;
+    gs_eparam_t *input_origin;
     gs_eparam_t *half_size;
     gs_eparam_t *mask_offset;
     gs_eparam_t *subject_pan;
@@ -57,6 +59,8 @@ struct nm_filter {
     nm_config config;
     nm_motion motion;
     bool fit_warning_sent;
+    bool padding_reported;
+    uint32_t logged_left, logged_top, logged_right, logged_bottom;
 };
 
 static const char *nm_get_name(void *unused)
@@ -114,6 +118,7 @@ static void nm_update(void *data, obs_data_t *settings)
         .mask_width = legacy_framing ? legacy_scale : (float)obs_data_get_double(settings, "mask_width"),
         .mask_height = legacy_framing ? legacy_scale : (float)obs_data_get_double(settings, "mask_height"),
         .safe_fit = obs_data_get_bool(settings, "safe_fit"),
+        .expand_canvas = obs_data_get_bool(settings, "expand_canvas"),
         .mask_x_px = legacy_framing ? 0.0f : (float)obs_data_get_double(settings, "mask_x"),
         .mask_y_px = legacy_framing ? 0.0f : (float)obs_data_get_double(settings, "mask_y"),
         .subject_pan_x_px = legacy_framing ? 0.0f : (float)obs_data_get_double(settings, "subject_pan_x"),
@@ -156,6 +161,7 @@ static void nm_update(void *data, obs_data_t *settings)
     const bool asset_changed=strcmp(next.svg_path,f->config.svg_path)!=0;
     f->config = next;
     f->fit_warning_sent = false;
+    f->padding_reported = false;
     if(asset_changed) nm_refresh_svg(f);
 
     /* Pin additive Phase-B defaults into saved v2 scenes once. Existing
@@ -213,6 +219,7 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_double(settings, "mask_width", cfg.mask_width);
     obs_data_set_default_double(settings, "mask_height", cfg.mask_height);
     obs_data_set_default_bool(settings, "safe_fit", cfg.safe_fit);
+    obs_data_set_default_bool(settings, "expand_canvas", cfg.expand_canvas);
     obs_data_set_default_double(settings, "mask_x", cfg.mask_x_px);
     obs_data_set_default_double(settings, "mask_y", cfg.mask_y_px);
     obs_data_set_default_double(settings, "subject_pan_x", cfg.subject_pan_x_px);
@@ -398,6 +405,7 @@ static obs_properties_t *nm_properties(void *data)
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_width", obs_module_text("Mask.Width"), 0.10, 0.98, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_height", obs_module_text("Mask.Height"), 0.10, 0.98, 0.01));
     NM_CUSTOM(obs_properties_add_bool(mask_group, "safe_fit", obs_module_text("Mask.SafeFit")));
+    NM_CUSTOM(obs_properties_add_bool(mask_group, "expand_canvas", obs_module_text("Mask.ExpandCanvas")));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "shape_detail", obs_module_text("Mask.Detail"), 0.08, 0.35, 0.01));
     /* One persisted slider: rounded-box corners, Bubble tail-tip curvature,
      * and ONLY the Angled Card diagonal endpoints (square corners stay sharp).
@@ -491,6 +499,8 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         } \
     } while (0)
         NM_PARAM(uv_size, "uv_size");
+        NM_PARAM(output_size, "output_size");
+        NM_PARAM(input_origin, "input_origin");
         NM_PARAM(half_size, "half_size");
         NM_PARAM(mask_offset, "mask_offset");
         NM_PARAM(subject_pan, "subject_pan");
@@ -595,6 +605,27 @@ static void nm_tick(void *data, float seconds)
     bfree(pixels);
 }
 
+/* libobs queries filters' dimensions through these callbacks. Target capture
+ * stays at the target's base dimensions; only OUR output gains padding.
+ * The shared pure-C calculator is used by dimension callbacks and render. */
+static uint32_t nm_output_dimension(void *data, bool horizontal)
+{
+    struct nm_filter *f = data;
+    if (!f || !f->context) return 0;
+    obs_source_t *target = obs_filter_get_target(f->context);
+    if (!target) return 0;
+    const uint32_t width = obs_source_get_base_width(target);
+    const uint32_t height = obs_source_get_base_height(target);
+    if (!width || !height) return horizontal ? width : height;
+    nm_fit_result fit;
+    if (!nm_safe_fit_calculate(&f->config, width, height, &fit) || !fit.fits)
+        return horizontal ? width : height; /* render fails closed */
+    return horizontal ? fit.output_width : fit.output_height;
+}
+
+static uint32_t nm_get_width(void *data) { return nm_output_dimension(data, true); }
+static uint32_t nm_get_height(void *data) { return nm_output_dimension(data, false); }
+
 static void nm_render(void *data, gs_effect_t *unused)
 {
     (void)unused;
@@ -617,24 +648,41 @@ static void nm_render(void *data, gs_effect_t *unused)
         /* A mask center outside the available halo envelope cannot be fitted
          * without moving the user's frame. Never silently reposition it. */
         if (!f->fit_warning_sent) {
-            blog(LOG_WARNING, "[NeonMask Studio] safe-fit has no room at this mask position/size; "
-                              "move the mask or reduce glow. Output is transparent.");
+            blog(LOG_WARNING, "[NeonMask Studio] safe-fit/expanded output cannot accommodate "
+                              "this mask/envelope within 512px-per-side / 8192px output limits; "
+                              "adjust placement or glow. Output is transparent.");
             f->fit_warning_sent = true;
         }
         return;
     }
     f->fit_warning_sent = false;
+    if (f->config.expand_canvas && (!f->padding_reported ||
+        fit.pad_left != f->logged_left || fit.pad_top != f->logged_top ||
+        fit.pad_right != f->logged_right || fit.pad_bottom != f->logged_bottom)) {
+        blog(LOG_INFO, "[NeonMask Studio] expanded output padding L=%u T=%u R=%u B=%u px; "
+                       "scene item content shifts +L/+T until scene transform is compensated",
+             fit.pad_left, fit.pad_top, fit.pad_right, fit.pad_bottom);
+        f->padding_reported = true;
+        f->logged_left = fit.pad_left;
+        f->logged_top = fit.pad_top;
+        f->logged_right = fit.pad_right;
+        f->logged_bottom = fit.pad_bottom;
+    }
     const float half_width = fit.half_width;
     const float half_height = fit.half_height;
     const float rx = fminf(half_width, half_height);
     const float corner_radius = f->config.roundness * fminf(half_width, half_height);
     struct vec2 dimensions;
+    struct vec2 output_dimensions;
+    struct vec2 origin;
     struct vec2 halfsize;
     struct vec2 mask_offset;
     struct vec2 subject_pan;
     struct vec4 primary;
     struct vec4 secondary;
     vec2_set(&dimensions, (float)width, (float)height);
+    vec2_set(&output_dimensions, (float)fit.output_width, (float)fit.output_height);
+    vec2_set(&origin, (float)fit.pad_left, (float)fit.pad_top);
     vec2_set(&halfsize, f->config.shape_id == NM_SHAPE_CIRCLE ? rx : half_width,
              f->config.shape_id == NM_SHAPE_CIRCLE ? rx : half_height);
     vec2_set(&mask_offset, f->config.mask_x_px, f->config.mask_y_px);
@@ -646,6 +694,8 @@ static void nm_render(void *data, gs_effect_t *unused)
     /* Disable direct bypass: the shader relies on captured premultiplied RGB. */
     if (!obs_source_process_filter_begin(f->context, GS_RGBA, OBS_NO_DIRECT_RENDERING)) return;
     gs_effect_set_vec2(f->uv_size, &dimensions);
+    gs_effect_set_vec2(f->output_size, &output_dimensions);
+    gs_effect_set_vec2(f->input_origin, &origin);
     gs_effect_set_vec2(f->half_size, &halfsize);
     gs_effect_set_vec2(f->mask_offset, &mask_offset);
     gs_effect_set_vec2(f->subject_pan, &subject_pan);
@@ -681,7 +731,8 @@ static void nm_render(void *data, gs_effect_t *unused)
         f->svg_mask_w==half_width && f->svg_mask_h==half_height;
     gs_effect_set_int(f->svg_ready,svg_ready ? 1 : 0);
     gs_effect_set_texture(f->svg_sdf,svg_ready ? f->svg_texture : NULL);
-    obs_source_process_filter_tech_end(f->context, f->effect, 0, 0, "Draw");
+    obs_source_process_filter_tech_end(f->context, f->effect,
+                                       fit.output_width, fit.output_height, "Draw");
 }
 
 struct obs_source_info neonmask_filter_info = {
@@ -696,4 +747,6 @@ struct obs_source_info neonmask_filter_info = {
     .get_properties = nm_properties,
     .video_tick = nm_tick,
     .video_render = nm_render,
+    .get_width = nm_get_width,
+    .get_height = nm_get_height,
 };

@@ -268,3 +268,17 @@ warning; no implicit image repositioning or unmasked bypass. SVG raster sizing
 uses the same effective mask dimensions as render. This conservative contained
 AABB is intentionally not expanded-output implementation; retain D3b/G4-V/G5
 for actual OBS scene-origin/filter-chain proof and exact coverage.
+
+## D3b expanded filter dimensions and the scene-origin limitation
+
+`expand_canvas` is explicit, default-off and takes precedence over safe-fit.
+The same source-space AABB/envelope computes per-side padding in get_width,
+get_height, SVG tick and render. libobs captures the target at the input width/
+height; the output sprite width/height becomes input + padding. In shader
+`sourcePos = uv * output_size - input_origin - input_size / 2`, where origin
+is (left,top). Source sample UVs always divide by input size and zero outside
+the source rather than sampling Clamp edges. Bounds are capped and a request
+beyond budget fails closed. The OBS filter size API cannot express a negative
+scene-space origin, so opt-in expansion shifts source content +left/+top and
+requires scene-transform compensation when exact world placement matters.
+Never change scene items implicitly; validate chains and transforms in G5.

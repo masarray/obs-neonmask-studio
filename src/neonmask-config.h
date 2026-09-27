@@ -16,6 +16,8 @@ typedef struct nm_config {
     float mask_height;
     /* D3a opt-in: reduce mask extents, never subject UV, to fit light in canvas. */
     bool safe_fit;
+    /* D3b opt-in: report an expanded filter output with explicit origin. */
+    bool expand_canvas;
     float mask_x_px;
     float mask_y_px;
     float subject_pan_x_px;

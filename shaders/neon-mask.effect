@@ -6,6 +6,9 @@ uniform texture2d image;
 uniform texture2d svg_sdf;
 uniform int svg_ready;
 uniform float2 uv_size;
+// Input remains in source pixels; final sprite may include transparent padding.
+uniform float2 output_size;
+uniform float2 input_origin;
 uniform float2 half_size;
 uniform float2 mask_offset;
 uniform float2 subject_pan;
@@ -476,7 +479,9 @@ float segmentDistance(float2 p, float2 a, float2 b)
 float4 drawNeonMask(VertData v_in) : TARGET
 {
     const float TAU = 6.28318530718;
-    float2 sourcePos = v_in.uv * uv_size - uv_size * 0.5;
+    // Output top-left is (0,0); the captured source begins at input_origin.
+    // Do not stretch source UV across the expanded sprite.
+    float2 sourcePos = v_in.uv * output_size - input_origin - uv_size * 0.5;
     float2 p = sourcePos - mask_offset;
     // Never expose an unmasked facecam for a missing, invalid or stale
     // external asset. Shader-not-ready failures are transparent, not bypass.
