@@ -2,6 +2,7 @@
 #pragma once
 
 #include "neonmask-presets.h"
+#include "neonmask-svg.h"
 #include <stdbool.h>
 #include <stdint.h>
 
