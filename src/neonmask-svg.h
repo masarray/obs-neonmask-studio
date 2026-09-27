@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#define NM_SVG_PATH_MAX 1024u
 #define NM_SVG_MAX_BYTES 65536u
 #define NM_SVG_MAX_EDGES 512u
 #define NM_SVG_SDF_SIZE 256u
