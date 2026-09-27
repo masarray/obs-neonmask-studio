@@ -64,3 +64,24 @@ The Chat Bubble tail, Angled Card arcs, HUD Cut Panel notch and Squircle contour
 ## Roadmap
 
 See the [canonical delivery roadmap and evidence ledger](docs/ROADMAP.md) for milestone order, active work and acceptance gates.
+
+## Local SVG path mask (D2.4 preview subset)
+
+Select **Mask shape → SVG File — local path mask**, choose a local
+`.svg` file under Mask Geometry, and use **Reload SVG file** after
+editing the file in place. Input must be a simple standalone SVG with a
+finite `viewBox` and closed, solid-filled `<path/>` shapes. Supported path
+commands are M/L/H/V/Q/C/Z (absolute/relative), up to eight paths and
+512 flattened line edges; evenodd/nonzero holes work. This is *not* a
+full SVG interpreter: groups, transforms, stroke/style, arcs, external
+resources, scripts/DTD/entities/fonts and URLs are explicitly rejected.
+No arbitrary image/background removal is performed. The shape is fitted
+within the mask with aspect ratio preserved (contain, not stretch).
+
+SVG is rasterized into a cached 256×256 signed distance field when the
+file or mask/source size changes. Invalid/missing files output **transparent**
+rather than silently exposing the original facecam. Unsupported path features
+are a known preview limitation; convert artwork to simple paths before
+importing. The optional import is distinct from the built-in analytic
+Bubble/Card/HUD/Squircle shapes. Always test in actual OBS and keep a
+backup of your scene before updating preview builds.
