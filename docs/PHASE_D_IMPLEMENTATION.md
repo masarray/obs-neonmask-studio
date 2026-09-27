@@ -43,7 +43,7 @@ the feature independently. All current D1 code/art is original.
   actual libobs OpenGL and D3D11 fixture tests verify source alpha **inside**
   tail, transparency beside it, neon at tip/diagonal and legacy controls.
 
-## D2: diverse geometry and bounded SVG provider (not yet implemented)
+## D2: diverse geometry and bounded SVG provider (partial implementation; see D2.3/D2.4)
 
 1. Curate original vector silhouettes from the proposal: HUD cut-corner,
    portrait capsule, star, heart, rounded polygon and squircle/superellipse.
@@ -59,7 +59,9 @@ the feature independently. All current D1 code/art is original.
 5. Select fill-rule, antialias semantics and aspect-ratio fit policy, with
    deterministic save/reload and resize behavior.
 6. Preserve copyright/license metadata for every bundled artwork. SVG files
-   in assets/designs are **authoring samples**, not yet runtime-loadable.
+   in assets/designs are **authoring samples**. From D2.4 the original
+   simple path samples are also local-file import examples; general SVG
+   rendering remains unsupported.
 
 ## D3: art polish, safe-fit and acceptance (not yet implemented)
 
