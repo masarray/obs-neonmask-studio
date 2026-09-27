@@ -24,7 +24,13 @@ assert "NM_SHAPE_HUD_PANEL" in host and "NM_SHAPE_SQUIRCLE" in host
 assert "hudPanelDistance(" in shader and "squircleDistance(" in shader
 assert "return sqrt(ds)*(inside ? -1.0 : 1.0)" in shader
 assert "Preset.HUDCut" in host and "Preset.Squircle" in host
-assert "Shape.HUDPanel" in host and "Shape.Squircle" in host
+assert "nm_geometry_visibility(" in host
+assert "obs_property_set_visible(round,rounded)" in host
+assert "obs_property_set_visible(detail,authored)" in host
+assert "obs_property_set_visible(sides,shape_id==NM_SHAPE_POLYGON)" in host
+assert "float2 topA=float2(-half_size.x+cut*0.38" in shader
+assert "artBarA=saturate(artBarA+trace*art_intensity*0.88)" in shader
+assert "float2 v10=float2(-b.x,b.y-cut*0.70)" in shader
 # The same saved Roundness slider affects both Bubble tail and Angled Card
 # cut-end fillets. Reject the old UI text claiming it is Angled-only.
 en_locale = (ROOT / "data" / "locale" / "en-US.ini").read_text(encoding="utf-8")
