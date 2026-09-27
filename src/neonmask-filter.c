@@ -195,11 +195,33 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_bool(settings, "glow_enabled", cfg.show_glow);
 }
 
+/* Shape-specific controls are intentionally sparse: Squircle/HUD do not
+ * respond to the Roundness slider, and generic shapes do not respond to
+ * the authored Shape Detail control. Never reset saved user values here. */
+static void nm_geometry_visibility(obs_properties_t *props, int shape_id)
+{
+    obs_property_t *group=obs_properties_get(props, "mask_geometry");
+    obs_properties_t *geometry=group ? obs_property_group_content(group) : NULL;
+    if(!geometry) return;
+    obs_property_t *round=obs_properties_get(geometry,"roundness");
+    obs_property_t *detail=obs_properties_get(geometry,"shape_detail");
+    obs_property_t *sides=obs_properties_get(geometry,"polygon_sides");
+    const bool rounded=shape_id==NM_SHAPE_ROUNDED ||
+                       shape_id==NM_SHAPE_CHAT_BUBBLE ||
+                       shape_id==NM_SHAPE_ANGLED_CARD;
+    const bool authored=shape_id==NM_SHAPE_CHAT_BUBBLE ||
+                        shape_id==NM_SHAPE_ANGLED_CARD ||
+                        shape_id==NM_SHAPE_HUD_PANEL ||
+                        shape_id==NM_SHAPE_SQUIRCLE;
+    if(round) obs_property_set_visible(round,rounded);
+    if(detail) obs_property_set_visible(detail,authored);
+    if(sides) obs_property_set_visible(sides,shape_id==NM_SHAPE_POLYGON);
+}
+
 /* Apply preset as real user-editable property values: no hidden runtime overrides. */
 static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
                               obs_data_t *settings)
 {
-    (void)props;
     (void)property;
 
     nm_config cfg;
@@ -233,6 +255,7 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_double(settings, "art_gap", cfg.art_gap);
     obs_data_set_bool(settings, "border_enabled", cfg.show_border);
     obs_data_set_bool(settings, "glow_enabled", cfg.show_glow);
+    nm_geometry_visibility(props,cfg.shape_id);
     return true;
 }
 
@@ -243,6 +266,14 @@ static bool nm_custom_changed(obs_properties_t *props, obs_property_t *property,
     (void)props; (void)property;
     if (obs_data_get_int(settings, "preset") == 0) return false;
     obs_data_set_int(settings, "preset", 0);
+    return true;
+}
+
+static bool nm_shape_changed(obs_properties_t *props, obs_property_t *property,
+                             obs_data_t *settings)
+{
+    nm_custom_changed(props,property,settings);
+    nm_geometry_visibility(props,(int)obs_data_get_int(settings,"shape"));
     return true;
 }
 
@@ -297,7 +328,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(shape, obs_module_text("Shape.AngledCard"), NM_SHAPE_ANGLED_CARD);
     obs_property_list_add_int(shape, obs_module_text("Shape.HUDPanel"), NM_SHAPE_HUD_PANEL);
     obs_property_list_add_int(shape, obs_module_text("Shape.Squircle"), NM_SHAPE_SQUIRCLE);
-    obs_property_set_modified_callback(shape, nm_custom_changed);
+    obs_property_set_modified_callback(shape, nm_shape_changed);
 
 #define NM_CUSTOM(expr) obs_property_set_modified_callback((expr), nm_custom_changed)
     obs_properties_t *mask_group = obs_properties_create();
@@ -368,6 +399,8 @@ static obs_properties_t *nm_properties(void *data)
     NM_CUSTOM(obs_properties_add_float_slider(props, "speed", obs_module_text("Speed"), 0.0, 5.0, 0.05));
     NM_CUSTOM(obs_properties_add_int_slider(props, "segments", obs_module_text("Segments"), 0, 48, 1));
 #undef NM_CUSTOM
+    struct nm_filter *current = data;
+    nm_geometry_visibility(props,current ? current->config.shape_id : NM_SHAPE_ROUNDED);
     return props;
 }
 
