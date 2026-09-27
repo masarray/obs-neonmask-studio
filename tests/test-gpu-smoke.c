@@ -34,7 +34,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                         (variant == 3 || variant == 4 || variant == 18 ||
                          variant == 19 || variant == 21 || variant == 22 ||
                          variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                          variant == 30 || variant == 32 || variant == 34 || variant == 35 ? 255 : 0);
+                          variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 ? 255 : 0);
     const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
                           (variant == 3 || variant == 4 || variant == 18 ||
                            variant == 19 || variant == 21 || variant == 22 ||
@@ -50,7 +50,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *layers[] = {pixels};
     gs_texture_t *input = gs_texture_create(W, H, GS_RGBA, 1, layers, 0);
     gs_texture_t *svg_texture = NULL;
-    if(variant>=34 && variant<=36){
+    if(variant>=34 && variant<=37){
         enum { SIZE = 256 };
         float *field=bmalloc(SIZE*SIZE*sizeof(float));
         if(!field){fprintf(stderr,"FAIL: SVG GPU fixture allocation\\n");return 1;}
@@ -58,7 +58,11 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
             for(unsigned x=0;x<SIZE;++x){
                 float px=((float)x+0.5f)/(float)SIZE*48.0f-24.0f;
                 float py=((float)y+0.5f)/(float)SIZE*48.0f-24.0f;
-                field[(size_t)y*SIZE+x]=sqrtf(px*px+py*py)-16.0f;
+                /* Case 37 fills the viewBox; clamped edge texels are negative.
+                 * Sample just OUTSIDE the local bounds to detect leaked alpha. */
+                field[(size_t)y*SIZE+x]=variant==37 ?
+                    fmaxf(fabsf(px),fabsf(py))-24.0f :
+                    sqrtf(px*px+py*py)-16.0f;
             }
         const uint8_t *svg_layers[]={ (const uint8_t *)field };
         svg_texture=gs_texture_create(SIZE,SIZE,GS_R32F,1,svg_layers,0);
@@ -85,7 +89,8 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     vec2_set(&zero2, 0.0f, 0.0f);
     struct vec2 mask_shift;
     struct vec2 subject_shift;
-    vec2_set(&mask_shift, variant == 4 ? 28.0f : 0.0f, 0.0f);
+    vec2_set(&mask_shift, variant == 4 ? 28.0f :
+             variant == 37 ? 0.45f : 0.0f, 0.0f);
     vec2_set(&subject_shift, variant == 3 ? 96.0f : 0.0f, 0.0f);
     vec4_set(&magenta, 1.0f, 0.0f, 1.0f, 1.0f);
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "uv_size"), &dims);
@@ -104,7 +109,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                       variant == 13 || variant == 14 ? 1 :
                       variant == 15 || variant == 22 ? 5 :
                       variant == 18 || variant == 20 || variant == 27 ? 8 :
-                      variant >= 34 && variant <= 36 ? 12 :
+                      variant >= 34 && variant <= 37 ? 12 :
                       variant == 30 || variant == 31 ? 10 :
                        variant == 32 || variant == 33 ? 11 :
                        variant == 21 || variant == 23 || variant >= 24 ? 9 : 0);
@@ -141,7 +146,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), glow_case);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "svg_sdf"),svg_texture);
     gs_effect_set_int(gs_effect_get_param_by_name(effect,"svg_ready"),
-                      variant == 34 || variant == 36 ? 1 : 0);
+                      variant == 34 || variant == 36 || variant == 37 ? 1 : 0);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "image"), input);
 
     if (!gs_texrender_begin(target, W, H)) {
@@ -216,6 +221,8 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *squircle_axis_neon = mapped + 32u * stride + 56u * 4u;
     const uint8_t *svg_outside = mapped + 32u * stride + 55u * 4u;
     const uint8_t *svg_edge = mapped + 32u * stride + 48u * 4u;
+    const uint8_t *svg_viewbox_just_outside = mapped + 32u * stride + 56u * 4u;
+    const uint8_t *svg_viewbox_just_inside = mapped + 32u * stride + 54u * 4u;
     const uint8_t *card_diag_neon = mapped + 12u * stride + 52u * 4u;
     const uint8_t *fillet_endpoint = mapped + 8u * stride + 46u * 4u;
     const uint8_t *square_top_left = mapped + 8u * stride + 8u * 4u;
@@ -409,6 +416,14 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
         failed=1;
     }
 
+    else if(variant==37 &&
+            (svg_viewbox_just_outside[3]>130 ||
+             svg_viewbox_just_inside[3]<245)) {
+        fprintf(stderr,"FAIL: filled SVG viewBox leaks clamped negative SDF outside: outer=%u inner=%u\n",
+                svg_viewbox_just_outside[3],svg_viewbox_just_inside[3]);
+        failed=1;
+    }
+
     gs_stagesurface_unmap(stage);
 done:
     if (stage) gs_stagesurface_destroy(stage);
@@ -509,7 +524,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 37; ++variant)
+            for (int variant = 0; variant < 38; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
