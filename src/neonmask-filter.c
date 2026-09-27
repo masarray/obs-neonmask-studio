@@ -300,8 +300,9 @@ static obs_properties_t *nm_properties(void *data)
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_width", obs_module_text("Mask.Width"), 0.10, 0.98, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_height", obs_module_text("Mask.Height"), 0.10, 0.98, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "shape_detail", obs_module_text("Mask.Detail"), 0.08, 0.35, 0.01));
-    /* Reuse existing persisted Roundness key. Angled Card only fillets the
-     * two diagonal cut endpoints; the other corners stay right angles. */
+    /* One persisted slider: rounded-box corners, Bubble tail-tip curvature,
+     * and ONLY the Angled Card diagonal endpoints (square corners stay sharp).
+     * Shape-neutral label avoids misleading Bubble users. */
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "roundness", obs_module_text("Roundness"), 0.0, 1.0, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_x", obs_module_text("Mask.PositionX"), -4096.0, 4096.0, 1.0));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_y", obs_module_text("Mask.PositionY"), -4096.0, 4096.0, 1.0));
