@@ -256,3 +256,22 @@ The original SVG authoring samples are not a runtime SVG importer. D2 is
 bounded SVG/distance field and expanded original shape library; D3 is safe-fit,
 actual OBS comparison and performance acceptance in Issue #24. Do not mark
 D2/D3 or image #8/#9 visual parity complete from a shader CI result.
+
+## D2.2 — exterior-only Bubble contour and rounded leaf tip
+
+The latest user's continuation request retains Phase D Issue #26 and the
+image #8/#9 visual north star. D2.1 selective Angled Card Roundness (PR #29)
+is the verified baseline. This next focused slice replaces the Bubble's
+distance-to-two-overlapping-primitives with a distance to one **exposed
+exterior contour**. Hidden body-bottom/tail-base edges are excluded so they
+cannot be illuminated as a horizontal internal seam. Roundness controls
+the tail-tip fillet; shape-detail controls tail depth. Both share a single
+coverage/neon/bloom contour. Existing IDs, source X/Y and zoom stay intact.
+See [PHASE_D_IMPLEMENTATION.md](PHASE_D_IMPLEMENTATION.md).
+
+Add pure-C and OpenGL/D3D11 shader pixel regression fixtures for the seam
+and tail; do not claim an OBS visual pass until actual captures at multiple
+Roundness and image sizes are reviewed. SVG/custom mask importer and shape
+library, safe-fit, 320×180 aesthetic review, performance and eight-hour soak
+remain outstanding Phase D gates. This intentionally corrects Bubble ID 8
+appearance without altering unrelated saved shapes.
