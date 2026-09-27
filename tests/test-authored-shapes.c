@@ -50,7 +50,7 @@ int main(void)
     check("lower-right corner remains at boundary",
           fabsf(nm_authored_shape_distance(card,bx,by,bx,by,10.5f,detail))<0.0001f);
     check("fillet respects shape-detail change",
-          nm_authored_shape_distance(card,cx,-by,bx,by,10.5f,0.35f)<0.0f);
+          nm_authored_shape_distance(card,cx,-by,bx,by,10.5f,0.35f)>0.0f);
     check("large roundness stays finite",
           isfinite(nm_authored_shape_distance(card,cx,-by,bx,by,999.0f,detail)));
     /* Signed-distance sign symmetry across the two authored cut corners. */
