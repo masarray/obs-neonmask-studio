@@ -84,7 +84,9 @@ if(NEONMASK_BUILD_TESTS)
   add_executable(neonmask-svg-tests tests/test-svg.c)
   target_link_libraries(neonmask-svg-tests PRIVATE neonmask-math)
   add_test(NAME neonmask-svg-tests COMMAND neonmask-svg-tests
-           "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/d24-local-mask.svg")
+           "${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/d24-local-mask.svg"
+           "${CMAKE_CURRENT_SOURCE_DIR}/assets/designs/chat-bubble.svg"
+           "${CMAKE_CURRENT_SOURCE_DIR}/assets/designs/angled-card.svg")
   if(NEONMASK_BUILD_PLUGIN AND NEONMASK_BUILD_SHADER_SMOKE)
     add_executable(neonmask-gpu-smoke tests/test-gpu-smoke.c)
     target_link_libraries(neonmask-gpu-smoke PRIVATE OBS::libobs)
