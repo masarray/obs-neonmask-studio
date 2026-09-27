@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Original NeonMask Studio D1 vector artwork; authoring reference, not yet a runtime importer. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" width="400" height="240">
+  <path fill="#ffffff" d="M4 4 H348 L396 52 V236 H52 L4 188 Z"/>
+</svg>
