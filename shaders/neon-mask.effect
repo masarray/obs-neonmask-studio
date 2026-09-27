@@ -651,6 +651,29 @@ float4 drawNeonMask(VertData v_in) : TARGET
                             rail * gate * art_intensity * 0.78);
         }
 
+        // HUD Cut Panel: an asymmetrical rail keyed to its actual stepped
+        // silhouette. The legacy rectangle brackets do not pretend to
+        // represent this authored shape or create phantom inner outlines.
+        if (ornament_mode == 3 && shape_id == 10 && art_intensity > 0.0) {
+            float2 q = rotatePoint(p,shape_rotation);
+            float cut = min(max(2.0,min(half_size.x,half_size.y)*
+                                shape_detail*1.8),
+                            min(half_size.x,half_size.y)*0.45);
+            float railGap = halfCore+art_gap+3.0;
+            float rail = 1.0-smoothstep(0.25,1.35,abs(d-railGap));
+            float topZone = 1.0-smoothstep(2.0,cut*0.9+2.0,
+                                           abs(q.y+half_size.y));
+            float notchZone = (1.0-smoothstep(-half_size.x+cut*0.85,
+                                -half_size.x+cut*1.60,q.x)) *
+                              smoothstep(half_size.y-cut*1.15,
+                                         half_size.y-cut*0.30,q.y);
+            float selective = max(topZone,notchZone);
+            rimA = saturate(rimA*0.36+art_intensity*rail*
+                            (0.24+0.64*selective));
+            glintA = saturate(glintA+art_intensity*rail*
+                              (0.22*topZone+0.53*notchZone));
+        }
+
         // Streamer: an intentional two-segment speech-tail line with a
         // restrained status-dot trio. The tail is decorative, NOT a change
         // to portrait mask coverage. It follows the lower-left contour.
