@@ -24,7 +24,16 @@ static const nm_preset builtin[] = {
     /* First built-in geometric angled/cut-corner mask, no generic overlay. */
     {NM_SHAPE_ANGLED_CARD, NM_ANIM_STATIC, 0x00FF317Au, 0x00FFAA19u,
      0.81, 0.0, 4.0, 0.85, 20.0, 0.73, 0.58, 0, NM_STYLE_DOUBLE,
-     true, true, 0.77, 0.85, 0.76, 0.11, NM_ORNAMENT_NONE, 0.0, 2.0, 0.23}
+     true, true, 0.77, 0.85, 0.76, 0.11, NM_ORNAMENT_NONE, 0.0, 2.0, 0.23},
+    /* D2.3: the lower-left step is part of the actual clipped source contour.
+     * The Tech HUD recipe uses a separate SDF-aligned rail on this shape. */
+    {NM_SHAPE_HUD_PANEL, NM_ANIM_FLOW, 0x00F5C62Au, 0x00FF9F00u,
+     0.81, 0.0, 4.0, 0.85, 20.0, 0.73, 0.56, 0, NM_STYLE_DOUBLE,
+     true, true, 0.79, 0.89, 0.83, 0.09, NM_ORNAMENT_TECH_HUD, 0.87, 2.0, 0.25},
+    /* Smooth superellipse instead of a generic radius-based rounded box. */
+    {NM_SHAPE_SQUIRCLE, NM_ANIM_PULSE, 0x00FD55CAu, 0x00FFFF35u,
+     0.81, 0.15, 4.0, 0.85, 20.0, 0.74, 0.54, 0, NM_STYLE_DOUBLE,
+     true, true, 0.77, 0.88, 0.65, 0.12, NM_ORNAMENT_NONE, 0.0, 2.0, 0.22}
 };
 
 bool nm_get_preset(int id, nm_preset *out)

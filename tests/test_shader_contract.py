@@ -20,12 +20,19 @@ assert uniforms["subject_zoom"] == uniforms["shape_rotation"] == "float"
 assert uniforms["polygon_sides"] == "int"
 assert uniforms["shape_detail"] == "float"
 assert "NM_SHAPE_CHAT_BUBBLE" in host and "NM_SHAPE_ANGLED_CARD" in host
+assert "NM_SHAPE_HUD_PANEL" in host and "NM_SHAPE_SQUIRCLE" in host
+assert "hudPanelDistance(" in shader and "squircleDistance(" in shader
+assert "return sqrt(ds)*(inside ? -1.0 : 1.0)" in shader
+assert "Preset.HUDCut" in host and "Preset.Squircle" in host
+assert "Shape.HUDPanel" in host and "Shape.Squircle" in host
 # The same saved Roundness slider affects both Bubble tail and Angled Card
 # cut-end fillets. Reject the old UI text claiming it is Angled-only.
 en_locale = (ROOT / "data" / "locale" / "en-US.ini").read_text(encoding="utf-8")
 id_locale = (ROOT / "data" / "locale" / "id-ID.ini").read_text(encoding="utf-8")
 assert 'Roundness="Contour roundness"' in en_locale
 assert 'Roundness="Kelengkungan kontur"' in id_locale
+assert 'Mask.Detail="Shape detail (tail / cut / squircle)"' in en_locale
+assert 'Mask.Detail="Detail bentuk (ekor / potongan / squircle)"' in id_locale
 assert "return chatBubbleDistance(" in shader and "return angledCardDistance(" in shader
 # A primitive min is an occupancy union, NOT the exposed contour distance:
 # its hidden body bottom/tail base caused a phantom horizontal neon seam.

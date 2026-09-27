@@ -32,11 +32,13 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t red = variant == 0 ? 255 : variant == 1 ? 128 :
                         (variant == 3 || variant == 4 || variant == 18 ||
                          variant == 19 || variant == 21 || variant == 22 ||
-                         variant == 24 || variant == 25 || variant == 27 || variant == 28 ? 255 : 0);
+                         variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
+                          variant == 30 || variant == 32 ? 255 : 0);
     const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
                           (variant == 3 || variant == 4 || variant == 18 ||
                            variant == 19 || variant == 21 || variant == 22 ||
-                           variant == 24 || variant == 25 || variant == 27 || variant == 28 ? 255 : 0);
+                           variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
+                            variant == 30 || variant == 32 ? 255 : 0);
     for (size_t i = 0; i < W * H; ++i) {
         pixels[4 * i + 0] = red;   /* premultiplied red */
         pixels[4 * i + 1] = 0;
@@ -85,7 +87,9 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                       variant == 13 || variant == 14 ? 1 :
                       variant == 15 || variant == 22 ? 5 :
                       variant == 18 || variant == 20 || variant == 27 ? 8 :
-                      variant == 21 || variant == 23 || variant >= 24 ? 9 : 0);
+                      variant == 30 || variant == 31 ? 10 :
+                       variant == 32 || variant == 33 ? 11 :
+                       variant == 21 || variant == 23 || variant >= 24 ? 9 : 0);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "border_width"), 4.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "style_id"), 0);
     int art_mode = variant == 11 ? 1 : variant == 13 ? 2 :
@@ -114,7 +118,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "border_enabled"),
                       variant == 2 || (variant >= 5 && variant <= 17) ||
                       variant == 20 || variant == 23 || variant == 26 ||
-                       variant == 27 || variant == 29);
+                       variant == 27 || variant == 29 || variant == 31 || variant == 33);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), glow_case);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "image"), input);
 
@@ -181,6 +185,13 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *bubble_exposed_bottom = mapped + 46u * stride + 27u * 4u;
     const uint8_t *card_cut_corner = mapped + 11u * stride + 53u * 4u;
     const uint8_t *full_arc_middle = mapped + 13u * stride + 51u * 4u;
+    const uint8_t *hud_cut_corner = mapped + 9u * stride + 55u * 4u;
+    const uint8_t *hud_notch = mapped + 51u * stride + 15u * 4u;
+    const uint8_t *hud_step_fill = mapped + 51u * stride + 20u * 4u;
+    const uint8_t *hud_step_neon = mapped + 53u * stride + 16u * 4u;
+    const uint8_t *squircle_corner = mapped + 55u * stride + 55u * 4u;
+    const uint8_t *squircle_inside = mapped + 50u * stride + 50u * 4u;
+    const uint8_t *squircle_axis_neon = mapped + 32u * stride + 56u * 4u;
     const uint8_t *card_diag_neon = mapped + 12u * stride + 52u * 4u;
     const uint8_t *fillet_endpoint = mapped + 8u * stride + 46u * 4u;
     const uint8_t *square_top_left = mapped + 8u * stride + 8u * 4u;
@@ -333,6 +344,30 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
         fprintf(stderr, "FAIL: neon must follow full quarter arc at max roundness alpha=%u\\n",
                 full_arc_middle[3]);
         failed = 1;
+    } else if (variant == 30 &&
+               (hud_cut_corner[3] > 3 || hud_notch[3] > 3 ||
+                hud_step_fill[0] < 240 || hud_step_fill[3] < 245)) {
+        fprintf(stderr, "FAIL: HUD panel must clip corners/notch and fill step: top=%u notch=%u step=%u\\n",
+                hud_cut_corner[3],hud_notch[3],hud_step_fill[3]);
+        failed = 1;
+    } else if (variant == 31 &&
+               (hud_step_neon[0] < 140 || hud_step_neon[2] < 140 ||
+                hud_step_neon[3] < 105)) {
+        fprintf(stderr, "FAIL: HUD neon must track non-convex step alpha=%u\\n",
+                hud_step_neon[3]);
+        failed = 1;
+    } else if (variant == 32 &&
+               (squircle_corner[3] > 3 ||
+                squircle_inside[0] < 240 || squircle_inside[3] < 245)) {
+        fprintf(stderr, "FAIL: squircle needs curved corner and filled inside corner=%u inside=%u\\n",
+                squircle_corner[3],squircle_inside[3]);
+        failed = 1;
+    } else if (variant == 33 &&
+               (squircle_axis_neon[0] < 150 || squircle_axis_neon[2] < 150 ||
+                squircle_axis_neon[3] < 120)) {
+        fprintf(stderr, "FAIL: squircle neon must track superellipse contour alpha=%u\\n",
+                squircle_axis_neon[3]);
+        failed = 1;
     }
 
     gs_stagesurface_unmap(stage);
@@ -434,7 +469,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 30; ++variant)
+            for (int variant = 0; variant < 34; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);

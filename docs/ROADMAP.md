@@ -279,3 +279,20 @@ appearance without altering unrelated saved shapes.
 ## Phase D2.3a — fuller authored Angled Card arc
 
 The user confirmed Bubble's former interior seam visually clean on the post-PR30 preview, while Angled Card Roundness 1.00 remained too angular. This focused refinement replaces the old 1.20×cut fillet-radius cap with a normalized 0..1 mapping reaching two tangent arcs with **one shared center and no flat diagonal** at maximum. Square top-left and bottom-right corners remain sharp, cut size remains separately adjustable, and a single SDF still controls mask, neon core and bloom. Existing shape ID 9/scene keys/presets are preserved, with an intentional visual improvement for saved nonzero Angled Card roundness. The rest of D2 (authored shape pack, bounded SVG importer) and D3 safe-fit/performance are not claimed complete from automated tests alone. See [PHASE_D_IMPLEMENTATION.md](PHASE_D_IMPLEMENTATION.md).
+
+## Phase D2.3b — first authored shape pack milestone
+
+Added HUD Cut Panel (shape 10; asymmetrical chamfers and a true stepped
+lower-left cutout) and Squircle (shape 11; continuous exponent-controlled
+superellipse). Preset IDs 8/9 are additive and do not rewrite older saved
+scenes. HUD signature supporting rail follows the actual non-convex mask
+distance. Both masks are source-alpha silhouettes, not decorative PNGs;
+the common SDF drives border, mid glow and bloom. Shape Detail is now
+labelled for tail, cut and squircle in English/Indonesian. The GPU path
+continues to use one composition effect without CPU frame processing.
+See [PHASE_D_IMPLEMENTATION.md](PHASE_D_IMPLEMENTATION.md).
+
+The deliverable is **code-level D2 built-in shapes v1**, not all of D2.
+The local bounded SVG import/cache provider, Star/Heart/Rounded Polygon,
+actual full-size/320×180 OBS captures, D3 safe-fit and hardware timing/soak
+remain pending and keep Issue #26 and #24 open.

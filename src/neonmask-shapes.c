@@ -185,6 +185,51 @@ static float card(nm_p2 p,nm_p2 b,float detail,float radius)
     return sqrtf(dist2)*(side>=0&&!removed?-1:1);
 }
 
+/* D2.3: a deliberately asymmetric, continuous HUD panel silhouette.
+ * Top/right bevels and a stepped lower-left notch clip the video itself,
+ * not an ornament hovering outside a conventional rectangle. */
+static int ray_crosses(nm_p2 p,nm_p2 a,nm_p2 b)
+{
+    return ((a.y>p.y)!=(b.y>p.y)) &&
+           p.x<a.x+(p.y-a.y)*(b.x-a.x)/(b.y-a.y);
+}
+static float hud_panel(nm_p2 p,nm_p2 b,float detail)
+{
+    const float cut=fminf(fmaxf(2.0f,fminf(b.x,b.y)*detail*1.8f),
+                          fminf(b.x,b.y)*0.45f);
+    const nm_p2 v[10]={
+        {-b.x,-b.y},{b.x-cut,-b.y},{b.x,-b.y+cut},
+        {b.x,b.y-cut*0.40f},{b.x-cut*0.35f,b.y},
+        {-b.x+cut*1.60f,b.y},{-b.x+cut*1.60f,b.y-cut*0.28f},
+        {-b.x+cut*0.85f,b.y-cut*0.28f},
+        {-b.x+cut*0.85f,b.y-cut*0.70f},
+        {-b.x,b.y-cut*0.70f}
+    };
+    float ds=edge2(p,v[9],v[0]);
+    int inside=0;
+    for(int i=0;i<10;++i){
+        const nm_p2 a=v[i],next=v[(i+1)%10];
+        ds=fminf(ds,edge2(p,a,next));
+        inside^=ray_crosses(p,a,next);
+    }
+    return sqrtf(ds)*(inside?-1.0f:1.0f);
+}
+
+/* A superellipse is NOT a corner-radius variant of a rounded rectangle.
+ * The implicit surface and its gradient yield approximately pixel-uniform
+ * near-edge distance for arbitrary source aspect ratios. Center is bounded. */
+static float squircle(nm_p2 p,nm_p2 b,float detail)
+{
+    const float exponent=4.0f+(detail-0.08f)/0.27f;
+    const float ax=fminf(fabsf(p.x)/b.x,32.0f);
+    const float ay=fminf(fabsf(p.y)/b.y,32.0f);
+    const float fx=powf(ax,exponent),fy=powf(ay,exponent);
+    const float gx=exponent*powf(ax,exponent-1.0f)/b.x;
+    const float gy=exponent*powf(ay,exponent-1.0f)/b.y;
+    const float d=(fx+fy-1.0f)/fmaxf(hypotf(gx,gy),1.0f/fminf(b.x,b.y));
+    return fmaxf(d,-fminf(b.x,b.y));
+}
+
 float nm_authored_shape_distance(int shape_id,float x,float y,
                                  float half_width,float half_height,
                                  float radius,float detail)
@@ -196,5 +241,7 @@ float nm_authored_shape_distance(int shape_id,float x,float y,
     const nm_p2 p={x,y},b={half_width,half_height};
     if(shape_id==NM_SHAPE_CHAT_BUBBLE) return bubble(p,b,radius,detail);
     if(shape_id==NM_SHAPE_ANGLED_CARD) return card(p,b,detail,radius);
+    if(shape_id==NM_SHAPE_HUD_PANEL) return hud_panel(p,b,detail);
+    if(shape_id==NM_SHAPE_SQUIRCLE) return squircle(p,b,detail);
     return NAN;
 }

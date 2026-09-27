@@ -9,10 +9,10 @@ Start with the [product and engineering charter](docs/PRODUCT_SPEC.md). It links
 ## Implemented
 
 - One OBS video filter: `NeonMask Studio — Facecam Mask & Border`.
-- Rounded rectangle, circle, oval, rectangle, hexagon, diamond, triangle, polygon, **integrated Chat Bubble** and **Angled Card**; independent mask size/X/Y, subject pan/zoom, rotation and feather.
+- Rounded rectangle, circle, oval, rectangle, hexagon, diamond, triangle, polygon, **integrated Chat Bubble**, **Angled Card**, **HUD Cut Panel** and **Squircle**; independent mask size/X/Y, subject pan/zoom, rotation and feather.
 - Dual-color neon, width, analytic halo radius/intensity, static/pulse/traveling-light modes, angular segmentation.
 - Four GPU-composited border styles: Classic Neon, Cyber Double Rim, Tech HUD, Minimal Glow.
-- Seven editable presets: Cyber Rounded, Reactor Ring, Emerald Hex, Ember Frame, Tech HUD, Streamer Bubble and Angled Card. Existing IDs 1–6 are stable; Angled Card appends ID 7. Reselecting Streamer uses the integrated bubble; previously saved rounded Streamer scenes retain their stored shape. Explicit signature ornament recipes (Cyber corner traces, Reactor arcs, HUD brackets, legacy Streamer decorative bubble tail) are optional and follow the mask contour.
+- Nine editable presets: Cyber Rounded, Reactor Ring, Emerald Hex, Ember Frame, Tech HUD, Streamer Bubble, Angled Card, HUD Cut Panel and Squircle. Existing IDs 1–7 are stable; HUD/Squircle append 8/9. Reselecting Streamer uses the integrated bubble; previously saved rounded Streamer scenes retain their stored shape. Explicit signature ornament recipes (Cyber corner traces, Reactor arcs, HUD brackets, legacy Streamer decorative bubble tail) are optional and follow the mask contour.
 - OBS-native properties, English and Indonesian strings, direct GPU effect. No web browser or recurring texture uploads.
 - Release-safe C geometry, contour, preset and motion tests; static shader/host contract and actual libobs OpenGL/D3D11 direct-effect pixel fixtures.
 - Corrected RGBA color handling, captured-alpha compositing and base-size calculations.
@@ -45,7 +45,7 @@ Right-click webcam source → **Filters** → **Effect Filters** → **+** → *
 ## Deliberate MVP limitations
 
 - Halo stays **within the original source rectangle**; use the built-in scale margin. Expanded output padding / companion frame source is next.
-- Custom alpha images, **SVG import** and source masks are **not yet implemented**. Original SVG design references in `assets/designs/` are authoring samples only; the D1 integrated Chat Bubble and Angled Card use production GPU geometry. No graphical gallery, audio reactivity or GPU benchmark evidence yet.
+- Custom alpha images, **SVG import** and source masks are **not yet implemented**. Original SVG design references in `assets/designs/` are authoring samples only. Bubble, Angled Card, stepped HUD Panel and superellipse Squircle are analytic GPU geometry, not imported SVG files. No graphical gallery, audio reactivity or GPU benchmark evidence yet.
 - Ellipse and segmented non-circular paths remain approximate; Cyber Rounded has rounded-perimeter travel, while universal contour-length motion is not yet delivered. Actual visual parity with the concept artwork and final OBS output are **not yet verified**.
 - GPU compilation and direct-effect pixel smoke tests run on libobs OpenGL and D3D11. Real OBS frontend/final-output visual tests, filter-chain validation, compatibility matrix and performance measurements remain pending.
 
@@ -59,7 +59,7 @@ This implementation is newly written around the documented libobs filter/effect 
 
 ## Phase D: actual authored mask contours
 
-The Chat Bubble tail and Angled Card diagonal cuts are **part of the source alpha mask and its shared neon contour**, not detached overlay ornaments. The new shape-detail control changes tail depth/chamfer size. [Phase D implementation contract](docs/PHASE_D_IMPLEMENTATION.md) separates the shipped code candidate from pending SVG importer, wider authored library, safe-fit and actual OBS concept comparison.
+The Chat Bubble tail, Angled Card arcs, HUD Cut Panel notch and Squircle contour are **part of the source alpha mask and its shared neon contour**, not detached overlay ornaments. Shape detail changes tail depth, cut depth or Squircle curvature depending on the selected shape. [Phase D implementation contract](docs/PHASE_D_IMPLEMENTATION.md) separates the shipped code candidate from pending SVG importer, wider authored library, safe-fit and actual OBS concept comparison.
 
 ## Roadmap
 

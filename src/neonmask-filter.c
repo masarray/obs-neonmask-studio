@@ -279,6 +279,8 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(preset, obs_module_text("Preset.TechHUD"), 5);
     obs_property_list_add_int(preset, obs_module_text("Preset.Streamer"), 6);
     obs_property_list_add_int(preset, obs_module_text("Preset.AngledCard"), 7);
+    obs_property_list_add_int(preset, obs_module_text("Preset.HUDCut"), 8);
+    obs_property_list_add_int(preset, obs_module_text("Preset.Squircle"), 9);
     obs_property_set_modified_callback(preset, nm_preset_changed);
 
     obs_property_t *shape = obs_properties_add_list(props, "shape", obs_module_text("Shape"),
@@ -293,6 +295,8 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(shape, obs_module_text("Shape.Polygon"), NM_SHAPE_POLYGON);
     obs_property_list_add_int(shape, obs_module_text("Shape.ChatBubble"), NM_SHAPE_CHAT_BUBBLE);
     obs_property_list_add_int(shape, obs_module_text("Shape.AngledCard"), NM_SHAPE_ANGLED_CARD);
+    obs_property_list_add_int(shape, obs_module_text("Shape.HUDPanel"), NM_SHAPE_HUD_PANEL);
+    obs_property_list_add_int(shape, obs_module_text("Shape.Squircle"), NM_SHAPE_SQUIRCLE);
     obs_property_set_modified_callback(shape, nm_custom_changed);
 
 #define NM_CUSTOM(expr) obs_property_set_modified_callback((expr), nm_custom_changed)
