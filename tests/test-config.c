@@ -114,6 +114,12 @@ int main(void)
     cfg.shape_id = NM_SHAPE_ANGLED_CARD;
     nm_config_validate(&cfg);
     check("angled enum accepted", cfg.shape_id == NM_SHAPE_ANGLED_CARD);
+    cfg.shape_id = NM_SHAPE_HUD_PANEL;
+    nm_config_validate(&cfg);
+    check("HUD enum accepted", cfg.shape_id == NM_SHAPE_HUD_PANEL);
+    cfg.shape_id = NM_SHAPE_SQUIRCLE;
+    nm_config_validate(&cfg);
+    check("squircle enum accepted", cfg.shape_id == NM_SHAPE_SQUIRCLE);
     check("animation fallback", cfg.animation_id == NM_ANIM_STATIC);
     check("style fallback", cfg.style_id == NM_STYLE_CLASSIC);
     check("segments clamp", cfg.segment_count == 48);
@@ -152,6 +158,8 @@ int main(void)
     check("Streamer selects actual bubble", nm_config_apply_preset(&cfg, 6) && cfg.shape_id == NM_SHAPE_CHAT_BUBBLE);
     check("Angled preset selects diagonal mask", nm_config_apply_preset(&cfg, 7) && cfg.shape_id == NM_SHAPE_ANGLED_CARD);
 
+    check("HUD preset chooses new shape", nm_config_apply_preset(&cfg, 8) && cfg.shape_id == NM_SHAPE_HUD_PANEL);
+    check("Squircle preset chooses new shape", nm_config_apply_preset(&cfg, 9) && cfg.shape_id == NM_SHAPE_SQUIRCLE);
     check("legacy schema supported", nm_config_schema_supported(0));
     check("current schema supported", nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION));
     check("legacy v1 schema supported", nm_config_schema_supported(1));
