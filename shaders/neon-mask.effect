@@ -3,6 +3,8 @@
 // No duplicate geometry or full-frame blur texture is required for this MVP.
 uniform float4x4 ViewProj;
 uniform texture2d image;
+uniform texture2d svg_sdf;
+uniform int svg_ready;
 uniform float2 uv_size;
 uniform float2 half_size;
 uniform float2 mask_offset;
@@ -36,6 +38,11 @@ uniform int border_enabled;
 uniform int glow_enabled;
 
 sampler_state image_sampler {
+    Filter = Linear;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+sampler_state svg_sampler {
     Filter = Linear;
     AddressU = Clamp;
     AddressV = Clamp;
@@ -365,8 +372,22 @@ float squircleDistance(float2 p,float2 b,float detail)
     return max(d,-min(b.x,b.y));
 }
 
+float svgPathDistance(float2 p)
+{
+    // Texture contains signed physical-pixel distance from a bounded
+    // update/resize-only CPU raster. Rotation is applied in mask space;
+    // source sampling/pan/zoom remains independent.
+    float2 q=rotatePoint(p,shape_rotation);
+    float2 uv=q/max(half_size*2.0,float2(0.001,0.001))+0.5;
+    float2 clamped=saturate(uv);
+    float d=svg_sdf.Sample(svg_sampler,clamped).r;
+    return d+length(max(abs(q)-half_size,0.0));
+}
+
 float shapeDistance(float2 p)
 {
+    if (shape_id == 12)
+        return svg_ready != 0 ? svgPathDistance(p) : 4096.0;
     if (shape_id == 8)
         return chatBubbleDistance(rotatePoint(p,shape_rotation),half_size,
                                   corner_radius,shape_detail);
@@ -451,6 +472,10 @@ float4 drawNeonMask(VertData v_in) : TARGET
     const float TAU = 6.28318530718;
     float2 sourcePos = v_in.uv * uv_size - uv_size * 0.5;
     float2 p = sourcePos - mask_offset;
+    // Never expose an unmasked facecam for a missing, invalid or stale
+    // external asset. Shader-not-ready failures are transparent, not bypass.
+    if(shape_id == 12 && svg_ready == 0)
+        return float4(0.0,0.0,0.0,0.0);
     float d = shapeDistance(p);
 
     // Positive pan moves the visible subject right/down inside a fixed mask.
