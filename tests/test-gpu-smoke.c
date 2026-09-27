@@ -36,7 +36,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
                           (variant == 3 || variant == 4 || variant == 18 ||
                            variant == 19 || variant == 21 || variant == 22 ||
-                           variant == 24 || variant == 25 || variant == 27 ? 255 : 0);
+                           variant == 24 || variant == 25 || variant == 27 || variant == 28 ? 255 : 0);
     for (size_t i = 0; i < W * H; ++i) {
         pixels[4 * i + 0] = red;   /* premultiplied red */
         pixels[4 * i + 1] = 0;
