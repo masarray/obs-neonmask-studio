@@ -26,8 +26,11 @@ int main(void)
           D(bubble,-13.0f,bottom+0.4f)<-2.5f);
     check("bubble exposed lower rail remains at zero distance",
           fabsf(D(bubble,-5.0f,bottom))<0.001f);
-    check("bubble rounded tip removes old sharp pixel",
-          D(bubble,-0.72f*bx,by-1.0f)>0.6f);
+    const float bubble_tip_distance=D(bubble,-0.72f*bx,by-1.0f);
+    if(!(bubble_tip_distance>0.6f))
+        fprintf(stderr,"DEBUG: rounded Bubble tip distance=%g (expected positive)\\n",
+                bubble_tip_distance);
+    check("bubble rounded tip removes old sharp pixel",bubble_tip_distance>0.6f);
     check("bubble leaf interior still contains source",
           D(bubble,-17.0f,20.0f)<-0.5f);
     check("roundness zero retains the geometric tail endpoint",
