@@ -11,6 +11,7 @@ void nm_config_defaults(nm_config *cfg)
         .scale = 0.81f,
         .mask_width = 0.81f,
         .mask_height = 0.81f,
+        .safe_fit = false,
         .mask_x_px = 0.0f,
         .mask_y_px = 0.0f,
         .subject_pan_x_px = 0.0f,

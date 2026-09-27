@@ -241,3 +241,27 @@ subject framing and SVG cache are unchanged. A structural regression forbids
 unmasked bypass from the render callback. Verify real OBS missing-effect,
 save/restart and filter-chain behavior separately under G4-V/G5; code and GPU
 CI cannot substitute for frontend proof.
+
+## D3a — opt-in source-canvas safe-fit (code preview)
+
+The first D3 vertical slice deliberately does **not** claim expanded OBS
+filter output. The libobs capture helper renders the target at its existing
+base dimensions; increasing the final sprite width/height alone would not
+translate the target origin or fix filter-chain/scene alignment. D3a instead
+offers an explicitly opt-in `safe_fit` checkbox, default **off** for all old
+scenes. It computes a conservative luminous envelope from shader core, feather,
+double rails, art/brackets/tail and exp2 bloom cutoff, plus a rotated silhouette
+bounding rectangle. If the authored geometry would clip, only the mask
+half-extents shrink uniformly; mask center and source subject pan/zoom/UV,
+saved width/height and source dimensions are unchanged. SVG raster/tick and
+render use the same effective half-size. If an offset leaves no room even for
+the envelope, emit transparent output and a one-shot warning instead of
+silently repositioning the portrait. This is an opt-in **inside-existing-canvas**
+mode, not a general solution to arbitrary off-source translations.
+
+Gates: pure-C fit/rotation/impossible-position and schema/locale host contracts,
+then Linux/Windows native, OpenGL/D3D11 direct-pixel CI. Actual OBS screenshots
+at off-center framing, source resize, SVG reload, filter-chain order and the
+320×180 downscale still require G4-V/G5. Expanded output (dimension callbacks,
+source-origin translation, exact per-shape envelope and downstream transforms)
+remains D3b, and hardware timing/soak remains G6. No premature #24/#26 closure.

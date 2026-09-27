@@ -5,6 +5,7 @@
 #include "neonmask-config.h"
 #include "neonmask-motion.h"
 #include "neonmask-svg.h"
+#include "neonmask-safe-fit.h"
 #include <string.h>
 #include <math.h>
 #include <graphics/vec2.h>
@@ -55,6 +56,7 @@ struct nm_filter {
     float svg_mask_w,svg_mask_h;
     nm_config config;
     nm_motion motion;
+    bool fit_warning_sent;
 };
 
 static const char *nm_get_name(void *unused)
@@ -111,6 +113,7 @@ static void nm_update(void *data, obs_data_t *settings)
         .scale = legacy_scale,
         .mask_width = legacy_framing ? legacy_scale : (float)obs_data_get_double(settings, "mask_width"),
         .mask_height = legacy_framing ? legacy_scale : (float)obs_data_get_double(settings, "mask_height"),
+        .safe_fit = obs_data_get_bool(settings, "safe_fit"),
         .mask_x_px = legacy_framing ? 0.0f : (float)obs_data_get_double(settings, "mask_x"),
         .mask_y_px = legacy_framing ? 0.0f : (float)obs_data_get_double(settings, "mask_y"),
         .subject_pan_x_px = legacy_framing ? 0.0f : (float)obs_data_get_double(settings, "subject_pan_x"),
@@ -152,6 +155,7 @@ static void nm_update(void *data, obs_data_t *settings)
     nm_config_validate(&next);
     const bool asset_changed=strcmp(next.svg_path,f->config.svg_path)!=0;
     f->config = next;
+    f->fit_warning_sent = false;
     if(asset_changed) nm_refresh_svg(f);
 
     /* Pin additive Phase-B defaults into saved v2 scenes once. Existing
@@ -208,6 +212,7 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_double(settings, "scale", cfg.scale);
     obs_data_set_default_double(settings, "mask_width", cfg.mask_width);
     obs_data_set_default_double(settings, "mask_height", cfg.mask_height);
+    obs_data_set_default_bool(settings, "safe_fit", cfg.safe_fit);
     obs_data_set_default_double(settings, "mask_x", cfg.mask_x_px);
     obs_data_set_default_double(settings, "mask_y", cfg.mask_y_px);
     obs_data_set_default_double(settings, "subject_pan_x", cfg.subject_pan_x_px);
@@ -392,6 +397,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_properties_t *mask_group = obs_properties_create();
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_width", obs_module_text("Mask.Width"), 0.10, 0.98, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_height", obs_module_text("Mask.Height"), 0.10, 0.98, 0.01));
+    NM_CUSTOM(obs_properties_add_bool(mask_group, "safe_fit", obs_module_text("Mask.SafeFit")));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "shape_detail", obs_module_text("Mask.Detail"), 0.08, 0.35, 0.01));
     /* One persisted slider: rounded-box corners, Bubble tail-tip curvature,
      * and ONLY the Angled Card diagonal endpoints (square corners stay sharp).
@@ -554,8 +560,11 @@ static void nm_tick(void *data, float seconds)
     const uint32_t width=obs_source_get_base_width(target);
     const uint32_t height=obs_source_get_base_height(target);
     if(!width||!height) return;
-    const float bx=0.5f*(float)width*f->config.mask_width;
-    const float by=0.5f*(float)height*f->config.mask_height;
+    nm_fit_result fit;
+    if (!nm_safe_fit_calculate(&f->config, width, height, &fit) || !fit.fits)
+        return;
+    const float bx=fit.half_width;
+    const float by=fit.half_height;
     if(!f->svg_dirty && f->svg_width==width && f->svg_height==height &&
        f->svg_mask_w==bx && f->svg_mask_h==by) return;
     f->svg_dirty=false;
@@ -601,8 +610,22 @@ static void nm_render(void *data, gs_effect_t *unused)
     /* Transient zero-size targets must not bypass the mask either. */
     if (!width || !height)
         return;
-    const float half_width = 0.5f * (float)width * f->config.mask_width;
-    const float half_height = 0.5f * (float)height * f->config.mask_height;
+    nm_fit_result fit;
+    if (!nm_safe_fit_calculate(&f->config, width, height, &fit))
+        return;
+    if (!fit.fits) {
+        /* A mask center outside the available halo envelope cannot be fitted
+         * without moving the user's frame. Never silently reposition it. */
+        if (!f->fit_warning_sent) {
+            blog(LOG_WARNING, "[NeonMask Studio] safe-fit has no room at this mask position/size; "
+                              "move the mask or reduce glow. Output is transparent.");
+            f->fit_warning_sent = true;
+        }
+        return;
+    }
+    f->fit_warning_sent = false;
+    const float half_width = fit.half_width;
+    const float half_height = fit.half_height;
     const float rx = fminf(half_width, half_height);
     const float corner_radius = f->config.roundness * fminf(half_width, half_height);
     struct vec2 dimensions;

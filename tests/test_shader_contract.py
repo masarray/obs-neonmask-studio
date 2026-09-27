@@ -111,6 +111,14 @@ assert not re.search(r"\bgs_effect_set_color\s*\(", host), "OBS color property d
 assert "src.rgb * mask" in shader
 assert "src.rgb * baseA" not in shader, "Would double-multiply alpha at edges"
 assert "obs_source_get_base_width" in host and "obs_source_get_base_height" in host
+assert 'obs_data_set_default_bool(settings, "safe_fit", cfg.safe_fit)' in host
+assert 'obs_properties_add_bool(mask_group, "safe_fit"' in host
+assert 'nm_safe_fit_calculate(&f->config, width, height, &fit)' in host
+assert "const float bx=fit.half_width;" in host and "const float by=fit.half_height;" in host
+assert "const float half_width = fit.half_width;" in host
+assert "const float half_height = fit.half_height;" in host
+assert 'Mask.SafeFit="Keep glow inside source (may shrink mask)"' in en_locale
+assert 'Mask.SafeFit="Jaga glow di dalam sumber (mask dapat mengecil)"' in id_locale
 assert "if (!valid)" in host, "Missing shader parameters must disable effect gracefully"
 # No shader / zero-size rendering must fail closed, not display the webcam.
 render = host.split("static void nm_render(", 1)[1].split("struct obs_source_info neonmask_filter_info", 1)[0]
