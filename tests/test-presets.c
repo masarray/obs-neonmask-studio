@@ -16,15 +16,16 @@ int main(void)
     nm_preset p = {0};
     check("custom preset invalid", !nm_get_preset(0, &p));
     check("negative preset invalid", !nm_get_preset(-1, &p));
-    check("unknown preset invalid", !nm_get_preset(7, &p));
+    check("unknown preset invalid", !nm_get_preset(8, &p));
     check("null output invalid", !nm_get_preset(1, NULL));
-    for (int id = 1; id <= 6; ++id) {
+    for (int id = 1; id <= 7; ++id) {
         check("known preset", nm_get_preset(id, &p));
-        check("valid shape", p.shape >= NM_SHAPE_ROUNDED && p.shape <= NM_SHAPE_POLYGON);
+        check("valid shape", p.shape >= NM_SHAPE_ROUNDED && p.shape <= NM_SHAPE_ANGLED_CARD);
         check("valid animation", p.animation >= NM_ANIM_STATIC && p.animation <= NM_ANIM_FLOW);
         check("nonzero colors", p.primary != p.secondary && p.primary != 0 && p.secondary != 0);
         check("scale range", p.scale >= 0.10 && p.scale <= 0.98);
         check("roundness range", p.roundness >= 0.0 && p.roundness <= 1.0);
+        check("shape detail range", p.shape_detail >= 0.08 && p.shape_detail <= 0.35);
         check("width range", p.border_width >= 0.5 && p.border_width <= 32.0);
         check("feather range", p.feather >= 0.5 && p.feather <= 30.0);
         check("glow radius range", p.glow_radius >= 1.0 && p.glow_radius <= 80.0);
@@ -56,8 +57,10 @@ int main(void)
     nm_get_preset(5, &p);
     check("HUD authored rectangle", p.shape == NM_SHAPE_RECTANGLE && p.ornament_mode == NM_ORNAMENT_TECH_HUD);
     nm_get_preset(6, &p);
-    check("Streamer authored bubble detail", p.shape == NM_SHAPE_ROUNDED && p.ornament_mode == NM_ORNAMENT_STREAMER);
+    check("Streamer preset becomes true bubble mask", p.shape == NM_SHAPE_CHAT_BUBBLE && p.ornament_mode == NM_ORNAMENT_NONE);
+    nm_get_preset(7, &p);
+    check("Angled Card preset", p.shape == NM_SHAPE_ANGLED_CARD && p.ornament_mode == NM_ORNAMENT_NONE);
     if (failures) return 1;
-    puts("PASS: six preset configurations and art recipe validation");
+    puts("PASS: seven preset configurations, integrated contours and recipe validation");
     return 0;
 }
