@@ -18,8 +18,23 @@ int main(void)
     check("bubble tail contains source image",D(bubble,-16.5f,20.5f)<-0.3f);
     check("bubble outside beside tail",D(bubble,-5.0f,20.5f)>2.0f);
     check("bubble upper exterior",D(bubble,0,-26.0f)>1.0f);
-    check("bubble shoulder union hides seam",D(bubble,-15.0f,bottom-1.0f)<-0.8f);
-    check("bubble tip is near contour",fabsf(D(bubble,-0.72f*bx,by-1.0f))<0.0001f);
+    check("bubble shoulder fully inside the outer contour",
+          D(bubble,-15.0f,bottom-1.0f)<-2.8f);
+    check("bubble internal seam is not an artificial neon edge",
+          D(bubble,-13.0f,bottom)<-2.8f);
+    check("bubble internal seam remains clear just below body",
+          D(bubble,-13.0f,bottom+0.4f)<-2.5f);
+    check("bubble exposed lower rail remains at zero distance",
+          fabsf(D(bubble,-5.0f,bottom))<0.001f);
+    check("bubble rounded tip removes old sharp pixel",
+          D(bubble,-0.72f*bx,by-1.0f)>0.6f);
+    check("bubble leaf interior still contains source",
+          D(bubble,-17.0f,20.0f)<-0.5f);
+    check("roundness zero retains the geometric tail endpoint",
+          fabsf(nm_authored_shape_distance(bubble,-0.72f*bx,by-1.0f,
+                                          bx,by,0.0f,detail))<0.001f);
+    check("bubble external shoulder remains on contour",
+          fabsf(D(bubble,-0.34f*bx,bottom))<0.001f);
     check("chamfered card center inside",D(card,0,0)<-5.0f);
     check("card top right removed",D(card,21,-21)>0.2f);
     check("card top right inside diagonal",D(card,13,-21)<-0.2f);
@@ -69,6 +84,6 @@ int main(void)
     }
 #undef D
     if(failures)return 1;
-    puts("PASS: integrated bubble, selective leaf-cut roundness and untouched square corners");
+    puts("PASS: exterior-only bubble contour, rounded leaf tip, selective card fillets and square corners");
     return 0;
 }
