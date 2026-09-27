@@ -179,3 +179,7 @@ and finite distance; separate real OpenGL/D3D11 GPU tests for filled interiors,
 transparent clipped corners and neon on concave/curved exterior. OBS
 real-output aesthetic review, custom SVG import, Star/Heart/Rounded
 Polygon and D3 safe-fit/motion/performance remain explicitly open.
+
+## D2.3c — maintainer OBS audit and refinement
+
+The 2026-09-27 user OBS captures are direct visual evidence: the angled maximum arc is accepted; the user manually changed **Mask shape** while **Apply design preset** remained *Custom/current settings*. That does not apply the curated HUD/Squircle light recipe and may retain an earlier segmented/ornament configuration. Explicitly select Preset 8/9 for signature lighting, or customize intentionally; do not silently overwrite the user's saved colors/segments when manually changing shape. HUD's two square staircase joins have been replaced with deliberately bevelled concave steps, and its opt-in Tech HUD preset adds two asymmetrical calibration traces. Squircle's near-horizontal/vertical signed distance uses exact axis intersection blended to the gradient distance at corners, to stabilize the luminous rail; the source shape and colored border remain one contour. Hide ineffective Roundness/Shape Detail/Polygon Sides native controls based on active shape while preserving persisted values. CPU+GPU regression and frontend screenshot on the revised build remain separate evidence gates; no blanket claim of image #9 parity.
