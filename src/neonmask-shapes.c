@@ -27,23 +27,76 @@ static float triangle(nm_p2 p,nm_p2 a,nm_p2 b,nm_p2 c)
                fminf(cross(sub(c,b),sub(p,b)),cross(sub(a,c),sub(p,c))));
     return sqrtf(d)*(side>=0?-1:1);
 }
-static float card(nm_p2 p,nm_p2 b,float detail)
+/* CPU reference mirrors the GPU's trimmed segments and selective arc
+ * fillets. Only diagonal endpoint vertices c/d/f/g are rounded. */
+static float arc2(nm_p2 p,nm_p2 start,nm_p2 finish,
+                  nm_p2 center,float radius)
 {
+    nm_p2 rs=sub(start,center),re=sub(finish,center),v=sub(p,center);
+    if(cross(rs,v)>=0.0f && cross(v,re)>=0.0f){
+        float d=sqrtf(dot(v,v))-radius;
+        return d*d;
+    }
+    return fminf(dot(sub(p,start),sub(p,start)),
+                 dot(sub(p,finish),sub(p,finish)));
+}
+static int in_tri(nm_p2 p,nm_p2 a,nm_p2 b,nm_p2 c)
+{
+    float x=cross(sub(b,a),sub(p,a)),y=cross(sub(c,b),sub(p,b)),
+          z=cross(sub(a,c),sub(p,c));
+    return (x>=0&&y>=0&&z>=0)||(x<=0&&y<=0&&z<=0);
+}
+static int excised(nm_p2 p,nm_p2 start,nm_p2 vertex,nm_p2 finish,
+                   nm_p2 center,float r)
+{
+    nm_p2 q=sub(p,center);
+    return in_tri(p,start,vertex,finish) && dot(q,q)>r*r;
+}
+static float card(nm_p2 p,nm_p2 b,float detail,float radius)
+{
+    const float inv_root2=0.70710678118f,tan_pi8=0.41421356237f;
     const float cut=fmaxf(1.0f,fminf(b.x,b.y)*detail*1.65f);
     nm_p2 a={-b.x,-b.y},c={b.x-cut,-b.y},d={b.x,-b.y+cut};
     nm_p2 e={b.x,b.y},f={-b.x+cut,b.y},g={-b.x,b.y-cut};
-    float ds=edge2(p,a,c);
-    ds=fminf(ds,edge2(p,c,d));ds=fminf(ds,edge2(p,d,e));
-    ds=fminf(ds,edge2(p,e,f));ds=fminf(ds,edge2(p,f,g));
-    ds=fminf(ds,edge2(p,g,a));
     float side=cross(sub(c,a),sub(p,a));
     side=fminf(side,cross(sub(d,c),sub(p,c)));
     side=fminf(side,cross(sub(e,d),sub(p,d)));
     side=fminf(side,cross(sub(f,e),sub(p,e)));
     side=fminf(side,cross(sub(g,f),sub(p,f)));
     side=fminf(side,cross(sub(a,g),sub(p,g)));
-    return sqrtf(ds)*(side>=0?-1:1);
+
+    const float r=fminf(fmaxf(radius,0.0f),cut*1.20f);
+    if(r<=0.0001f){
+        float ds=edge2(p,a,c);
+        ds=fminf(ds,edge2(p,c,d));ds=fminf(ds,edge2(p,d,e));
+        ds=fminf(ds,edge2(p,e,f));ds=fminf(ds,edge2(p,f,g));
+        ds=fminf(ds,edge2(p,g,a));
+        return sqrtf(ds)*(side>=0?-1:1);
+    }
+    float t=r*tan_pi8,k=t*inv_root2;
+    nm_p2 cs={c.x-t,c.y},ce={c.x+k,c.y+k};
+    nm_p2 ds={d.x-k,d.y-k},de={d.x,d.y+t};
+    nm_p2 fs={f.x+t,f.y},fe={f.x-k,f.y-k};
+    nm_p2 gs={g.x+k,g.y+k},ge={g.x,g.y-t};
+    nm_p2 cc={cs.x,cs.y+r},dc={de.x-r,de.y};
+    nm_p2 fc={fs.x,fs.y-r},gc={ge.x+r,ge.y};
+    float dist2=edge2(p,a,cs);
+    dist2=fminf(dist2,edge2(p,ce,ds));
+    dist2=fminf(dist2,edge2(p,de,e));
+    dist2=fminf(dist2,edge2(p,e,fs));
+    dist2=fminf(dist2,edge2(p,fe,gs));
+    dist2=fminf(dist2,edge2(p,ge,a));
+    dist2=fminf(dist2,arc2(p,cs,ce,cc,r));
+    dist2=fminf(dist2,arc2(p,ds,de,dc,r));
+    dist2=fminf(dist2,arc2(p,fs,fe,fc,r));
+    dist2=fminf(dist2,arc2(p,gs,ge,gc,r));
+    const int removed=excised(p,cs,c,ce,cc,r)||
+                      excised(p,ds,d,de,dc,r)||
+                      excised(p,fs,f,fe,fc,r)||
+                      excised(p,gs,g,ge,gc,r);
+    return sqrtf(dist2)*(side>=0&&!removed?-1:1);
 }
+
 float nm_authored_shape_distance(int shape_id,float x,float y,
                                  float half_width,float half_height,
                                  float radius,float detail)
@@ -62,6 +115,6 @@ float nm_authored_shape_distance(int shape_id,float x,float y,
         const nm_p2 tip={-0.72f*b.x,b.y-1.0f};
         return fminf(body,triangle(p,a,c,tip));
     }
-    if(shape_id==NM_SHAPE_ANGLED_CARD) return card(p,b,detail);
+    if(shape_id==NM_SHAPE_ANGLED_CARD) return card(p,b,detail,radius);
     return NAN;
 }
