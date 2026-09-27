@@ -139,3 +139,16 @@ test-only GPU readback additionally checks that the tail-base strip is
 red source content without a magenta line, while the actual outside edge
 still lights. Actual OBS dark/light captures and leaf-tail artistic acceptance
 remain pending; so do SVG import, wider shape pack, safe-fit and G6.
+
+## D2.2 GUI feedback — shared Roundness label
+
+The 2026-09-27 OBS screenshots show the GUI still labels Roundness as
+"Angled Card: diagonal cuts only" even when Chat Bubble is selected.
+The same saved control also rounds the Bubble's leaf-tail tip after D2.2.
+Use the compact shape-neutral label **Contour roundness** in English and
+**Kelengkungan kontur** in Indonesian. Angled Card still rounds only its
+diagonal endpoints, leaving two square corners sharp; rounded rectangle
+uses corner roundness, and Bubble uses tail-tip curvature. No new key,
+slider, schema version, or geometry change is involved. Visual acceptance
+of the Bubble seam must use the exact post-PR30 build, not an earlier
+screenshot/artifact.
