@@ -32,11 +32,11 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t red = variant == 0 ? 255 : variant == 1 ? 128 :
                         (variant == 3 || variant == 4 || variant == 18 ||
                          variant == 19 || variant == 21 || variant == 22 ||
-                         variant == 24 || variant == 25 ? 255 : 0);
+                         variant == 24 || variant == 25 || variant == 27 ? 255 : 0);
     const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
                           (variant == 3 || variant == 4 || variant == 18 ||
                            variant == 19 || variant == 21 || variant == 22 ||
-                           variant == 24 || variant == 25 ? 255 : 0);
+                           variant == 24 || variant == 25 || variant == 27 ? 255 : 0);
     for (size_t i = 0; i < W * H; ++i) {
         pixels[4 * i + 0] = red;   /* premultiplied red */
         pixels[4 * i + 1] = 0;
@@ -83,7 +83,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "shape_id"),
                       variant == 13 || variant == 14 ? 1 :
                       variant == 15 || variant == 22 ? 5 :
-                      variant == 18 || variant == 20 ? 8 :
+                      variant == 18 || variant == 20 || variant == 27 ? 8 :
                       variant == 21 || variant == 23 || variant >= 24 ? 9 : 0);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "border_width"), 4.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "style_id"), 0);
@@ -112,7 +112,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "segment_count"), 0);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "border_enabled"),
                       variant == 2 || (variant >= 5 && variant <= 17) ||
-                      variant == 20 || variant == 23 || variant == 26);
+                      variant == 20 || variant == 23 || variant == 26 || variant == 27);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), glow_case);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "image"), input);
 
@@ -173,6 +173,10 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *bubble_tip_fill = mapped + 52u * stride + 15u * 4u;
     const uint8_t *bubble_beside = mapped + 52u * stride + 27u * 4u;
     const uint8_t *bubble_tip_neon = mapped + 55u * stride + 15u * 4u;
+    /* The body-tail overlap lies wholly INSIDE the bubble. A min-of-two
+     * SDFs incorrectly draws a blue neon strip along the horizontal seam. */
+    const uint8_t *bubble_internal_seam = mapped + 46u * stride + 19u * 4u;
+    const uint8_t *bubble_exposed_bottom = mapped + 46u * stride + 27u * 4u;
     const uint8_t *card_cut_corner = mapped + 11u * stride + 53u * 4u;
     const uint8_t *card_diag_neon = mapped + 12u * stride + 52u * 4u;
     const uint8_t *fillet_endpoint = mapped + 8u * stride + 46u * 4u;
@@ -302,6 +306,16 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
         fprintf(stderr, "FAIL: neon must follow the rounded diagonal fillet alpha=%u\n",
                 fillet_endpoint[3]);
         failed = 1;
+    } else if (variant == 27 &&
+               (bubble_internal_seam[0] < 220 ||
+                bubble_internal_seam[3] < 245 ||
+                bubble_internal_seam[2] > 40 ||
+                bubble_exposed_bottom[2] < 120)) {
+        fprintf(stderr, "FAIL: bubble phantom inner line seam RGBA=(%u,%u,%u,%u), exteriorB=%u\\n",
+                bubble_internal_seam[0],bubble_internal_seam[1],
+                bubble_internal_seam[2],bubble_internal_seam[3],
+                bubble_exposed_bottom[2]);
+        failed = 1;
     }
 
     gs_stagesurface_unmap(stage);
@@ -403,7 +417,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 27; ++variant)
+            for (int variant = 0; variant < 28; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
@@ -412,6 +426,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: libobs alpha/framing/light + geometric/leaf selective cut GPU fixtures (partial G4)");
+    puts("PASS: libobs alpha/framing/light + bubble seam/leaf + selective card cut GPU fixtures (partial G4)");
     return 0;
 }

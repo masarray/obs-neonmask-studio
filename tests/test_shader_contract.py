@@ -21,7 +21,14 @@ assert uniforms["polygon_sides"] == "int"
 assert uniforms["shape_detail"] == "float"
 assert "NM_SHAPE_CHAT_BUBBLE" in host and "NM_SHAPE_ANGLED_CARD" in host
 assert "return chatBubbleDistance(" in shader and "return angledCardDistance(" in shader
-assert "return min(body,wedge)" in shader
+# A primitive min is an occupancy union, NOT the exposed contour distance:
+# its hidden body bottom/tail base caused a phantom horizontal neon seam.
+assert "float ds = edgeDistanceSquared(p,topLeft,topRight)" in shader
+assert "edgeDistanceSquared(p,bottomRight,right)" in shader
+assert "edgeDistanceSquared(p,left,bottomLeft)" in shader
+assert "arcDistanceSquared(p,rightTangent,leftTangent,tipCenter,tipR)" in shader
+assert "return sqrt(ds)*(inside && !removed" in shader
+assert "return min(body,wedge)" not in shader
 assert 'obs_data_has_user_value(settings, "shape_detail")' in host
 assert 'gs_effect_set_float(f->shape_detail, f->config.shape_detail)' in host
 assert uniforms["style_id"] == uniforms["ornament_mode"] == "int"

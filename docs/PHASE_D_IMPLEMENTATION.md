@@ -108,3 +108,34 @@ the former diagonal vertices, the two square corners stay intact, both cuts
 remain symmetric, the input image and border follow the rounded contour,
 and existing bubble/other shapes do not regress. Actual OBS aesthetic
 acceptance of the leaf-like appearance is still pending.
+
+## D2.2 — Chat Bubble exterior-only leaf-tail contour (implementation)
+
+The user's reported horizontal line in the Bubble is not adequately addressed
+by a wider glow or a detached overlay. In the D1 formula, `min(body, triangle)`
+is a valid **alpha occupancy union** but underestimates *interior distance*:
+the covered bottom of the body and the covered triangle base can remain close
+to zero, creating a phantom neon stripe inside the speech bubble.
+
+D2.2 separates occupancy/sign from the **single visible exterior perimeter**.
+Explicit body straight segments, four rounded corner arcs, the two exposed
+tail sides and a tangent rounded leaf tip form one signed contour distance.
+The covered body-bottom interval and triangle base are not distance candidates.
+The same signed distance still drives source alpha, core, secondary rim, bloom
+and ornaments. Reuse the existing Roundness and shape-detail controls; no
+new setting key, enum ID, PNG overlay, dependency or per-frame CPU work.
+A zero Roundness value retains a pointed geometric tail; positive Roundness
+makes its tip softly rounded. Angled Card's independent selective leaf-chamfer
+behavior remains unchanged.
+
+This is an intentional appearance correction for shape ID 8, including
+previously saved Bubble scenes. Other shape IDs and existing source X/Y,
+pan/zoom and schema mappings remain untouched. The original SVG sample
+remains a design reference, not an implemented runtime importer.
+
+Required proof: pure-C distance checks establish no near-zero interior seam,
+a still-covered tail, a real exterior bottom rail and tip shape; OpenGL/D3D11
+test-only GPU readback additionally checks that the tail-base strip is
+red source content without a magenta line, while the actual outside edge
+still lights. Actual OBS dark/light captures and leaf-tail artistic acceptance
+remain pending; so do SVG import, wider shape pack, safe-fit and G6.

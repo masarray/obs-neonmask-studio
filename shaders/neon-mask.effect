@@ -128,8 +128,9 @@ bool inTriangle(float2 p, float2 a, float2 b, float2 c)
     float x = cross2(b-a,p-a);
     float y = cross2(c-b,p-b);
     float z = cross2(a-c,p-c);
-    return (x >= 0.0 && y >= 0.0 && z >= 0.0) ||
-           (x <= 0.0 && y <= 0.0 && z <= 0.0);
+    const float eps = 0.0001;
+    return (x >= -eps && y >= -eps && z >= -eps) ||
+           (x <= eps && y <= eps && z <= eps);
 }
 
 bool excisedCorner(float2 p, float2 start, float2 vertex,
@@ -202,22 +203,77 @@ float angledCardDistance(float2 p, float2 b, float detail, float radius)
     return sqrt(dist2) * (inside >= 0.0 && !removed ? -1.0 : 1.0);
 }
 
+// The bubble is a SINGLE exposed perimeter. min(body, triangle) is a
+// correct occupancy union, but its hidden body-bottom and tail-base remain
+// too close to zero inside the union and produce a phantom horizontal neon
+// line. Only external rails and arcs contribute to the contour distance.
+float quarterArcDistanceSquared(float2 p, float2 center, float r, float2 signXY)
+{
+    float2 q = (p-center)*signXY;
+    if (q.x >= 0.0 && q.y >= 0.0) {
+        float d = length(q)-r;
+        return d*d;
+    }
+    float2 xEnd = center+float2(signXY.x*r,0.0);
+    float2 yEnd = center+float2(0.0,signXY.y*r);
+    return min(dot(p-xEnd,p-xEnd),dot(p-yEnd,p-yEnd));
+}
+
 float chatBubbleDistance(float2 p, float2 b, float radius, float detail)
 {
-    // Reserve the tail inside the mask's half-height: no source-edge
-    // clipping at the default centered position; expanded OBS bounds for
-    // translated masks/bloom remain a separate task.
     float tail = max(3.0, b.y * detail * 1.8);
-    float bottom = b.y - tail;
-    float bodyHalfY = b.y - 0.5 * tail;
-    float2 bodyP = p + float2(0.0,0.5*tail);
-    float body = roundedBoxDistance(bodyP,float2(b.x,bodyHalfY),
-                                    min(radius,min(b.x,bodyHalfY)));
-    float2 left = float2(-0.78*b.x,bottom-2.0);
-    float2 right = float2(-0.34*b.x,bottom-2.0);
+    float bottom = b.y - tail, top = -b.y;
+    float2 left = float2(-0.78*b.x,bottom);
+    float2 right = float2(-0.34*b.x,bottom);
     float2 tip = float2(-0.72*b.x,b.y-1.0);
-    float wedge = signedTriangle(p,left,right,tip);
-    return min(body,wedge); // True union: no line across the joined shoulder.
+    // Constrain body corner radius before the tail shoulder so that the
+    // actual bottom rails never cross the body's corner arcs.
+    float r = min(max(radius,0.0),min(b.y-0.5*tail,0.22*b.x));
+    float2 lv = left-tip, rv = right-tip;
+    float ll = length(lv), rl = length(rv);
+    float2 ul = lv/max(ll,0.0001), ur = rv/max(rl,0.0001);
+    float cosine = clamp(dot(ul,ur),-0.98,0.98);
+    float sinHalf = sqrt(0.5*(1.0-cosine));
+    float tanHalf = sinHalf/sqrt(max(0.01,0.5*(1.0+cosine)));
+    // A compact circular leaf tip, tangent to both tail sides. No
+    // additional UI control; the existing Roundness slider is authoritative.
+    float desired = min(1.8,min(tail*0.12,r*0.24));
+    float trim = min(desired/max(tanHalf,0.01),min(ll,rl)*0.32);
+    float tipR = trim*tanHalf;
+    float2 rightTangent = tip+ur*trim;
+    float2 leftTangent = tip+ul*trim;
+    float2 bis = ul+ur;
+    float2 tipCenter = tip + bis*(tipR/max(sinHalf*length(bis),0.0001));
+
+    float2 topLeft = float2(-b.x+r,top), topRight = float2(b.x-r,top);
+    float2 rightTop = float2(b.x,top+r), rightBottom = float2(b.x,bottom-r);
+    float2 bottomRight = float2(b.x-r,bottom), bottomLeft = float2(-b.x+r,bottom);
+    float2 leftBottom = float2(-b.x,bottom-r), leftTop = float2(-b.x,top+r);
+
+    float ds = edgeDistanceSquared(p,topLeft,topRight);
+    ds = min(ds,edgeDistanceSquared(p,rightTop,rightBottom));
+    ds = min(ds,edgeDistanceSquared(p,bottomRight,right));
+    ds = min(ds,edgeDistanceSquared(p,right,rightTangent));
+    ds = min(ds,edgeDistanceSquared(p,leftTangent,left));
+    ds = min(ds,edgeDistanceSquared(p,left,bottomLeft));
+    ds = min(ds,edgeDistanceSquared(p,leftBottom,leftTop));
+    ds = min(ds,quarterArcDistanceSquared(p,float2(b.x-r,top+r),r,float2(1.0,-1.0)));
+    ds = min(ds,quarterArcDistanceSquared(p,float2(b.x-r,bottom-r),r,float2(1.0,1.0)));
+    ds = min(ds,quarterArcDistanceSquared(p,float2(-b.x+r,bottom-r),r,float2(-1.0,1.0)));
+    ds = min(ds,quarterArcDistanceSquared(p,float2(-b.x+r,top+r),r,float2(-1.0,-1.0)));
+    if(tipR > 0.0001)
+        ds = min(ds,arcDistanceSquared(p,rightTangent,leftTangent,tipCenter,tipR));
+    else
+        ds = min(ds,edgeDistanceSquared(p,rightTangent,leftTangent));
+
+    // Occupancy only: the primitive base is NOT an external neon edge.
+    float2 bodyP = p+float2(0.0,0.5*tail);
+    float body = roundedBoxDistance(bodyP,float2(b.x,b.y-0.5*tail),r);
+    float wedge = signedTriangle(p,right,tip,left);
+    bool inside = body <= 0.0 || wedge <= 0.0;
+    bool removed = tipR > 0.0001 &&
+        excisedCorner(p,rightTangent,tip,leftTangent,tipCenter,tipR);
+    return sqrt(ds)*(inside && !removed ? -1.0 : 1.0);
 }
 
 float shapeDistance(float2 p)
