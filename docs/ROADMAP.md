@@ -275,3 +275,7 @@ Roundness and image sizes are reviewed. SVG/custom mask importer and shape
 library, safe-fit, 320×180 aesthetic review, performance and eight-hour soak
 remain outstanding Phase D gates. This intentionally corrects Bubble ID 8
 appearance without altering unrelated saved shapes.
+
+## Phase D2.3a — fuller authored Angled Card arc
+
+The user confirmed Bubble's former interior seam visually clean on the post-PR30 preview, while Angled Card Roundness 1.00 remained too angular. This focused refinement replaces the old 1.20×cut fillet-radius cap with a normalized 0..1 mapping reaching two tangent arcs with **one shared center and no flat diagonal** at maximum. Square top-left and bottom-right corners remain sharp, cut size remains separately adjustable, and a single SDF still controls mask, neon core and bloom. Existing shape ID 9/scene keys/presets are preserved, with an intentional visual improvement for saved nonzero Angled Card roundness. The rest of D2 (authored shape pack, bounded SVG importer) and D3 safe-fit/performance are not claimed complete from automated tests alone. See [PHASE_D_IMPLEMENTATION.md](PHASE_D_IMPLEMENTATION.md).
