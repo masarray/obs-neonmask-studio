@@ -31,10 +31,12 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     uint8_t pixels[W * H * 4];
     const uint8_t red = variant == 0 ? 255 : variant == 1 ? 128 :
                         (variant == 3 || variant == 4 || variant == 18 ||
-                         variant == 19 || variant == 21 || variant == 22 ? 255 : 0);
+                         variant == 19 || variant == 21 || variant == 22 ||
+                         variant == 24 || variant == 25 ? 255 : 0);
     const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
                           (variant == 3 || variant == 4 || variant == 18 ||
-                           variant == 19 || variant == 21 || variant == 22 ? 255 : 0);
+                           variant == 19 || variant == 21 || variant == 22 ||
+                           variant == 24 || variant == 25 ? 255 : 0);
     for (size_t i = 0; i < W * H; ++i) {
         pixels[4 * i + 0] = red;   /* premultiplied red */
         pixels[4 * i + 1] = 0;
@@ -75,12 +77,14 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_rotation"), 0.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "polygon_sides"), 8);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_detail"), 0.23f);
-    gs_effect_set_float(gs_effect_get_param_by_name(effect, "corner_radius"), 5.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "corner_radius"),
+                        variant == 24 ? 0.0f :
+                        (variant == 25 || variant == 26 ? 10.5f : 5.0f));
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "shape_id"),
                       variant == 13 || variant == 14 ? 1 :
                       variant == 15 || variant == 22 ? 5 :
                       variant == 18 || variant == 20 ? 8 :
-                      variant == 21 || variant == 23 ? 9 : 0);
+                      variant == 21 || variant == 23 || variant >= 24 ? 9 : 0);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "border_width"), 4.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "style_id"), 0);
     int art_mode = variant == 11 ? 1 : variant == 13 ? 2 :
@@ -108,7 +112,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "segment_count"), 0);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "border_enabled"),
                       variant == 2 || (variant >= 5 && variant <= 17) ||
-                      variant == 20 || variant == 23);
+                      variant == 20 || variant == 23 || variant == 26);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), glow_case);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "image"), input);
 
@@ -171,6 +175,9 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *bubble_tip_neon = mapped + 55u * stride + 15u * 4u;
     const uint8_t *card_cut_corner = mapped + 11u * stride + 53u * 4u;
     const uint8_t *card_diag_neon = mapped + 12u * stride + 52u * 4u;
+    const uint8_t *fillet_endpoint = mapped + 8u * stride + 46u * 4u;
+    const uint8_t *square_top_left = mapped + 8u * stride + 8u * 4u;
+    const uint8_t *square_bottom_right = mapped + 55u * stride + 55u * 4u;
 
 
     /* The black/transparent corner proves the mask is not an opaque box.
@@ -279,6 +286,22 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
         fprintf(stderr, "FAIL: neon missing on angled cut alpha=%u\n",
                 card_diag_neon[3]);
         failed = 1;
+    } else if (variant == 24 && fillet_endpoint[3] < 245) {
+        fprintf(stderr, "FAIL: zero roundness must preserve geometric chamfer endpoint alpha=%u\n",
+                fillet_endpoint[3]);
+        failed = 1;
+    } else if (variant == 25 &&
+               (fillet_endpoint[3] > 180 || square_top_left[3] < 245 ||
+                square_bottom_right[3] < 245)) {
+        fprintf(stderr, "FAIL: selective rounded cut endpoint=%u squareTL=%u squareBR=%u\n",
+                fillet_endpoint[3], square_top_left[3], square_bottom_right[3]);
+        failed = 1;
+    } else if (variant == 26 &&
+               (fillet_endpoint[0] < 170 || fillet_endpoint[2] < 170 ||
+                fillet_endpoint[3] < 170)) {
+        fprintf(stderr, "FAIL: neon must follow the rounded diagonal fillet alpha=%u\n",
+                fillet_endpoint[3]);
+        failed = 1;
     }
 
     gs_stagesurface_unmap(stage);
@@ -380,7 +403,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 24; ++variant)
+            for (int variant = 0; variant < 27; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
@@ -389,6 +412,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: libobs alpha/framing/light + integrated bubble/card source AND shared neon contour fixtures (partial G4)");
+    puts("PASS: libobs alpha/framing/light + geometric/leaf selective cut GPU fixtures (partial G4)");
     return 0;
 }
