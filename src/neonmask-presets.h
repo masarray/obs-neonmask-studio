@@ -14,7 +14,9 @@ enum nm_shape {
     NM_SHAPE_TRIANGLE = 6,
     NM_SHAPE_POLYGON = 7,
     NM_SHAPE_CHAT_BUBBLE = 8,
-    NM_SHAPE_ANGLED_CARD = 9
+    NM_SHAPE_ANGLED_CARD = 9,
+    NM_SHAPE_HUD_PANEL = 10,
+    NM_SHAPE_SQUIRCLE = 11
 };
 
 enum nm_animation {
@@ -57,6 +59,6 @@ typedef struct nm_preset {
     double shape_detail;
 } nm_preset;
 
-/* IDs 1..6 stable; 6 selects the new integrated Chat Bubble when reapplied;
- * existing saved shape=0 scenes remain unchanged. 7 is Angled Card. */
+/* IDs 1..7 stable; appended IDs 8 HUD Cut Panel, 9 Squircle.
+ * Existing scenes keep their saved shape; only deliberate preset selection changes it. */
 bool nm_get_preset(int id, nm_preset *out);
