@@ -9,9 +9,13 @@ typedef struct nm_fit_result {
     float envelope_px;
     float scale;
     bool fits;
+    /* Source pixels begin at (pad_left,pad_top) in the expanded output. */
+    uint32_t pad_left, pad_right, pad_top, pad_bottom;
+    uint32_t output_width, output_height;
 } nm_fit_result;
 
 /* Returns false for invalid inputs; fits=false for impossible placement.
- * It never changes cfg, the mask center, subject pan/zoom or source UV. */
+ * Expand mode takes precedence over safe_fit; legacy output is unchanged.
+ * It never changes cfg, mask center, subject pan/zoom or input UV. */
 bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
                            uint32_t height, nm_fit_result *out);

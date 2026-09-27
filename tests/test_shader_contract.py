@@ -7,14 +7,15 @@ ROOT = Path(__file__).resolve().parents[1]
 host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
-assert len(names) == len(set(names)) == 33, f"Expected 33 unique bindings: {names!r}"
+assert len(names) == len(set(names)) == 35, f"Expected 35 unique bindings: {names!r}"
 uniforms = {name: kind for kind, name in re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader)}
-assert len(uniforms) == 35, f"Unexpected number of shader uniforms: {uniforms}"
+assert len(uniforms) == 37, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
     "Host/shader uniform drift: " + str(set(names) ^ (set(uniforms) - {"ViewProj", "image"}))
 )
 assert uniforms["color_a"] == uniforms["color_b"] == "float4"
 assert uniforms["uv_size"] == uniforms["half_size"] == "float2"
+assert uniforms["output_size"] == uniforms["input_origin"] == "float2"
 assert uniforms["mask_offset"] == uniforms["subject_pan"] == "float2"
 assert uniforms["subject_zoom"] == uniforms["shape_rotation"] == "float"
 assert uniforms["polygon_sides"] == "int"
@@ -117,6 +118,20 @@ assert 'nm_safe_fit_calculate(&f->config, width, height, &fit)' in host
 assert "const float bx=fit.half_width;" in host and "const float by=fit.half_height;" in host
 assert "const float half_width = fit.half_width;" in host
 assert "const float half_height = fit.half_height;" in host
+assert 'obs_data_set_default_bool(settings, "expand_canvas", cfg.expand_canvas)' in host
+assert 'obs_properties_add_bool(mask_group, "expand_canvas"' in host
+assert 'Mask.ExpandCanvas="Expand output for glow' in en_locale
+assert 'Mask.ExpandCanvas="Perluas output glow' in id_locale
+assert ".get_width = nm_get_width" in host and ".get_height = nm_get_height" in host
+assert "return horizontal ? fit.output_width : fit.output_height;" in host
+assert "vec2_set(&origin, (float)fit.pad_left, (float)fit.pad_top);" in host
+assert "vec2_set(&output_dimensions, (float)fit.output_width, (float)fit.output_height);" in host
+assert "fit.output_width, fit.output_height, \"Draw\"" in host
+assert "v_in.uv * output_size - input_origin - uv_size * 0.5" in shader
+assert "v_in.uv * uv_size - uv_size * 0.5" not in shader
+assert "sourceUV = (samplePos + uv_size * 0.5) / uv_size" in shader
+assert "gs_effect_set_vec2(f->output_size, &output_dimensions)" in host
+assert "gs_effect_set_vec2(f->input_origin, &origin)" in host
 assert 'Mask.SafeFit="Keep glow inside source (may shrink mask)"' in en_locale
 assert 'Mask.SafeFit="Jaga glow di dalam sumber (mask dapat mengecil)"' in id_locale
 assert "if (!valid)" in host, "Missing shader parameters must disable effect gracefully"
