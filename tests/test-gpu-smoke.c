@@ -73,10 +73,14 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_rotation"), 0.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "polygon_sides"), 8);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "corner_radius"), 5.0f);
-    gs_effect_set_int(gs_effect_get_param_by_name(effect, "shape_id"), 0);
+    gs_effect_set_int(gs_effect_get_param_by_name(effect, "shape_id"),
+                      variant == 13 || variant == 14 ? 1 :
+                      variant == 15 ? 5 : 0);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "border_width"), 4.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "style_id"), 0);
-    gs_effect_set_int(gs_effect_get_param_by_name(effect, "ornament_mode"), variant == 11 ? 1 : 0);
+    int art_mode = variant == 11 ? 1 : variant == 13 ? 2 :
+                   variant == 15 ? 3 : variant == 16 ? 4 : 0;
+    gs_effect_set_int(gs_effect_get_param_by_name(effect, "ornament_mode"), art_mode);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "art_intensity"), 0.90f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "art_gap"), 2.0f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "feather"), 0.5f);
@@ -153,6 +157,8 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *far_glow = mapped + 32u * stride + 63u * 4u;
     const uint8_t *opposite_rim = mapped + 32u * stride + 8u * 4u;
     const uint8_t *cyber_bar = mapped + 3u * stride + 52u * 4u;
+    const uint8_t *reactor_arc = mapped + 1u * stride + 32u * 4u;
+    const uint8_t *streamer_tail = mapped + 63u * stride + 17u * 4u;
 
 
     /* The black/transparent corner proves the mask is not an opaque box.
@@ -215,6 +221,21 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
         failed = 1;
     } else if (variant == 12 && cyber_bar[3] > 3) {
         fprintf(stderr, "FAIL: legacy scene acquired Cyber ornament alpha=%u\n", cyber_bar[3]);
+        failed = 1;
+    } else if (variant == 13 && reactor_arc[3] < 75) {
+        fprintf(stderr, "FAIL: authored Reactor outer arc missing alpha=%u\n", reactor_arc[3]);
+        failed = 1;
+    } else if (variant == 14 && reactor_arc[3] > 3) {
+        fprintf(stderr, "FAIL: legacy circle acquired Reactor rail alpha=%u\n", reactor_arc[3]);
+        failed = 1;
+    } else if (variant == 15 && cyber_bar[3] < 75) {
+        fprintf(stderr, "FAIL: authored Tech HUD bracket missing alpha=%u\n", cyber_bar[3]);
+        failed = 1;
+    } else if (variant == 16 && streamer_tail[3] < 60) {
+        fprintf(stderr, "FAIL: authored Streamer tail missing alpha=%u\n", streamer_tail[3]);
+        failed = 1;
+    } else if (variant == 17 && streamer_tail[3] > 3) {
+        fprintf(stderr, "FAIL: legacy rounded frame acquired Streamer tail alpha=%u\n", streamer_tail[3]);
         failed = 1;
     }
 
@@ -317,7 +338,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 13; ++variant)
+            for (int variant = 0; variant < 18; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
@@ -326,6 +347,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: real libobs alpha/framing/light plus Cyber ornament opt-in GPU pixel fixtures (partial G4)");
+    puts("PASS: real libobs alpha/framing/light and opt-in Cyber/Reactor/HUD/Streamer fixtures (partial G4)");
     return 0;
 }
