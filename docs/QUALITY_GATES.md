@@ -161,3 +161,15 @@ The fixtures run against real libobs OpenGL/D3D11 render targets and do not
 claim final OBS frontend compositing, finished proposal aesthetics, safe-fit
 or measured performance. All original alpha/framing/light fixtures must
 remain green.
+
+
+## Phase D1 integrated shape proof
+
+Pure-C CPU oracle checks bubble tip occupancy, transparent region beside
+the tip, absence of seam, card missing asymmetrical corners and signed
+Euclidean edge samples. Direct libobs OpenGL/D3D11 GPU fixtures must check
+opaque source RGB/alpha inside bubble tip, alpha outside beside tail,
+bubble-tip border over transparent input, missing angled-card corner and
+neon following a diagonal; include legacy rounded/rectangle controls. This
+only covers effect-level G4; real OBS post-filter output, safe-fit and
+concept-art parity still need human/image evidence.
