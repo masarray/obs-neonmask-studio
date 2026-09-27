@@ -162,7 +162,13 @@ float angledCardDistance(float2 p, float2 b, float detail, float radius)
 
     // Exact pre-D2 geometry when slider is zero. A nonzero setting cannot
     // accidentally round the two right-angle corners a/e.
-    float r = min(max(radius,0.0),cut*1.20);
+    // At slider 1 both trimmed 45-degree arcs join at their common
+    // center and form a complete tangent quarter-circle. The old 1.20*cut
+    // cap left a long flat diagonal even at the slider's maximum.
+    // Normalize the pixel-space host radius so Roundness uses its entire
+    // [0,1] travel independent of source aspect ratio/cut size.
+    float amount = saturate(max(radius,0.0)/max(min(b.x,b.y),0.0001));
+    float r = amount*cut*(1.0+INV_ROOT2);
     if (r <= 0.0001) {
         float ds = edgeDistanceSquared(p,a,c);
         ds = min(ds,edgeDistanceSquared(p,c,d));

@@ -152,3 +152,7 @@ uses corner roundness, and Bubble uses tail-tip curvature. No new key,
 slider, schema version, or geometry change is involved. Visual acceptance
 of the Bubble seam must use the exact post-PR30 build, not an earlier
 screenshot/artifact.
+
+## D2.3a — full-arc Angled Card refinement (user OBS feedback)
+
+User OBS screenshots confirm the integrated Chat Bubble seam is visually clean on the new build. On Angled Card, however, Roundness 1.00 still shows a conspicuous straight diagonal between two small corner fillets. Increase the **geometry**, not blur: normalize the existing source-pixel radius by the smaller half-extent to recover the full 0..1 slider travel, and map it to a maximum radius `cut × (1 + 1/√2)`. At maximum, the two 45-degree arcs have **the same circle center**, join tangentially, and form one continuous 90-degree arc between the top and right rails (and the opposite bottom-left pair). Zero preserves the original chamfer; half slider creates intermediate curvature; upper-left and lower-right remain mathematically sharp. The same distance still drives actual source alpha and all neon layers. No extra property, preset ID, schema or scene migration is needed; existing saved Angled Card settings intentionally gain fuller curvature. CPU oracle and real OpenGL/D3D11 pixel fixtures are the code-level gates; visual acceptance remains pending actual OBS captures on user source.

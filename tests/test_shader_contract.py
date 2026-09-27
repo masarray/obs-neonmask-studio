@@ -34,6 +34,9 @@ assert "edgeDistanceSquared(p,bottomRight,right)" in shader
 assert "edgeDistanceSquared(p,left,bottomLeft)" in shader
 assert "arcDistanceSquared(p,rightTangent,leftTangent,tipCenter,tipR)" in shader
 assert "return sqrt(ds)*(inside && !removed" in shader
+# Maximum Angled Card roundness forms a shared-center quarter circle.
+assert "float r = amount*cut*(1.0+INV_ROOT2)" in shader
+assert "cut*1.20" not in shader
 assert "return min(body,wedge)" not in shader
 assert 'obs_data_has_user_value(settings, "shape_detail")' in host
 assert 'gs_effect_set_float(f->shape_detail, f->config.shape_detail)' in host

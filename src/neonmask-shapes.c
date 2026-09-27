@@ -145,7 +145,15 @@ static float card(nm_p2 p,nm_p2 b,float detail,float radius)
     side=fminf(side,cross(sub(g,f),sub(p,f)));
     side=fminf(side,cross(sub(a,g),sub(p,g)));
 
-    const float r=fminf(fmaxf(radius,0.0f),cut*1.20f);
+    /* At slider 1 the two 45-degree tangent fillets meet with one common
+     * center: a single full 90-degree circular arc from the top to right
+     * rail (and its 180-degree counterpart). Old cap 1.20*cut left a
+     * straight diagonal and looked under-rounded even at maximum.
+     * Recover normalized Roundness from the host's source-pixel radius so
+     * the entire 0..1 slider travel remains useful on every aspect ratio. */
+    const float amount=nm_clamp(fmaxf(radius,0.0f)/
+                                fminf(b.x,b.y),0.0f,1.0f);
+    const float r=amount*cut*(1.0f+inv_root2);
     if(r<=0.0001f){
         float ds=edge2(p,a,c);
         ds=fminf(ds,edge2(p,c,d));ds=fminf(ds,edge2(p,d,e));
