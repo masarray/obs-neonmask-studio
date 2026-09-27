@@ -14,7 +14,7 @@ Update the ledger in the same change that advances implementation or verificatio
 | State | Canonical pure-C config snapshot, schema v2; v0/v1 uniform-scale framing migrates additively to centered width/height + pan/zoom defaults | OBS callback handoff/lifecycle concurrency still needs runtime evidence; future schema/import UI not exposed |
 | Safety | Shader load/uniform checks; bypass; effect cleanup | Fault injection, resource accounting and soak pending |
 | CI | Headless/platform builds, OpenGL and Windows D3D11 compile smokes, Windows preview ZIP; M0 synthetic fixture generator and build provenance in preview pipeline | Direct GPU effect pixel fixtures cover only part of G4; final OBS source/filter-chain captures and benchmarks remain pending |
-| Assets/workers | No custom image/SVG/live-mask provider | Bounded service is a future requirement |
+| Assets/workers | D2.4 limited local-only SVG path/SDF provider is an implementation candidate; no image/live-source mask | Real OBS import/reload/resize, cache/resource and general SVG capabilities remain pending |
 | Performance | Procedural one-effect design | No hardware budget evidence recorded |
 | Padding | Existing source canvas only | Large glow can clip; safe-fit/expanded-output validation pending |
 
