@@ -128,8 +128,9 @@ bool inTriangle(float2 p, float2 a, float2 b, float2 c)
     float x = cross2(b-a,p-a);
     float y = cross2(c-b,p-b);
     float z = cross2(a-c,p-c);
-    return (x >= 0.0 && y >= 0.0 && z >= 0.0) ||
-           (x <= 0.0 && y <= 0.0 && z <= 0.0);
+    const float eps = 0.0001;
+    return (x >= -eps && y >= -eps && z >= -eps) ||
+           (x <= eps && y <= eps && z <= eps);
 }
 
 bool excisedCorner(float2 p, float2 start, float2 vertex,
