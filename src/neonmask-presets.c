@@ -23,7 +23,7 @@ static const nm_preset builtin[] = {
      true, true, 0.79, 0.89, 0.86, 0.10, NM_ORNAMENT_NONE, 0.0, 2.0, 0.23},
     /* First built-in geometric angled/cut-corner mask, no generic overlay. */
     {NM_SHAPE_ANGLED_CARD, NM_ANIM_STATIC, 0x00FF317Au, 0x00FFAA19u,
-     0.81, 0.08, 4.0, 0.85, 20.0, 0.73, 0.58, 0, NM_STYLE_DOUBLE,
+     0.81, 0.0, 4.0, 0.85, 20.0, 0.73, 0.58, 0, NM_STYLE_DOUBLE,
      true, true, 0.77, 0.85, 0.76, 0.11, NM_ORNAMENT_NONE, 0.0, 2.0, 0.23}
 };
 
