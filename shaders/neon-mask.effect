@@ -343,6 +343,25 @@ float squircleDistance(float2 p,float2 b,float detail)
     float2 gradient=float2(exponent*pow(a.x,exponent-1.0)/b.x,
                             exponent*pow(a.y,exponent-1.0)/b.y);
     float d=(f.x+f.y-1.0)/max(length(gradient),1.0/min(b.x,b.y));
+    // Exact near-axis superellipse intersection stabilizes long luminous
+    // top/side rails; smooth blend retains the curved corner SDF.
+    if(a.x<0.72 && a.y>0.72) {
+        float rem=max(0.00001,1.0-f.x);
+        float edge=b.y*pow(rem,1.0/exponent);
+        float slope=(b.y/b.x)*pow(a.x,exponent-1.0)*
+                    pow(rem,1.0/exponent-1.0);
+        float axis=(abs(p.y)-edge)/length(float2(1.0,slope));
+        float t=smoothstep(0.58,0.72,a.x);
+        d=lerp(axis,d,t);
+    } else if(a.y<0.72 && a.x>0.72) {
+        float rem=max(0.00001,1.0-f.y);
+        float edge=b.x*pow(rem,1.0/exponent);
+        float slope=(b.x/b.y)*pow(a.y,exponent-1.0)*
+                    pow(rem,1.0/exponent-1.0);
+        float axis=(abs(p.x)-edge)/length(float2(1.0,slope));
+        float t=smoothstep(0.58,0.72,a.y);
+        d=lerp(axis,d,t);
+    }
     return max(d,-min(b.x,b.y));
 }
 
