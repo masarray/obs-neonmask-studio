@@ -240,3 +240,19 @@ brackets/cut rails, Streamer uses a deliberate line tail and dot trio.
 Decorations are composited *after* source image coverage is computed, and
 never alter base mask alpha. The complete recipe is stored in ordinary
 version-2 OBS settings; legacy enum IDs are not reinterpreted.
+
+
+## ADR 016 — integrated authored contours precede SVG import (Phase D)
+
+Append IDs for a native, parametrically editable Chat Bubble and diagonally
+cut Angled Card. Signed distance evaluated at the translated/rotated mask
+coordinate supplies both source alpha and all light contributions. Bubble
+shape is a true geometric union of the body and an overlapping tail; signed
+union removes the internal shoulder seam, and bubble-tip source coverage is
+explicitly tested. Card distance uses six polygon edges, with asymmetric
+chamfers and correct vertex distances. No added textures/CPU video reads.
+
+Keep existing shape IDs and schema v2; new `shape_detail` has an additive
+validated/persisted default. Build authored SVG files as independent design
+sources only; adding SVG runtime needs an explicit bounded local decoder,
+safe failure, cache and distance-field provider. See PHASE_D_IMPLEMENTATION.
