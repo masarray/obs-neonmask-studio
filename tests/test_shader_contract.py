@@ -24,6 +24,10 @@ assert "roundedContourTurn" in shader
 assert "float gapGate" in shader and "float hbar" in shader and "float vbar" in shader
 assert "artBarA" in shader and "artBarGlowA" in shader
 assert "NM_ORNAMENT_CYBER" in host and "NM_ORNAMENT_NONE" in host
+assert "NM_ORNAMENT_REACTOR" in host and "NM_ORNAMENT_TECH_HUD" in host and "NM_ORNAMENT_STREAMER" in host
+for mode in (2, 3, 4):
+    assert f"ornament_mode == {mode}" in shader
+assert "float segmentDistance(" in shader
 for key in ("art_intensity", "art_gap"):
     assert f'obs_data_has_user_value(settings, "{key}")' in host
     assert f'obs_data_set_double(settings, "{key}", next.{key})' in host
