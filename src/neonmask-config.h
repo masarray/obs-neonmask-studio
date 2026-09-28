@@ -28,6 +28,10 @@ typedef struct nm_config {
     float roundness;
     /* D1: proportional tail height / diagonal cut, range 0.08..0.35. */
     float shape_detail;
+    /* D4A: independent body inset, tail anchors and depth (source-relative). */
+    float bubble_left_inset, bubble_right_inset;
+    float bubble_top_inset, bubble_bottom_inset;
+    float bubble_tail_left, bubble_tail_right, bubble_tail_tip, bubble_tail_depth;
     float border_px;
     float feather_px;
     float glow_px;
