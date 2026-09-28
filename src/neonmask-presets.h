@@ -17,7 +17,8 @@ enum nm_shape {
     NM_SHAPE_ANGLED_CARD = 9,
     NM_SHAPE_HUD_PANEL = 10,
     NM_SHAPE_SQUIRCLE = 11,
-    NM_SHAPE_SVG_PATH = 12
+    NM_SHAPE_SVG_PATH = 12,
+    NM_SHAPE_TECH_HUD = 13
 };
 
 enum nm_animation {
@@ -60,6 +61,7 @@ typedef struct nm_preset {
     double shape_detail;
 } nm_preset;
 
-/* IDs 1..7 stable; appended IDs 8 HUD Cut Panel, 9 Squircle.
- * Existing scenes keep their saved shape; only deliberate preset selection changes it. */
+/* Preset IDs stay stable. Preset 5 keeps the Tech HUD identity but now
+ * deliberately selects the dedicated appended shape 13 when re-applied.
+ * Existing scenes keep their saved shape until the user applies a preset. */
 bool nm_get_preset(int id, nm_preset *out);

@@ -434,6 +434,34 @@ float hudPanelDistance(float2 p,float2 b,float detail)
     return sqrt(ds)*(inside ? -1.0 : 1.0);
 }
 
+// D4B: a dedicated HUD mask, not a rectangle with decoration. Top-left and
+// bottom-right are diagonal cuts; top-right and bottom-left stay square so
+// external L-brackets have deliberate anchor corners.
+float techHudDistance(float2 p,float2 b,float detail)
+{
+    float cut=min(max(2.0,min(b.x,b.y)*detail*1.75),
+                  min(b.x,b.y)*0.42);
+    float2 v0=float2(-b.x+cut,-b.y);
+    float2 v1=float2( b.x,-b.y);
+    float2 v2=float2( b.x, b.y-cut);
+    float2 v3=float2( b.x-cut, b.y);
+    float2 v4=float2(-b.x, b.y);
+    float2 v5=float2(-b.x,-b.y+cut);
+    float ds=edgeDistanceSquared(p,v0,v1);
+    float inside=cross2(v1-v0,p-v0);
+    ds=min(ds,edgeDistanceSquared(p,v1,v2));
+    inside=min(inside,cross2(v2-v1,p-v1));
+    ds=min(ds,edgeDistanceSquared(p,v2,v3));
+    inside=min(inside,cross2(v3-v2,p-v2));
+    ds=min(ds,edgeDistanceSquared(p,v3,v4));
+    inside=min(inside,cross2(v4-v3,p-v3));
+    ds=min(ds,edgeDistanceSquared(p,v4,v5));
+    inside=min(inside,cross2(v5-v4,p-v4));
+    ds=min(ds,edgeDistanceSquared(p,v5,v0));
+    inside=min(inside,cross2(v0-v5,p-v5));
+    return sqrt(ds)*(inside>=0.0 ? -1.0 : 1.0);
+}
+
 float squircleDistance(float2 p,float2 b,float detail)
 {
     // Superellipse F=|x/a|^n+|y/b|^n-1; normalized gradient controls
@@ -500,6 +528,9 @@ float shapeDistance(float2 p)
     if (shape_id == 11)
         return squircleDistance(rotatePoint(p,shape_rotation),half_size,
                                 shape_detail);
+    if (shape_id == 13)
+        return techHudDistance(rotatePoint(p,shape_rotation),half_size,
+                               shape_detail);
     if (shape_id == 1) return length(p) - min(half_size.x, half_size.y);
     if (shape_id == 2) return ellipseDistance(rotatePoint(p, shape_rotation), half_size);
     if (shape_id == 3) {
@@ -806,6 +837,68 @@ float4 drawNeonMask(VertData v_in) : TARGET
                          (1.0 - smoothstep(0.68, 0.74, slot));
             rimA = saturate(rimA * 0.18 +
                             rail * gate * art_intensity * 0.78);
+        }
+
+        // D4B Tech HUD Advanced: the mask already supplies TL/BR chamfers.
+        // Decoration stays OUTSIDE coverage: thick square-corner anchors at
+        // TR/BL plus slim companion rails parallel to both diagonal cuts.
+        if (ornament_mode == 3 && shape_id == 13 && art_intensity > 0.0) {
+            float2 q=rotatePoint(p,shape_rotation);
+            float cut=min(max(2.0,min(half_size.x,half_size.y)*
+                              shape_detail*1.75),
+                          min(half_size.x,half_size.y)*0.42);
+            float gap=art_gap+3.0;
+            float armX=min(half_size.x*0.24,34.0);
+            float armY=min(half_size.y*0.28,31.0);
+
+            // Thick L anchors on the two intentionally square corners.
+            float2 trH0=float2(half_size.x-armX,-half_size.y-gap);
+            float2 trH1=float2(half_size.x+gap,-half_size.y-gap);
+            float2 trV1=float2(half_size.x+gap,-half_size.y+armY);
+            float2 blV0=float2(-half_size.x-gap,half_size.y-armY);
+            float2 blC =float2(-half_size.x-gap,half_size.y+gap);
+            float2 blH1=float2(-half_size.x+armX,half_size.y+gap);
+            float bracketD=min(min(segmentDistance(q,trH0,trH1),
+                                   segmentDistance(q,trH1,trV1)),
+                               min(segmentDistance(q,blV0,blC),
+                                   segmentDistance(q,blC,blH1)));
+
+            // Companion diagonal rails beside the actual cut mask edges.
+            float diag=gap*0.70710678;
+            float2 tlA=float2(-half_size.x+cut*0.18-diag,
+                              -half_size.y+cut*0.82-diag);
+            float2 tlB=float2(-half_size.x+cut*0.82-diag,
+                              -half_size.y+cut*0.18-diag);
+            float2 brA=float2( half_size.x-cut*0.18+diag,
+                               half_size.y-cut*0.82+diag);
+            float2 brB=float2( half_size.x-cut*0.82+diag,
+                               half_size.y-cut*0.18+diag);
+            float diagD=min(segmentDistance(q,tlA,tlB),
+                            segmentDistance(q,brA,brB));
+
+            float anchor=1.0-smoothstep(0.20,1.55,bracketD);
+            float trace=1.0-smoothstep(0.20,1.20,diagD);
+            artBarA=saturate(artBarA+art_intensity*
+                             (anchor*0.97+trace*0.68));
+            if(glow_enabled != 0) {
+                float g=min(bracketD,diagD);
+                artBarGlowA=saturate(artBarGlowA+
+                    art_intensity*glow_strength*0.28*
+                    (1.0-smoothstep(0.0,4.2,g)));
+            }
+
+            // A sparse exterior contour rail ties overlay to the neon border
+            // without turning it into another full rectangle.
+            float railGap=halfCore+art_gap+2.5;
+            float rail=1.0-smoothstep(0.25,1.25,abs(d-railGap));
+            float nx=q.x/max(half_size.x,1.0);
+            float ny=q.y/max(half_size.y,1.0);
+            float zone=max(smoothstep(0.48,0.82,nx)*
+                           (1.0-smoothstep(-0.20,0.55,ny)),
+                           smoothstep(-0.82,-0.48,nx)*
+                           smoothstep(-0.55,0.20,ny));
+            rimA=saturate(rimA*0.28+rail*zone*art_intensity*0.72);
+            glintA=saturate(glintA+rail*zone*art_intensity*0.34);
         }
 
         // HUD Cut Panel: an asymmetrical rail keyed to its actual stepped
