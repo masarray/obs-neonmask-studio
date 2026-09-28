@@ -355,3 +355,33 @@ custom-body/tail pixels require CI; actual OBS visual review at 320x180,
 small sizes, save/restart and live dropdown transitions remains G4-V/G5.
 D4A v2 may add a separate point-drag editor after this parametric model is
 accepted.
+
+## D4A v2 — corrected freeform Bubble + halo stabilization
+
+User OBS testing rejected the v1 "side inset" model: it only cropped four
+parallel rails and could not produce an intentionally skewed/peyang Bubble.
+Schema 3 therefore migrates that preview representation once to a true
+four-corner convex body. TL/TR/BR/BL each have independent normalized X/Y
+controls. Their slider ranges keep each corner in a disjoint quadrant, so
+every possible UI combination remains convex and non-self-intersecting.
+The tail start/end/tip are fractions of the actual BL->BR line, and the tip
+travels along its outward pixel-space normal. Tail depth is bounded against
+the original half-size rectangle; D3's existing conservative rectangle
+therefore remains valid even for a slanted bottom. One exposed perimeter is
+still authoritative for mask alpha, core, tracks and glow. Body roundness is
+a tangent circular fillet calculated from the two incident freeform sides.
+
+Schema-2 D4A inset values migrate to equivalent axis-aligned corner points
+where possible; pre-D4A scenes are the zero-inset special case. Named preset
+application resets to the canonical rectangular Bubble, while manual shape
+switching preserves authored points. The obsolete inset controls are no
+longer exposed. Point-drag editing is still a future frontend enhancement;
+these eight normalized point values are the intended backing model.
+
+The gray/pixelated fringe reported in OBS Filters preview is treated as a
+plugin visual defect, not an OBS decoration. Broad bloom now preserves neon
+hue instead of whitening low-alpha pixels, receives a smooth finite 2.30R-
+2.50R support gate aligned with D3's 2.5R envelope, and emits exact transparent
+black once total alpha is negligible. OpenGL/D3D11 fixtures add a far-envelope
+RGBA==0 guard and chromatic near-bloom check. Real OBS preview/full-canvas
+screenshots are still required to close visual acceptance.

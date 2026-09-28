@@ -16,9 +16,10 @@ uniform float subject_zoom;
 uniform float shape_rotation;
 uniform int polygon_sides;
 uniform float shape_detail;
-// Opt-in Bubble ID 8 designer; zero insets and legacy anchors reproduce v2.
-uniform float4 bubble_body; // left/right/top/bottom inset (fraction of full extent)
-uniform float4 bubble_tail; // base left/right, tip X / half-width, depth
+// D4A freeform Bubble ID 8. Corner coordinates are normalized by half-size.
+uniform float4 bubble_top;    // TL.x, TL.y, TR.x, TR.y
+uniform float4 bubble_bottom; // BR.x, BR.y, BL.x, BL.y
+uniform float4 bubble_tail;   // start/end/tip fraction on BL->BR, depth
 uniform float corner_radius;
 uniform int shape_id;
 uniform float border_width;
@@ -238,72 +239,148 @@ float quarterArcDistanceSquared(float2 p, float2 center, float r, float2 signXY)
     return min(dot(p-xEnd,p-xEnd),dot(p-yEnd,p-yEnd));
 }
 
-float chatBubbleDistance(float2 p, float2 b, float radius)
+float bubbleCornerTrim(float2 prev,float2 v,float2 next,float radius)
 {
-    // Body-side inset is nonnegative and cannot escape the original mask
-    // rectangle. Tail tip remains inside it, so D3 padding stays conservative.
-    float tail = max(3.0, b.y * bubble_tail.w * 1.8);
-    float leftX = -b.x + 2.0*b.x*bubble_body.x;
-    float rightX = b.x - 2.0*b.x*bubble_body.y;
-    float top = -b.y + 2.0*b.y*bubble_body.z;
-    float bottom = b.y - tail - 2.0*b.y*bubble_body.w;
-    float r = min(max(radius,0.0),
-                  min(0.5*(bottom-top),min(0.22*b.x,0.24*(rightX-leftX))));
+    float2 a=prev-v,b=next-v;
+    float la=max(length(a),0.0001),lb=max(length(b),0.0001);
+    float2 ua=a/la,ub=b/lb;
+    float cosine=clamp(dot(ua,ub),-0.96,0.96);
+    float sinHalf=sqrt(max(0.0001,0.5*(1.0-cosine)));
+    float cosHalf=sqrt(max(0.0001,0.5*(1.0+cosine)));
+    float tanHalf=sinHalf/cosHalf;
+    return min(max(radius,0.0)/max(tanHalf,0.0001),0.42*min(la,lb));
+}
+float2 bubblePrevTangent(float2 prev,float2 v,float2 next,float radius)
+{
+    float2 d=prev-v;
+    return v+d/max(length(d),0.0001)*bubbleCornerTrim(prev,v,next,radius);
+}
+float2 bubbleNextTangent(float2 prev,float2 v,float2 next,float radius)
+{
+    float2 d=next-v;
+    return v+d/max(length(d),0.0001)*bubbleCornerTrim(prev,v,next,radius);
+}
+float bubbleCornerRadius(float2 prev,float2 v,float2 next,float radius)
+{
+    float2 a=normalize(prev-v),b=normalize(next-v);
+    float cosine=clamp(dot(a,b),-0.96,0.96);
+    float sinHalf=sqrt(max(0.0001,0.5*(1.0-cosine)));
+    float cosHalf=sqrt(max(0.0001,0.5*(1.0+cosine)));
+    return bubbleCornerTrim(prev,v,next,radius)*sinHalf/cosHalf;
+}
+float2 bubbleCornerCenter(float2 prev,float2 v,float2 next,float radius)
+{
+    float2 a=normalize(prev-v),b=normalize(next-v);
+    float cosine=clamp(dot(a,b),-0.96,0.96);
+    float sinHalf=sqrt(max(0.0001,0.5*(1.0-cosine)));
+    float rr=bubbleCornerRadius(prev,v,next,radius);
+    return v+normalize(a+b)*(rr/sinHalf);
+}
+float bubbleQuadInside(float2 p,float2 tl,float2 tr,float2 br,float2 bl)
+{
+    float side=cross2(tr-tl,p-tl);
+    side=min(side,cross2(br-tr,p-tr));
+    side=min(side,cross2(bl-br,p-br));
+    side=min(side,cross2(tl-bl,p-bl));
+    return side;
+}
+float bubbleTailMaxDepth(float2 base,float2 normal,float2 b)
+{
+    float d=100000.0;
+    if(normal.x>0.0001) d=min(d,( b.x-base.x)/normal.x);
+    if(normal.x<-0.0001) d=min(d,(-b.x-base.x)/normal.x);
+    if(normal.y>0.0001) d=min(d,( b.y-base.y)/normal.y);
+    if(normal.y<-0.0001) d=min(d,(-b.y-base.y)/normal.y);
+    return max(0.0,d-1.0);
+}
 
-    // The two shoulder points stay on the straight lower rail. Enforce a
-    // minimum nondegenerate base even when user-edited anchors cross.
-    float railL=leftX+r, railR=rightX-r;
-    float minBase=min(max(1.0,0.07*b.x),0.4*(railR-railL));
-    float xL=clamp(b.x*bubble_tail.x,railL,railR-minBase);
-    float xR=clamp(b.x*bubble_tail.y,xL+minBase,railR);
-    float2 left=float2(xL,bottom);
-    float2 right=float2(xR,bottom);
-    float2 tip=float2(b.x*bubble_tail.z,b.y-1.0);
+float chatBubbleDistance(float2 p,float2 b,float radius)
+{
+    float2 tl=float2(bubble_top.x*b.x,bubble_top.y*b.y);
+    float2 tr=float2(bubble_top.z*b.x,bubble_top.w*b.y);
+    float2 br=float2(bubble_bottom.x*b.x,bubble_bottom.y*b.y);
+    float2 bl=float2(bubble_bottom.z*b.x,bubble_bottom.w*b.y);
 
-    float2 lv = left-tip, rv = right-tip;
-    float ll = length(lv), rl = length(rv);
-    float2 ul = lv/max(ll,0.0001), ur = rv/max(rl,0.0001);
-    float cosine = clamp(dot(ul,ur),-0.98,0.98);
-    float sinHalf = sqrt(0.5*(1.0-cosine));
-    float tanHalf = sinHalf/sqrt(max(0.01,0.5*(1.0+cosine)));
-    float desired = min(1.8,min(tail*0.12,r*0.24));
-    float trim = min(desired/max(tanHalf,0.01),min(ll,rl)*0.32);
-    float tipR = trim*tanHalf;
-    float2 rightTangent = tip+ur*trim;
-    float2 leftTangent = tip+ul*trim;
-    float2 bis = ul+ur;
-    float2 tipCenter = tip + bis*(tipR/max(sinHalf*length(bis),0.0001));
+    // One global Roundness value creates true tangent circular fillets even
+    // when all four sides are slanted differently.
+    float bodyR=min(max(radius,0.0),0.22*b.x);
+    float2 tlP=bubblePrevTangent(bl,tl,tr,bodyR);
+    float2 tlN=bubbleNextTangent(bl,tl,tr,bodyR);
+    float2 trP=bubblePrevTangent(tl,tr,br,bodyR);
+    float2 trN=bubbleNextTangent(tl,tr,br,bodyR);
+    float2 brP=bubblePrevTangent(tr,br,bl,bodyR);
+    float2 brN=bubbleNextTangent(tr,br,bl,bodyR);
+    float2 blP=bubblePrevTangent(br,bl,tl,bodyR);
+    float2 blN=bubbleNextTangent(br,bl,tl,bodyR);
+    float tlR=bubbleCornerRadius(bl,tl,tr,bodyR);
+    float trR=bubbleCornerRadius(tl,tr,br,bodyR);
+    float brR=bubbleCornerRadius(tr,br,bl,bodyR);
+    float blR=bubbleCornerRadius(br,bl,tl,bodyR);
+    float2 tlC=bubbleCornerCenter(bl,tl,tr,bodyR);
+    float2 trC=bubbleCornerCenter(tl,tr,br,bodyR);
+    float2 brC=bubbleCornerCenter(tr,br,bl,bodyR);
+    float2 blC=bubbleCornerCenter(br,bl,tl,bodyR);
 
-    float2 topLeft = float2(leftX+r,top), topRight = float2(rightX-r,top);
-    float2 rightTop = float2(rightX,top+r), rightBottom = float2(rightX,bottom-r);
-    float2 bottomRight = float2(rightX-r,bottom), bottomLeft = float2(leftX+r,bottom);
-    float2 leftBottom = float2(leftX,bottom-r), leftTop = float2(leftX,top+r);
+    // Tail anchors are fractions along the actual slanted BL->BR edge.
+    float2 bottom=br-bl;
+    float bottomLen=max(length(bottom),0.0001);
+    float2 bottomDir=bottom/bottomLen;
+    float railMin=length(blP-bl)/bottomLen;
+    float railMax=1.0-length(brN-br)/bottomLen;
+    float minBase=min(max(1.0/bottomLen,0.04),0.30*max(railMax-railMin,0.001));
+    float startT=clamp(bubble_tail.x,railMin,railMax-minBase);
+    float endT=clamp(bubble_tail.y,startT+minBase,railMax);
+    float2 left=lerp(bl,br,startT);
+    float2 right=lerp(bl,br,endT);
+    float2 tipBase=lerp(bl,br,saturate(bubble_tail.z));
+    float2 outward=normalize(float2(-bottomDir.y,bottomDir.x));
+    float desiredDepth=max(2.0,b.y*bubble_tail.w*1.8-1.0);
+    float depth=min(desiredDepth,bubbleTailMaxDepth(tipBase,outward,b));
+    float2 tip=tipBase+outward*depth;
 
-    float ds = edgeDistanceSquared(p,topLeft,topRight);
-    ds = min(ds,edgeDistanceSquared(p,rightTop,rightBottom));
-    ds = min(ds,edgeDistanceSquared(p,bottomRight,right));
-    ds = min(ds,edgeDistanceSquared(p,right,rightTangent));
-    ds = min(ds,edgeDistanceSquared(p,leftTangent,left));
-    ds = min(ds,edgeDistanceSquared(p,left,bottomLeft));
-    ds = min(ds,quarterArcDistanceSquared(p,float2(rightX-r,top+r),r,float2(1.0,-1.0)));
-    ds = min(ds,quarterArcDistanceSquared(p,float2(rightX-r,bottom-r),r,float2(1.0,1.0)));
-    ds = min(ds,quarterArcDistanceSquared(p,float2(leftX+r,bottom-r),r,float2(-1.0,1.0)));
-    ds = min(ds,quarterArcDistanceSquared(p,float2(leftX+r,top+r),r,float2(-1.0,-1.0)));
-    if(tipR > 0.0001)
-        ds = min(ds,arcDistanceSquared(p,rightTangent,leftTangent,tipCenter,tipR));
+    // Rounded leaf tip; shoulders intentionally remain on the bottom rail so
+    // the hidden base never becomes a second neon line.
+    float2 lv=left-tip,rv=right-tip;
+    float ll=max(length(lv),0.0001),rl=max(length(rv),0.0001);
+    float2 ul=lv/ll,ur=rv/rl;
+    float cosine=clamp(dot(ul,ur),-0.98,0.98);
+    float sinHalf=sqrt(max(0.0001,0.5*(1.0-cosine)));
+    float tanHalf=sinHalf/sqrt(max(0.01,0.5*(1.0+cosine)));
+    float desired=min(1.8,min(depth*0.12,bodyR*0.24));
+    float trim=min(desired/max(tanHalf,0.01),min(ll,rl)*0.32);
+    float tipR=trim*tanHalf;
+    float2 rightTangent=tip+ur*trim;
+    float2 leftTangent=tip+ul*trim;
+    float2 bis=ul+ur;
+    float2 tipCenter=tip+bis*(tipR/max(sinHalf*length(bis),0.0001));
+
+    // Exactly one exposed contour: four tangent body sides/arcs, split bottom
+    // rail, and two tail legs/tip. No hidden body-bottom or tail-base segment.
+    float ds=edgeDistanceSquared(p,tlN,trP);
+    ds=min(ds,edgeDistanceSquared(p,trN,brP));
+    ds=min(ds,edgeDistanceSquared(p,brN,right));
+    ds=min(ds,edgeDistanceSquared(p,right,rightTangent));
+    ds=min(ds,edgeDistanceSquared(p,leftTangent,left));
+    ds=min(ds,edgeDistanceSquared(p,left,blP));
+    ds=min(ds,edgeDistanceSquared(p,blN,tlP));
+    if(tlR>0.0001) ds=min(ds,arcDistanceSquared(p,tlP,tlN,tlC,tlR));
+    if(trR>0.0001) ds=min(ds,arcDistanceSquared(p,trP,trN,trC,trR));
+    if(brR>0.0001) ds=min(ds,arcDistanceSquared(p,brP,brN,brC,brR));
+    if(blR>0.0001) ds=min(ds,arcDistanceSquared(p,blP,blN,blC,blR));
+    if(tipR>0.0001)
+        ds=min(ds,arcDistanceSquared(p,rightTangent,leftTangent,tipCenter,tipR));
     else
-        ds = min(ds,edgeDistanceSquared(p,rightTangent,leftTangent));
+        ds=min(ds,edgeDistanceSquared(p,rightTangent,leftTangent));
 
-    // Do not illuminate the hidden body-bottom or triangle base: only ONE
-    // exterior contour controls alpha, fine rim and all glow layers.
-    float2 bodyHalf=float2(0.5*(rightX-leftX),0.5*(bottom-top));
-    float2 bodyP=p-float2(0.5*(leftX+rightX),0.5*(top+bottom));
-    float bodyDistance=roundedBoxDistance(bodyP,bodyHalf,r);
-    float wedge=signedTriangle(p,right,tip,left);
-    bool inside=bodyDistance<=0.0 || wedge<=0.0;
-    bool removed=tipR>0.0001 &&
-        excisedCorner(p,rightTangent,tip,leftTangent,tipCenter,tipR);
-    return sqrt(ds)*(inside && !removed ? -1.0 : 1.0);
+    bool bodyInside=bubbleQuadInside(p,tl,tr,br,bl)>=0.0;
+    bool tailInside=signedTriangle(p,right,tip,left)<=0.0;
+    bool removed=(tlR>0.0001 && excisedCorner(p,tlP,tl,tlN,tlC,tlR)) ||
+                 (trR>0.0001 && excisedCorner(p,trP,tr,trN,trC,trR)) ||
+                 (brR>0.0001 && excisedCorner(p,brP,br,brN,brC,brR)) ||
+                 (blR>0.0001 && excisedCorner(p,blP,bl,blN,blC,blR)) ||
+                 (tipR>0.0001 &&
+                  excisedCorner(p,rightTangent,tip,leftTangent,tipCenter,tipR));
+    return sqrt(ds)*((bodyInside || tailInside) && !removed ? -1.0 : 1.0);
 }
 
 // D2.3 authored masks: the actual image and neon share these contours.
@@ -526,8 +603,10 @@ float4 drawNeonMask(VertData v_in) : TARGET
         float angle = atan2(p.y, p.x);
         float mixAmount = saturate(0.5 + 0.5 * sin(angle + TAU * color_phase));
         float3 neon = lerp(color_a.rgb, color_b.rgb, mixAmount);
-        float3 outerColor = lerp(neon, color_b.rgb, 0.28);
-        float3 midColor = lerp(neon, float3(1.0, 1.0, 1.0), 0.15);
+        // Broad light stays chromatic. Whitening belongs near the fine core;
+        // otherwise OBS preview downscaling turns low-alpha bloom gray.
+        float3 outerColor = neon;
+        float3 midColor = lerp(neon, float3(1.0, 1.0, 1.0), 0.07);
         float3 fineColor = lerp(neon, float3(1.0, 1.0, 1.0), 0.72);
 
         float segmentAlpha = 1.0;
@@ -579,6 +658,11 @@ float4 drawNeonMask(VertData v_in) : TARGET
             outerA = saturate(glow_strength * bloom_strength * 0.46 *
                               side * breath * glowGate *
                               exp2(-2.0 * gap * gap / (outerRadius * outerRadius)));
+            // Analytic exp2 never reaches zero. Terminate it with a smooth
+            // finite support matching D3's 2.5R envelope, eliminating the
+            // blocky low-alpha gray fringe seen in the OBS Filters preview.
+            midA *= 1.0-smoothstep(1.55*midRadius,1.85*midRadius,gap);
+            outerA *= 1.0-smoothstep(2.30*outerRadius,2.50*outerRadius,gap);
             // Traveling brightness grows locally without switching off the
             // base frame or flashing the whole portrait.
             midA = saturate(midA * (1.0 + 0.65 * hot * hotspot_strength));
@@ -826,8 +910,11 @@ float4 drawNeonMask(VertData v_in) : TARGET
         premul = hotspotColor * hotspotA + premul * (1.0 - hotspotA);
         outA = hotspotA + outA * (1.0 - hotspotA);
     }
+    // Exact transparent black outside the finite light support prevents
+    // straight-alpha RGB from surviving as a gray fringe after preview scale.
+    if(outA <= 0.0005) return float4(0.0,0.0,0.0,0.0);
     // The final effect outputs straight alpha for OBS's SRC_ALPHA blend stage.
-    float3 straight = outA > 0.00001 ? premul / outA : float3(0.0, 0.0, 0.0);
+    float3 straight = premul / outA;
     return float4(straight, outA);
 }
 

@@ -38,33 +38,49 @@ int main(void)
                                           bx,by,0.0f,detail))<0.001f);
     check("bubble external shoulder remains on contour",
           fabsf(D(bubble,-0.34f*bx,bottom))<0.001f);
-    /* D4A designer must reproduce every legacy Bubble pixel by default. */
-    nm_bubble_controls old={0,0,0,0,-0.78f,-0.34f,-0.72f,detail};
+    /* D4A v2 default point model must preserve the legacy Bubble contour. */
+    const float bottom_norm=1.0f-1.8f*detail;
+    nm_bubble_controls old={
+        -1.0f,-1.0f, 1.0f,-1.0f,
+         1.0f,bottom_norm,-1.0f,bottom_norm,
+         0.11f,0.33f,0.14f,detail
+    };
     for(int yy=-26;yy<=26;yy+=2) for(int xx=-26;xx<=26;xx+=2) {
         const float oldD=D(bubble,(float)xx,(float)yy);
         const float newD=nm_bubble_custom_distance((float)xx,(float)yy,bx,by,r,&old);
-        check("D4A zero-inset matches legacy exterior",fabsf(oldD-newD)<0.0005f);
+        check("D4A freeform defaults match legacy exterior",fabsf(oldD-newD)<0.0005f);
     }
-    nm_bubble_controls custom={0.10f,0.25f,0.20f,0.05f,
-                               -0.40f,0.20f,0.15f,detail};
+
+    nm_bubble_controls custom={
+        -0.85f,-0.90f, 0.75f,-0.70f,
+         0.90f, 0.65f,-0.65f, 0.45f,
+         0.18f,0.42f,0.28f,detail
+    };
 #define BC(X,Y) nm_bubble_custom_distance((X),(Y),bx,by,r,&custom)
-    check("D4A center stays filled",BC(0,0)<-2.0f);
-    check("D4A independently inset top clips image",BC(0,-20)>2.0f);
-    check("D4A independently inset left clips image",BC(-22,0)>1.0f);
-    check("D4A independently inset right clips image",BC(15,0)>1.0f);
-    check("D4A tail translated into new location",BC(2,18)<-0.4f);
-    check("D4A area beside translated tail transparent",BC(14,18)>1.0f);
-    check("D4A internal shoulder remains away from exposed neon",
-          BC(0,11.664f)<-0.8f);
-    check("D4A tail tip remains bounded",BC(3.6f,24.5f)>0.2f);
+    check("D4A freeform center remains filled",BC(0,0)<-2.0f);
+    check("D4A old flat top point is now outside",BC(0,-24.0f)>1.0f);
+    check("D4A right side independently pulled inward",BC(23.0f,0.0f)>0.8f);
+    check("D4A left side independently pulled inward",BC(-23.0f,0.0f)>0.8f);
+    check("D4A slanted top rail is contour",
+          fabsf(BC((-0.85f+0.75f)*0.5f*bx,
+                   (-0.90f-0.70f)*0.5f*by))<0.02f);
+    const float x80=(-0.65f+(0.90f+0.65f)*0.80f)*bx;
+    const float y80=(0.45f+(0.65f-0.45f)*0.80f)*by;
+    check("D4A slanted bottom rail remains contour",fabsf(BC(x80,y80))<0.03f);
+    check("D4A tail follows slanted bottom",BC(-4.5f,16.0f)<0.0f);
+    check("D4A area beside tail remains transparent",BC(15.0f,20.0f)>1.0f);
+    check("D4A hidden tail base stays away from neon",BC(-4.0f,12.5f)<-0.2f);
     check("D4A null control rejected",
           isnan(nm_bubble_custom_distance(0,0,bx,by,r,NULL)));
-    custom.left_inset=custom.right_inset=0.25f;
-    custom.top_inset=custom.bottom_inset=0.25f;
-    custom.tail_left=-0.90f;custom.tail_right=0.90f;
-    custom.tail_tip=0.95f;custom.tail_depth=0.35f;
-    for(int i=-20;i<=20;++i) for(int j=-20;j<=20;++j)
-        check("D4A extreme valid shape stays finite",
+
+    custom.tl_x=-1.0f; custom.tl_y=-0.35f;
+    custom.tr_x=0.35f; custom.tr_y=-1.0f;
+    custom.br_x=1.0f; custom.br_y=0.92f;
+    custom.bl_x=-0.35f; custom.bl_y=0.35f;
+    custom.tail_start=0.02f; custom.tail_end=0.98f;
+    custom.tail_tip_pos=1.0f; custom.tail_depth=0.35f;
+    for(int i=-24;i<=24;++i) for(int j=-24;j<=24;++j)
+        check("D4A extreme valid freeform stays finite",
               isfinite(nm_bubble_custom_distance(0.4f*i,0.3f*j,
                                                  8.0f,6.0f,30.0f,&custom)));
 #undef BC

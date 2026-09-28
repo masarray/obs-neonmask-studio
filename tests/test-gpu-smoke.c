@@ -14,7 +14,7 @@
 
 static const char *const uniforms[] = {
     "uv_size", "half_size", "mask_offset", "subject_pan", "subject_zoom",
-    "shape_rotation", "polygon_sides", "shape_detail", "bubble_body", "bubble_tail", "corner_radius", "shape_id", "border_width",
+    "shape_rotation", "polygon_sides", "shape_detail", "bubble_top", "bubble_bottom", "bubble_tail", "corner_radius", "shape_id", "border_width",
     "feather", "glow_radius", "glow_strength", "mid_glow_strength",
     "bloom_strength", "hotspot_strength", "hotspot_size", "color_a", "color_b",
     "color_phase", "pulse_phase", "flow_phase", "animation_id", "segment_count",
@@ -29,10 +29,12 @@ static const char *const uniforms[] = {
 static int verify_pixel_fixture(gs_effect_t *effect, int variant)
 {
     enum { W = 64, H = 64 };
-    /* 38: input 64x64, output 96x80, captured source origin (16,8). */
+    /* 38 validates D3 origin; 40 validates finite halo support. */
     const bool expanded = variant == 38;
-    const uint32_t out_w = expanded ? 96u : W;
-    const uint32_t out_h = expanded ? 80u : H;
+    const bool halo_guard = variant == 40;
+    const bool padded = expanded || halo_guard;
+    const uint32_t out_w = padded ? 96u : W;
+    const uint32_t out_h = padded ? 80u : H;
     uint8_t pixels[W * H * 4];
     const uint8_t red = variant == 0 ? 255 : variant == 1 ? 128 :
                         (variant == 3 || variant == 4 || variant == 18 ||
@@ -76,7 +78,8 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_texrender_t *target = gs_texrender_create(GS_RGBA, GS_ZS_NONE);
     gs_stagesurf_t *stage = gs_stagesurface_create(out_w, out_h, GS_RGBA);
     int failed = 0;
-    const bool glow_case = variant == 5 || variant == 6 || variant == 9 || variant == 10 || expanded;
+    const bool glow_case = variant == 5 || variant == 6 || variant == 9 ||
+                           variant == 10 || expanded || halo_guard;
 
     if (!input || !target || !stage) {
         fprintf(stderr, "FAIL: GPU fixture resource creation\n");
@@ -90,10 +93,10 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     struct vec2 extents;
     struct vec2 zero2;
     struct vec4 magenta;
-    struct vec4 bubble_body, bubble_tail;
+    struct vec4 bubble_top, bubble_bottom, bubble_tail;
     vec2_set(&dims, (float)W, (float)H);
     vec2_set(&output_dims, (float)out_w, (float)out_h);
-    vec2_set(&source_origin, expanded ? 16.0f : 0.0f, expanded ? 8.0f : 0.0f);
+    vec2_set(&source_origin, padded ? 16.0f : 0.0f, padded ? 8.0f : 0.0f);
     vec2_set(&extents, 24.0f, 24.0f);
     vec2_set(&zero2, 0.0f, 0.0f);
     struct vec2 mask_shift;
@@ -103,11 +106,13 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     vec2_set(&subject_shift, variant == 3 ? 96.0f : 0.0f, 0.0f);
     vec4_set(&magenta, 1.0f, 0.0f, 1.0f, 1.0f);
     if (variant == 39) {
-        vec4_set(&bubble_body,0.10f,0.25f,0.20f,0.05f);
-        vec4_set(&bubble_tail,-0.40f,0.20f,0.15f,0.23f);
+        vec4_set(&bubble_top,-0.85f,-0.90f,0.75f,-0.70f);
+        vec4_set(&bubble_bottom,0.90f,0.65f,-0.65f,0.45f);
+        vec4_set(&bubble_tail,0.18f,0.42f,0.28f,0.23f);
     } else {
-        vec4_set(&bubble_body,0.0f,0.0f,0.0f,0.0f);
-        vec4_set(&bubble_tail,-0.78f,-0.34f,-0.72f,0.23f);
+        vec4_set(&bubble_top,-1.0f,-1.0f,1.0f,-1.0f);
+        vec4_set(&bubble_bottom,1.0f,0.586f,-1.0f,0.586f);
+        vec4_set(&bubble_tail,0.11f,0.33f,0.14f,0.23f);
     }
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "uv_size"), &dims);
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "output_size"), &output_dims);
@@ -119,7 +124,8 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_rotation"), 0.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "polygon_sides"), 8);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_detail"), 0.23f);
-    gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "bubble_body"), &bubble_body);
+    gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "bubble_top"), &bubble_top);
+    gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "bubble_bottom"), &bubble_bottom);
     gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "bubble_tail"), &bubble_tail);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "corner_radius"),
                         variant == 24 ? 0.0f :
@@ -130,6 +136,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                       variant == 15 || variant == 22 ? 5 :
                       variant == 18 || variant == 20 || variant == 27 || variant == 39 ? 8 :
                       variant >= 34 && variant <= 37 ? 12 :
+                      variant == 40 ? 0 :
                       variant == 30 || variant == 31 ? 10 :
                        variant == 32 || variant == 33 ? 11 :
                        variant == 21 || variant == 23 || variant >= 24 ? 9 : 0);
@@ -142,7 +149,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "art_gap"), 2.0f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "feather"), 0.5f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "glow_radius"),
-                        glow_case ? 12.0f : 8.0f);
+                        halo_guard ? 8.0f : (glow_case ? 12.0f : 8.0f));
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "glow_strength"),
                         glow_case ? 0.85f : 0.0f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "mid_glow_strength"), 0.75f);
@@ -162,7 +169,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                       variant == 2 || (variant >= 5 && variant <= 17) ||
                       variant == 20 || variant == 23 || variant == 26 ||
                        variant == 27 || variant == 29 || variant == 31 || variant == 33 ||
-                       variant == 35 || variant == 36 || expanded);
+                       variant == 35 || variant == 36 || expanded || halo_guard);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), glow_case);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "svg_sdf"),svg_texture);
     gs_effect_set_int(gs_effect_get_param_by_name(effect,"svg_ready"),
@@ -464,18 +471,30 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     }
 
     else if(variant==39) {
-        const uint8_t *top_clipped=mapped+10u*stride+32u*4u;
-        const uint8_t *left_clipped=mapped+32u*stride+10u*4u;
-        const uint8_t *right_clipped=mapped+32u*stride+55u*4u;
-        const uint8_t *new_tail=mapped+50u*stride+34u*4u;
-        const uint8_t *tail_side=mapped+50u*stride+46u*4u;
+        const uint8_t *top_old=mapped+8u*stride+32u*4u;
+        const uint8_t *left_old=mapped+32u*stride+8u*4u;
+        const uint8_t *right_old=mapped+32u*stride+57u*4u;
+        const uint8_t *tail_fill=mapped+48u*stride+27u*4u;
+        const uint8_t *tail_side=mapped+50u*stride+47u*4u;
         if(center[0]<240 || center[3]<245 ||
-           top_clipped[3]>2 || left_clipped[3]>2 ||
-           right_clipped[3]>2 || new_tail[0]<240 ||
-           new_tail[3]<245 || tail_side[3]>2) {
-            fprintf(stderr,"FAIL: D4A custom bubble center=%u top=%u left=%u right=%u tail=%u side=%u\n",
-                    center[3],top_clipped[3],left_clipped[3],
-                    right_clipped[3],new_tail[3],tail_side[3]);
+           top_old[3]>3 || left_old[3]>3 || right_old[3]>3 ||
+           tail_fill[0]<230 || tail_fill[3]<230 || tail_side[3]>3) {
+            fprintf(stderr,"FAIL: D4A freeform bubble center=%u top=%u left=%u right=%u tail=%u side=%u\n",
+                    center[3],top_old[3],left_old[3],right_old[3],
+                    tail_fill[3],tail_side[3]);
+            failed=1;
+        }
+    }
+
+    else if(halo_guard) {
+        const uint8_t *colored=mapped+40u*stride+82u*4u;
+        const uint8_t *far=mapped+40u*stride+95u*4u;
+        if(colored[3]<5 || colored[0]<=colored[1]+4 ||
+           colored[2]<=colored[1]+4 ||
+           far[0]>2 || far[1]>2 || far[2]>2 || far[3]>2) {
+            fprintf(stderr,"FAIL: finite chromatic halo color=%u/%u/%u/%u far=%u/%u/%u/%u\n",
+                    colored[0],colored[1],colored[2],colored[3],
+                    far[0],far[1],far[2],far[3]);
             failed=1;
         }
     }
@@ -580,7 +599,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 40; ++variant)
+            for (int variant = 0; variant < 41; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
@@ -589,6 +608,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: libobs alpha/framing/light + SVG + expanded origin + custom bubble GPU fixtures (partial G4)");
+    puts("PASS: libobs alpha/framing/light + SVG + expanded origin + freeform Bubble + halo cutoff GPU fixtures (partial G4)");
     return 0;
 }

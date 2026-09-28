@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define NM_CONFIG_SCHEMA_VERSION 2u
+#define NM_CONFIG_SCHEMA_VERSION 3u
 
 typedef struct nm_config {
     uint32_t schema_version;
@@ -28,10 +28,17 @@ typedef struct nm_config {
     float roundness;
     /* D1: proportional tail height / diagonal cut, range 0.08..0.35. */
     float shape_detail;
-    /* D4A: independent body inset, tail anchors and depth (source-relative). */
+    /* D4A v1 fields are retained only for schema-2 migration. */
     float bubble_left_inset, bubble_right_inset;
     float bubble_top_inset, bubble_bottom_inset;
-    float bubble_tail_left, bubble_tail_right, bubble_tail_tip, bubble_tail_depth;
+    float bubble_tail_left, bubble_tail_right, bubble_tail_tip;
+    /* D4A v2: convex freeform body control points normalized by half-size.
+     * Each corner stays in its own quadrant so arbitrary slider combinations
+     * cannot self-intersect. Tail positions are fractions of BL->BR. */
+    float bubble_tl_x, bubble_tl_y, bubble_tr_x, bubble_tr_y;
+    float bubble_br_x, bubble_br_y, bubble_bl_x, bubble_bl_y;
+    float bubble_tail_start, bubble_tail_end, bubble_tail_tip_pos;
+    float bubble_tail_depth;
     float border_px;
     float feather_px;
     float glow_px;

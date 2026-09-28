@@ -1,11 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #pragma once
 
-/* Parametric Bubble geometry; default zero-insets + legacy anchors preserve
- * saved shape ID 8. User values are sanitized by nm_config_validate. */
+/* D4A freeform Bubble geometry. Coordinates are normalized by half-size;
+ * tail start/end/tip_pos are fractions along BL->BR. */
 typedef struct nm_bubble_controls {
-    float left_inset, right_inset, top_inset, bottom_inset;
-    float tail_left, tail_right, tail_tip, tail_depth;
+    float tl_x,tl_y,tr_x,tr_y;
+    float br_x,br_y,bl_x,bl_y;
+    float tail_start,tail_end,tail_tip_pos,tail_depth;
 } nm_bubble_controls;
 
 float nm_bubble_custom_distance(float x,float y,float half_width,float half_height,

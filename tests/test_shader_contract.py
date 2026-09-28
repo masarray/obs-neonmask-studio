@@ -7,16 +7,16 @@ ROOT = Path(__file__).resolve().parents[1]
 host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
-assert len(names) == len(set(names)) == 37, f"Expected 37 unique bindings: {names!r}"
+assert len(names) == len(set(names)) == 38, f"Expected 38 unique bindings: {names!r}"
 uniforms = {name: kind for kind, name in re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader)}
-assert len(uniforms) == 39, f"Unexpected number of shader uniforms: {uniforms}"
+assert len(uniforms) == 40, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
     "Host/shader uniform drift: " + str(set(names) ^ (set(uniforms) - {"ViewProj", "image"}))
 )
 assert uniforms["color_a"] == uniforms["color_b"] == "float4"
 assert uniforms["uv_size"] == uniforms["half_size"] == "float2"
 assert uniforms["output_size"] == uniforms["input_origin"] == "float2"
-assert uniforms["bubble_body"] == uniforms["bubble_tail"] == "float4"
+assert uniforms["bubble_top"] == uniforms["bubble_bottom"] == uniforms["bubble_tail"] == "float4"
 assert uniforms["mask_offset"] == uniforms["subject_pan"] == "float2"
 assert uniforms["subject_zoom"] == uniforms["shape_rotation"] == "float"
 assert uniforms["polygon_sides"] == "int"
@@ -52,32 +52,40 @@ assert 'Roundness="Kelengkungan kontur"' in id_locale
 assert 'Mask.Detail="Shape detail (cut / squircle)"' in en_locale
 assert 'Mask.Detail="Detail bentuk (potongan / squircle)"' in id_locale
 assert "return chatBubbleDistance(" in shader and "return angledCardDistance(" in shader
-assert "float leftX = -b.x + 2.0*b.x*bubble_body.x;" in shader
-assert "float xL=clamp(b.x*bubble_tail.x,railL,railR-minBase);" in shader
-assert "float bodyDistance=roundedBoxDistance(bodyP,bodyHalf,r);" in shader
-assert "NM_PARAM(bubble_body, \"bubble_body\")" in host
+assert "float2 tl=float2(bubble_top.x*b.x,bubble_top.y*b.y);" in shader
+assert "float2 br=float2(bubble_bottom.x*b.x,bubble_bottom.y*b.y);" in shader
+assert "float startT=clamp(bubble_tail.x,railMin,railMax-minBase);" in shader
+assert "float2 outward=normalize(float2(-bottomDir.y,bottomDir.x));" in shader
+assert "bubbleTailMaxDepth(tipBase,outward,b)" in shader
+assert "bubbleQuadInside(p,tl,tr,br,bl)>=0.0" in shader
+assert "NM_PARAM(bubble_top, \"bubble_top\")" in host
+assert "NM_PARAM(bubble_bottom, \"bubble_bottom\")" in host
 assert "NM_PARAM(bubble_tail, \"bubble_tail\")" in host
-assert "gs_effect_set_vec4(f->bubble_body, &bubble_body)" in host
+assert "gs_effect_set_vec4(f->bubble_top, &bubble_top)" in host
+assert "gs_effect_set_vec4(f->bubble_bottom, &bubble_bottom)" in host
 assert "gs_effect_set_vec4(f->bubble_tail, &bubble_tail)" in host
-for key in ("bubble_left_inset","bubble_right_inset","bubble_top_inset","bubble_bottom_inset",
-            "bubble_tail_left","bubble_tail_right","bubble_tail_tip","bubble_tail_depth"):
-    assert f'obs_data_has_user_value(settings, "{key}")' in host
+for key in ("bubble_tl_x","bubble_tl_y","bubble_tr_x","bubble_tr_y",
+            "bubble_br_x","bubble_br_y","bubble_bl_x","bubble_bl_y",
+            "bubble_tail_start","bubble_tail_end","bubble_tail_tip_pos","bubble_tail_depth"):
     assert f'obs_data_set_default_double(settings, "{key}"' in host
-    assert f'obs_data_set_double(settings, "{key}"' in host
-assert 'if (!obs_data_has_user_value(settings, "bubble_tail_depth"))' in host
+    assert f'obs_data_set_double(settings, "{key}"' in host or key in ("bubble_tl_x","bubble_tl_y","bubble_tr_x","bubble_tr_y","bubble_br_x","bubble_br_y","bubble_bl_x","bubble_bl_y","bubble_tail_start","bubble_tail_end","bubble_tail_tip_pos")
+assert "schema < 3u" in host and "bottom_y = 1.0f - 1.8f*depth" in host
+assert '"bubble_tl_x","bubble_tl_y","bubble_tr_x","bubble_tr_y"' in host
 assert "bubble_body_controls" in host and "bubble_tail_controls" in host
 assert 'obs_property_set_visible(body,shape_id==NM_SHAPE_CHAT_BUBBLE)' in host
 assert 'obs_property_set_visible(tail,shape_id==NM_SHAPE_CHAT_BUBBLE)' in host
 assert "nm_context_visibility(" in host
 assert "NM_SHOW(\"speed\",border && animation!=NM_ANIM_STATIC)" in host
 assert "NM_SHOW(\"glow_radius\",border && glow)" in host
+assert 'Bubble.TLX="Top-left X"' in en_locale
+assert 'Bubble.TLX="Sudut kiri-atas X"' in id_locale
 # A primitive min is an occupancy union, NOT the exposed contour distance:
 # its hidden body bottom/tail base caused a phantom horizontal neon seam.
-assert "float ds = edgeDistanceSquared(p,topLeft,topRight)" in shader
-assert "edgeDistanceSquared(p,bottomRight,right)" in shader
-assert "edgeDistanceSquared(p,left,bottomLeft)" in shader
+assert "float ds=edgeDistanceSquared(p,tlN,trP)" in shader
+assert "edgeDistanceSquared(p,brN,right)" in shader
+assert "edgeDistanceSquared(p,left,blP)" in shader
 assert "arcDistanceSquared(p,rightTangent,leftTangent,tipCenter,tipR)" in shader
-assert "return sqrt(ds)*(inside && !removed" in shader
+assert "return sqrt(ds)*((bodyInside || tailInside) && !removed" in shader
 # Maximum Angled Card roundness forms a shared-center quarter circle.
 assert "float r = amount*cut*(1.0+INV_ROOT2)" in shader
 assert "cut*1.20" not in shader
@@ -108,6 +116,9 @@ assert "float fineA =" in shader and "float hotspotA =" in shader
 assert "float breath =" in shader and "animation_id == 1" in shader
 assert "float turnDelta =" in shader and "animation_id == 2" in shader
 assert "premul = outerColor * outerA" in shader
+assert "outerA *= 1.0-smoothstep(2.30*outerRadius,2.50*outerRadius,gap)" in shader
+assert "float3 outerColor = neon;" in shader
+assert "if(outA <= 0.0005) return float4(0.0,0.0,0.0,0.0);" in shader
 assert "premul = midColor * midA" in shader
 assert "premul = fineColor * fineA" in shader
 assert "premul = hotspotColor * hotspotA" in shader
