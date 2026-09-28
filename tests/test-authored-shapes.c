@@ -187,8 +187,8 @@ int main(void)
     check("Tech HUD BR diagonal is exact contour",
           fabsf(D(tech,bx-tech_cut*0.5f,by-tech_cut*0.5f))<0.002f);
     check("Tech HUD detail visibly changes chamfer",
-          D(tech,-18,-18)<0.0f &&
-          nm_authored_shape_distance(tech,-18,-18,bx,by,r,0.35f)>0.0f);
+          nm_authored_shape_distance(tech,-20,-20,bx,by,r,0.08f)<0.0f &&
+          nm_authored_shape_distance(tech,-20,-20,bx,by,r,0.35f)>0.0f);
 
     /* Smooth superellipse has a continuous, aspect-correct implicit
      * contour; its exponent changes with the existing shape_detail. */
