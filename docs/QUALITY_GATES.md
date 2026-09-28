@@ -185,3 +185,14 @@ and preserved 90-degree top-left/bottom-right corners. Ensure the neon
 uses the same rounded contour (no detached line) and shape-detail still
 changes cut depth independently. Actual OBS screenshots at zero, midpoint
 and maximum are needed to judge leaf-like visual quality.
+
+
+## D3-specific verification
+
+D3 source/output coordinate, separated padding and impossible-offset checks
+are automated in neonmask-safe-fit-tests, with expanded shader origin pixels
+in neonmask-gpu-smoke. Source-recursive filter composition, scene-item origin
+alignment, crop/chroma order, resize/restart and real GPU soak require actual
+OBS frontend G4-V/G5/G6 evidence. An enabled `expand_canvas` filter shifts
+content inside the reported source by left/top pixels; never record this as
+automatic scene transform preservation. See PHASE_D_IMPLEMENTATION.md.

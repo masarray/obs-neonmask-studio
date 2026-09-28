@@ -376,3 +376,13 @@ input-origin pixel probes (OpenGL and D3D11). This is partial G4 GPU proof;
 real OBS scene item anchor, filter order, source resize/restart, SVG reload,
 320x180 dark/light captures, render lag and soak are pending G4-V/G5/G6.
 Issue #24/#26 stay open. No claim of final automatic scene-origin parity.
+
+
+## D3 verification continuation
+
+Automated landscape/square/portrait bounds matrix and G4 direct-effect
+expanded-origin pixel fixtures are the code-level acceptance evidence.
+Frontend scene-anchor/filter-chain/source-restart/PNG alpha proof and
+Windows GPU/soak remain mandatory, not silently reclassified as passing.
+The exact manual matrix is in PHASE_D_IMPLEMENTATION.md. D4A can begin on the
+verified code base without prematurely closing #24 or #26.
