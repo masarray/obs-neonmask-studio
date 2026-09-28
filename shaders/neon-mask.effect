@@ -462,6 +462,31 @@ float techHudDistance(float2 p,float2 b,float detail)
     return sqrt(ds)*(inside>=0.0 ? -1.0 : 1.0);
 }
 
+// D4C: symmetric small-chamfer gaming panel; source alpha follows this
+// contour while corner brackets and the secondary rail remain independent.
+float gameUiDistance(float2 p,float2 b,float detail)
+{
+    float cut=min(max(2.0,min(b.x,b.y)*detail*0.72),min(b.x,b.y)*0.18);
+    float2 v0=float2(-b.x+cut,-b.y);
+    float2 v1=float2( b.x-cut,-b.y);
+    float2 v2=float2( b.x,-b.y+cut);
+    float2 v3=float2( b.x, b.y-cut);
+    float2 v4=float2( b.x-cut, b.y);
+    float2 v5=float2(-b.x+cut, b.y);
+    float2 v6=float2(-b.x, b.y-cut);
+    float2 v7=float2(-b.x,-b.y+cut);
+    float ds=edgeDistanceSquared(p,v0,v1);
+    float inside=cross2(v1-v0,p-v0);
+    ds=min(ds,edgeDistanceSquared(p,v1,v2)); inside=min(inside,cross2(v2-v1,p-v1));
+    ds=min(ds,edgeDistanceSquared(p,v2,v3)); inside=min(inside,cross2(v3-v2,p-v2));
+    ds=min(ds,edgeDistanceSquared(p,v3,v4)); inside=min(inside,cross2(v4-v3,p-v3));
+    ds=min(ds,edgeDistanceSquared(p,v4,v5)); inside=min(inside,cross2(v5-v4,p-v4));
+    ds=min(ds,edgeDistanceSquared(p,v5,v6)); inside=min(inside,cross2(v6-v5,p-v5));
+    ds=min(ds,edgeDistanceSquared(p,v6,v7)); inside=min(inside,cross2(v7-v6,p-v6));
+    ds=min(ds,edgeDistanceSquared(p,v7,v0)); inside=min(inside,cross2(v0-v7,p-v7));
+    return sqrt(ds)*(inside>=0.0 ? -1.0 : 1.0);
+}
+
 float squircleDistance(float2 p,float2 b,float detail)
 {
     // Superellipse F=|x/a|^n+|y/b|^n-1; normalized gradient controls
@@ -531,6 +556,9 @@ float shapeDistance(float2 p)
     if (shape_id == 13)
         return techHudDistance(rotatePoint(p,shape_rotation),half_size,
                                shape_detail);
+    if (shape_id == 14)
+        return gameUiDistance(rotatePoint(p,shape_rotation),half_size,
+                              shape_detail);
     if (shape_id == 1) return length(p) - min(half_size.x, half_size.y);
     if (shape_id == 2) return ellipseDistance(rotatePoint(p, shape_rotation), half_size);
     if (shape_id == 3) {
@@ -980,6 +1008,50 @@ float4 drawNeonMask(VertData v_in) : TARGET
                 artBarGlowA=saturate(artBarGlowA+
                            art_intensity*glow_strength*0.26*
                            (1.0-smoothstep(0.0,4.2,traceD)));
+        }
+
+        // D4C Game UI: four dominant outside L corners plus a complete,
+        // dimmer inner contour. Mirrored absolute coordinates guarantee
+        // consistent four-corner scale without per-corner pixel constants.
+        if (ornament_mode == 5 && shape_id == 14 && art_intensity > 0.0) {
+            float2 q=rotatePoint(p,shape_rotation);
+            float2 aq=abs(q);
+            float hx=half_size.x,hy=half_size.y;
+            float majorHalf=max(2.6,border_width*1.25);
+            float minorHalf=max(1.35,border_width*0.62);
+            float gap=art_gap+max(4.0,border_width*1.15);
+            float armX=clamp(hx*0.25,44.0,96.0);
+            float armY=clamp(hy*0.31,40.0,84.0);
+            float2 corner=float2(hx+gap,hy+gap);
+            float dH=segmentDistance(aq,float2(hx-armX,corner.y),corner);
+            float dV=segmentDistance(aq,float2(corner.x,hy-armY),corner);
+            float cornerD=min(dH,dV);
+            float corners=1.0-smoothstep(majorHalf-0.75,
+                                         majorHalf+0.85,cornerD);
+
+            // True inner line follows the same signed mask contour, so its
+            // gap stays calibrated on all four chamfers and aspect ratios.
+            float innerGap=max(5.0,border_width*2.05);
+            float innerD=abs(d+innerGap);
+            float innerRail=1.0-smoothstep(minorHalf-0.55,
+                                           minorHalf+0.70,innerD);
+            artBarA=saturate(artBarA+art_intensity*
+                             (corners*0.99+innerRail*0.62));
+            if(glow_enabled != 0) {
+                float glowSpread=max(4.0,glow_radius*0.20);
+                float g=min(max(0.0,cornerD-majorHalf),
+                            max(0.0,innerD-minorHalf));
+                artBarGlowA=saturate(artBarGlowA+
+                    art_intensity*glow_strength*0.30*
+                    (1.0-smoothstep(0.0,glowSpread,g)));
+            }
+
+            // Small bright nodes at inner-rail corners provide the arcade/
+            // gaming feel without tinting the central face region.
+            float nodeInset=innerGap;
+            float nodeD=length(aq-float2(hx-nodeInset,hy-nodeInset));
+            glintA=saturate(glintA+art_intensity*
+                            (1.0-smoothstep(1.0,3.2,nodeD))*0.72);
         }
 
         // Streamer: an intentional two-segment speech-tail line with a

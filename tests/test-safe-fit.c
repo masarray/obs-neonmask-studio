@@ -135,6 +135,15 @@ int main(void)
     check("Tech HUD visible bracket envelope participates in D3",
           nm_safe_fit_calculate(&c,640,360,&f) && f.fits &&
           f.envelope_px>=18.0f);
+    nm_config_defaults(&c);
+    c.shape_id=NM_SHAPE_GAME_UI;
+    c.ornament_mode=NM_ORNAMENT_GAME_UI;
+    c.art_intensity=0.92f; c.art_gap=3.0f;
+    c.border_px=4.0f; c.glow_px=18.0f; c.show_glow=true;
+    c.expand_canvas=true;
+    check("Game UI four-corner envelope participates in D3",
+          nm_safe_fit_calculate(&c,640,360,&f) && f.fits &&
+          f.envelope_px>=17.0f);
     /* D3 gate: deterministic coverage of input/output dimensions, asymmetric
      * offsets and rotated AABBs over landscape, square and portrait captures.
      * This tests geometry, not OBS scene-item transform semantics. */

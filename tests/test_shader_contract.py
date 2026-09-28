@@ -23,7 +23,7 @@ assert uniforms["polygon_sides"] == "int"
 assert uniforms["shape_detail"] == "float"
 assert "NM_SHAPE_CHAT_BUBBLE" in host and "NM_SHAPE_ANGLED_CARD" in host
 assert "NM_SHAPE_HUD_PANEL" in host and "NM_SHAPE_SQUIRCLE" in host
-assert "NM_SHAPE_TECH_HUD" in host
+assert "NM_SHAPE_TECH_HUD" in host and "NM_SHAPE_GAME_UI" in host
 assert "NM_SHAPE_SVG_PATH" in host and "svgPathDistance(" in shader
 assert "nm_svg_read_local(" in host and "nm_svg_raster_sdf(" in host
 assert "shape_id == 12 && svg_ready == 0" in shader
@@ -36,6 +36,7 @@ assert "obs_properties_add_path(mask_group, \"svg_path\"" in host
 assert "obs_enter_graphics();" in host and "gs_texture_destroy(f->svg_texture)" in host
 assert "hudPanelDistance(" in shader and "squircleDistance(" in shader
 assert "techHudDistance(" in shader and "shape_id == 13" in shader
+assert "gameUiDistance(" in shader and "shape_id == 14" in shader
 assert "return sqrt(ds)*(inside ? -1.0 : 1.0)" in shader
 assert "Preset.HUDCut" in host and "Preset.Squircle" in host
 assert "nm_geometry_visibility(" in host
@@ -96,6 +97,8 @@ assert "NM_SHOW(\"glow_radius\",border && glow)" in host
 assert 'Bubble.TLX="Top-left X"' in en_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — cut corners + brackets"' in en_locale
 assert 'Preset.TechHUD="Tech HUD Advanced — Cyan + Amber"' in en_locale
+assert 'Shape.GameUI="Game UI — corner brackets + inner rail"' in en_locale
+assert 'Preset.GameUI="Game UI — Neon Green"' in en_locale
 assert 'Bubble.TLX="Sudut kiri-atas X"' in id_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — sudut potong + bracket"' in id_locale
 # A primitive min is an occupancy union, NOT the exposed contour distance:
@@ -118,9 +121,14 @@ assert "float gapGate" in shader and "float hbar" in shader and "float vbar" in 
 assert "artBarA" in shader and "artBarGlowA" in shader
 assert "NM_ORNAMENT_CYBER" in host and "NM_ORNAMENT_NONE" in host
 assert "NM_ORNAMENT_REACTOR" in host and "NM_ORNAMENT_TECH_HUD" in host and "NM_ORNAMENT_STREAMER" in host
-for mode in (2, 3, 4):
+assert "NM_ORNAMENT_GAME_UI" in host
+for mode in (2, 3, 4, 5):
     assert f"ornament_mode == {mode}" in shader
 assert "float segmentDistance(" in shader
+assert "ornament_mode == 5 && shape_id == 14" in shader
+assert "float dH=segmentDistance(aq,float2(hx-armX,corner.y),corner)" in shader
+assert "float innerD=abs(d+innerGap)" in shader
+assert "corners*0.99+innerRail*0.62" in shader
 for key in ("art_intensity", "art_gap"):
     assert f'obs_data_has_user_value(settings, "{key}")' in host
     assert f'obs_data_set_double(settings, "{key}", next.{key})' in host

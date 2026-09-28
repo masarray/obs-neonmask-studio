@@ -353,6 +353,7 @@ static void nm_geometry_visibility(obs_properties_t *props, int shape_id)
     const bool authored=shape_id==NM_SHAPE_ANGLED_CARD ||
                         shape_id==NM_SHAPE_HUD_PANEL ||
                         shape_id==NM_SHAPE_TECH_HUD ||
+                        shape_id==NM_SHAPE_GAME_UI ||
                         shape_id==NM_SHAPE_SQUIRCLE;
     if(round) obs_property_set_visible(round,rounded);
     if(detail) obs_property_set_visible(detail,authored);
@@ -545,6 +546,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(preset, obs_module_text("Preset.AngledCard"), 7);
     obs_property_list_add_int(preset, obs_module_text("Preset.HUDCut"), 8);
     obs_property_list_add_int(preset, obs_module_text("Preset.Squircle"), 9);
+    obs_property_list_add_int(preset, obs_module_text("Preset.GameUI"), 10);
     obs_property_set_modified_callback(preset, nm_preset_changed);
 
     obs_property_t *shape = obs_properties_add_list(props, "shape", obs_module_text("Shape"),
@@ -561,6 +563,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(shape, obs_module_text("Shape.AngledCard"), NM_SHAPE_ANGLED_CARD);
     obs_property_list_add_int(shape, obs_module_text("Shape.HUDPanel"), NM_SHAPE_HUD_PANEL);
     obs_property_list_add_int(shape, obs_module_text("Shape.TechHUD"), NM_SHAPE_TECH_HUD);
+    obs_property_list_add_int(shape, obs_module_text("Shape.GameUI"), NM_SHAPE_GAME_UI);
     obs_property_list_add_int(shape, obs_module_text("Shape.Squircle"), NM_SHAPE_SQUIRCLE);
     obs_property_list_add_int(shape, obs_module_text("Shape.SVG"), NM_SHAPE_SVG_PATH);
     obs_property_set_modified_callback(shape, nm_shape_changed);
@@ -630,6 +633,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(ornament, obs_module_text("Art.Reactor"), NM_ORNAMENT_REACTOR);
     obs_property_list_add_int(ornament, obs_module_text("Art.TechHUD"), NM_ORNAMENT_TECH_HUD);
     obs_property_list_add_int(ornament, obs_module_text("Art.Streamer"), NM_ORNAMENT_STREAMER);
+    obs_property_list_add_int(ornament, obs_module_text("Art.GameUI"), NM_ORNAMENT_GAME_UI);
     obs_property_set_modified_callback(ornament, nm_context_changed);
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "art_intensity",
                          obs_module_text("Art.Intensity"), 0.0, 1.0, 0.01));

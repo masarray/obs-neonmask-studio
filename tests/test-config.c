@@ -128,6 +128,11 @@ int main(void)
     cfg.shape_id = NM_SHAPE_TECH_HUD;
     nm_config_validate(&cfg);
     check("Tech HUD advanced shape ID accepted",cfg.shape_id == NM_SHAPE_TECH_HUD);
+    cfg.shape_id = NM_SHAPE_GAME_UI;
+    cfg.ornament_mode = NM_ORNAMENT_GAME_UI;
+    nm_config_validate(&cfg);
+    check("Game UI shape ID accepted",cfg.shape_id == NM_SHAPE_GAME_UI);
+    check("Game UI ornament accepted",cfg.ornament_mode == NM_ORNAMENT_GAME_UI);
     check("animation fallback", cfg.animation_id == NM_ANIM_STATIC);
     check("style fallback", cfg.style_id == NM_STYLE_CLASSIC);
     check("segments clamp", cfg.segment_count == 48);
