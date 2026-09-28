@@ -139,7 +139,8 @@ assert "const float bx=fit.half_width;" in host and "const float by=fit.half_hei
 assert "const float half_width = fit.half_width;" in host
 assert "const float half_height = fit.half_height;" in host
 assert 'obs_data_set_default_bool(settings, "expand_canvas", cfg.expand_canvas)' in host
-assert 'obs_properties_add_bool(mask_group, "expand_canvas"' in host
+assert 'obs_properties_add_bool(mask_group,"expand_canvas"' in host
+assert "obs_property_set_modified_callback(expand,nm_context_changed)" in host
 assert 'Mask.ExpandCanvas="Expand output for glow' in en_locale
 assert 'Mask.ExpandCanvas="Perluas output glow' in id_locale
 assert ".get_width = nm_get_width" in host and ".get_height = nm_get_height" in host
