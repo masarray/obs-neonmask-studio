@@ -70,65 +70,126 @@ static float quarter_arc2(nm_p2 p,nm_p2 center,float r,float sx,float sy)
                  dot(sub(p,ey),sub(p,ey)));
 }
 
-/* A bubble has ONE exposed perimeter. A min(box,triangle) is a valid
- * occupancy union but is NOT a true interior distance: the box's hidden
- * bottom and triangle's hidden base create a bright phantom horizontal rim.
- * Evaluate only exterior paths; the same distance drives mask and neon. */
+typedef struct {
+    nm_p2 prev_t,next_t,center;
+    float r,trim;
+} nm_fillet;
+
+static nm_fillet bubble_fillet(nm_p2 prev,nm_p2 v,nm_p2 next,float radius)
+{
+    const nm_p2 ap=sub(prev,v),an=sub(next,v);
+    const float lp=fmaxf(hypotf(ap.x,ap.y),0.0001f);
+    const float ln=fmaxf(hypotf(an.x,an.y),0.0001f);
+    const nm_p2 up={ap.x/lp,ap.y/lp},un={an.x/ln,an.y/ln};
+    const float co=nm_clamp(dot(up,un),-0.96f,0.96f);
+    const float sh=sqrtf(fmaxf(0.0001f,0.5f*(1.0f-co)));
+    const float ch=sqrtf(fmaxf(0.0001f,0.5f*(1.0f+co)));
+    const float th=sh/ch;
+    const float trim=fminf(fmaxf(radius,0.0f)/fmaxf(th,0.0001f),
+                           0.42f*fminf(lp,ln));
+    const float rr=trim*th;
+    nm_p2 bis={up.x+un.x,up.y+un.y};
+    const float bl=fmaxf(hypotf(bis.x,bis.y),0.0001f);
+    bis.x/=bl;bis.y/=bl;
+    return (nm_fillet){
+        .prev_t={v.x+up.x*trim,v.y+up.y*trim},
+        .next_t={v.x+un.x*trim,v.y+un.y*trim},
+        .center={v.x+bis.x*(rr/sh),v.y+bis.y*(rr/sh)},
+        .r=rr,.trim=trim
+    };
+}
+static float quad_inside(nm_p2 p,nm_p2 tl,nm_p2 tr,nm_p2 br,nm_p2 bl)
+{
+    float side=cross(sub(tr,tl),sub(p,tl));
+    side=fminf(side,cross(sub(br,tr),sub(p,tr)));
+    side=fminf(side,cross(sub(bl,br),sub(p,br)));
+    side=fminf(side,cross(sub(tl,bl),sub(p,bl)));
+    return side;
+}
+static float tail_max_depth(nm_p2 base,nm_p2 n,nm_p2 b)
+{
+    float d=100000.0f;
+    if(n.x>0.0001f)d=fminf(d,( b.x-base.x)/n.x);
+    if(n.x<-0.0001f)d=fminf(d,(-b.x-base.x)/n.x);
+    if(n.y>0.0001f)d=fminf(d,( b.y-base.y)/n.y);
+    if(n.y<-0.0001f)d=fminf(d,(-b.y-base.y)/n.y);
+    return fmaxf(0.0f,d-1.0f);
+}
+
+/* A freeform Bubble has ONE exposed perimeter. Four independently authored
+ * convex corners define the body; the tail replaces a segment of the actual
+ * BL->BR edge so no hidden seam can become neon. */
 static float bubble(nm_p2 p,nm_p2 b,float radius,
                     const nm_bubble_controls *c)
 {
-    const float tail=fmaxf(3.0f,b.y*c->tail_depth*1.8f);
-    const float lx=-b.x+2.0f*b.x*c->left_inset;
-    const float rx=b.x-2.0f*b.x*c->right_inset;
-    const float top=-b.y+2.0f*b.y*c->top_inset;
-    const float bottom=b.y-tail-2.0f*b.y*c->bottom_inset;
-    const float r=fminf(fmaxf(radius,0.0f),
-                      fminf(0.5f*(bottom-top),fminf(0.22f*b.x,0.24f*(rx-lx))));
-    const float rail_l=lx+r,rail_r=rx-r;
-    const float min_base=fminf(fmaxf(1.0f,0.07f*b.x),0.4f*(rail_r-rail_l));
-    const float base_l=nm_clamp(b.x*c->tail_left,rail_l,rail_r-min_base);
-    const float base_r=nm_clamp(b.x*c->tail_right,base_l+min_base,rail_r);
-    const nm_p2 left={base_l,bottom},right={base_r,bottom};
-    const nm_p2 tip={b.x*c->tail_tip,b.y-1.0f};
+    const nm_p2 tl={c->tl_x*b.x,c->tl_y*b.y};
+    const nm_p2 tr={c->tr_x*b.x,c->tr_y*b.y};
+    const nm_p2 br={c->br_x*b.x,c->br_y*b.y};
+    const nm_p2 bl={c->bl_x*b.x,c->bl_y*b.y};
+    const float body_r=fminf(fmaxf(radius,0.0f),0.22f*b.x);
+    const nm_fillet ftl=bubble_fillet(bl,tl,tr,body_r);
+    const nm_fillet ftr=bubble_fillet(tl,tr,br,body_r);
+    const nm_fillet fbr=bubble_fillet(tr,br,bl,body_r);
+    const nm_fillet fbl=bubble_fillet(br,bl,tl,body_r);
+
+    const nm_p2 bottom=sub(br,bl);
+    const float bottom_len=fmaxf(hypotf(bottom.x,bottom.y),0.0001f);
+    const nm_p2 dir={bottom.x/bottom_len,bottom.y/bottom_len};
+    const float rail_min=fbl.trim/bottom_len;
+    const float rail_max=1.0f-fbr.trim/bottom_len;
+    const float min_base=fminf(fmaxf(1.0f/bottom_len,0.04f),
+                               0.30f*fmaxf(rail_max-rail_min,0.001f));
+    const float st=nm_clamp(c->tail_start,rail_min,rail_max-min_base);
+    const float et=nm_clamp(c->tail_end,st+min_base,rail_max);
+    const nm_p2 left={bl.x+bottom.x*st,bl.y+bottom.y*st};
+    const nm_p2 right={bl.x+bottom.x*et,bl.y+bottom.y*et};
+    const float tt=nm_clamp(c->tail_tip_pos,0.0f,1.0f);
+    const nm_p2 tip_base={bl.x+bottom.x*tt,bl.y+bottom.y*tt};
+    const nm_p2 outward={-dir.y,dir.x};
+    const float wanted=fmaxf(2.0f,b.y*c->tail_depth*1.8f-1.0f);
+    const float depth=fminf(wanted,tail_max_depth(tip_base,outward,b));
+    const nm_p2 tip={tip_base.x+outward.x*depth,
+                     tip_base.y+outward.y*depth};
+
     const nm_p2 lv=sub(left,tip),rv=sub(right,tip);
-    const float ll=hypotf(lv.x,lv.y),rl=hypotf(rv.x,rv.y);
-    const nm_p2 ul={lv.x/fmaxf(ll,0.0001f),lv.y/fmaxf(ll,0.0001f)};
-    const nm_p2 ur={rv.x/fmaxf(rl,0.0001f),rv.y/fmaxf(rl,0.0001f)};
-    const float cosine=nm_clamp(dot(ul,ur),-0.98f,0.98f);
-    const float sin_half=sqrtf(0.5f*(1.0f-cosine));
-    const float tan_half=sin_half/sqrtf(fmaxf(0.01f,0.5f*(1.0f+cosine)));
-    const float desired=fminf(1.8f,fminf(tail*0.12f,r*0.24f));
-    const float trim=fminf(desired/fmaxf(tan_half,0.01f),
-                           fminf(ll,rl)*0.32f);
-    const float tr=trim*tan_half;
+    const float ll=fmaxf(hypotf(lv.x,lv.y),0.0001f);
+    const float rl=fmaxf(hypotf(rv.x,rv.y),0.0001f);
+    const nm_p2 ul={lv.x/ll,lv.y/ll},ur={rv.x/rl,rv.y/rl};
+    const float co=nm_clamp(dot(ul,ur),-0.98f,0.98f);
+    const float sh=sqrtf(fmaxf(0.0001f,0.5f*(1.0f-co)));
+    const float th=sh/sqrtf(fmaxf(0.01f,0.5f*(1.0f+co)));
+    const float desired=fminf(1.8f,fminf(depth*0.12f,body_r*0.24f));
+    const float trim=fminf(desired/fmaxf(th,0.01f),fminf(ll,rl)*0.32f);
+    const float tip_r=trim*th;
     const nm_p2 rt={tip.x+ur.x*trim,tip.y+ur.y*trim};
     const nm_p2 lt={tip.x+ul.x*trim,tip.y+ul.y*trim};
-    const nm_p2 bis={ul.x+ur.x,ul.y+ur.y};
-    const float offset=tr/fmaxf(sin_half*hypotf(bis.x,bis.y),0.0001f);
-    const nm_p2 tc={tip.x+bis.x*offset,tip.y+bis.y*offset};
-    const nm_p2 tl={lx+r,top},top_right={rx-r,top};
-    const nm_p2 rtop={rx,top+r},rb={rx,bottom-r};
-    const nm_p2 br={rx-r,bottom},bl={lx+r,bottom};
-    const nm_p2 lb={lx,bottom-r},ltop={lx,top+r};
-    float ds=edge2(p,tl,top_right);
-    ds=fminf(ds,edge2(p,rtop,rb));
-    ds=fminf(ds,edge2(p,br,right));
+    nm_p2 bis={ul.x+ur.x,ul.y+ur.y};
+    const float bis_len=fmaxf(hypotf(bis.x,bis.y),0.0001f);
+    const float off=tip_r/fmaxf(sh*bis_len,0.0001f);
+    const nm_p2 tc={tip.x+bis.x*off,tip.y+bis.y*off};
+
+    float ds=edge2(p,ftl.next_t,ftr.prev_t);
+    ds=fminf(ds,edge2(p,ftr.next_t,fbr.prev_t));
+    ds=fminf(ds,edge2(p,fbr.next_t,right));
     ds=fminf(ds,edge2(p,right,rt));
     ds=fminf(ds,edge2(p,lt,left));
-    ds=fminf(ds,edge2(p,left,bl));
-    ds=fminf(ds,edge2(p,lb,ltop));
-    ds=fminf(ds,quarter_arc2(p,(nm_p2){rx-r,top+r},r,1,-1));
-    ds=fminf(ds,quarter_arc2(p,(nm_p2){rx-r,bottom-r},r,1,1));
-    ds=fminf(ds,quarter_arc2(p,(nm_p2){lx+r,bottom-r},r,-1,1));
-    ds=fminf(ds,quarter_arc2(p,(nm_p2){lx+r,top+r},r,-1,-1));
-    if(tr>0.0001f) ds=fminf(ds,arc2(p,rt,lt,tc,tr));
+    ds=fminf(ds,edge2(p,left,fbl.prev_t));
+    ds=fminf(ds,edge2(p,fbl.next_t,ftl.prev_t));
+    if(ftl.r>0.0001f)ds=fminf(ds,arc2(p,ftl.prev_t,ftl.next_t,ftl.center,ftl.r));
+    if(ftr.r>0.0001f)ds=fminf(ds,arc2(p,ftr.prev_t,ftr.next_t,ftr.center,ftr.r));
+    if(fbr.r>0.0001f)ds=fminf(ds,arc2(p,fbr.prev_t,fbr.next_t,fbr.center,fbr.r));
+    if(fbl.r>0.0001f)ds=fminf(ds,arc2(p,fbl.prev_t,fbl.next_t,fbl.center,fbl.r));
+    if(tip_r>0.0001f)ds=fminf(ds,arc2(p,rt,lt,tc,tip_r));
     else ds=fminf(ds,edge2(p,rt,lt));
-    const nm_p2 body_p={p.x-0.5f*(lx+rx),p.y-0.5f*(top+bottom)};
-    const nm_p2 body_b={0.5f*(rx-lx),0.5f*(bottom-top)};
-    const int inside=box(body_p,body_b,r)<=0.0f ||
-                     triangle(p,right,tip,left)<=0.0f;
-    const int removed=tr>0.0001f && excised(p,rt,tip,lt,tc,tr);
-    return sqrtf(ds)*(inside&&!removed?-1.0f:1.0f);
+
+    const int body=quad_inside(p,tl,tr,br,bl)>=0.0f;
+    const int tail=triangle(p,right,tip,left)<=0.0f;
+    const int removed=(ftl.r>0.0001f&&excised(p,ftl.prev_t,tl,ftl.next_t,ftl.center,ftl.r))||
+                      (ftr.r>0.0001f&&excised(p,ftr.prev_t,tr,ftr.next_t,ftr.center,ftr.r))||
+                      (fbr.r>0.0001f&&excised(p,fbr.prev_t,br,fbr.next_t,fbr.center,fbr.r))||
+                      (fbl.r>0.0001f&&excised(p,fbl.prev_t,bl,fbl.next_t,fbl.center,fbl.r))||
+                      (tip_r>0.0001f&&excised(p,rt,tip,lt,tc,tip_r));
+    return sqrtf(ds)*((body||tail)&&!removed?-1.0f:1.0f);
 }
 
 float nm_bubble_custom_distance(float x,float y,float half_width,float half_height,
@@ -137,8 +198,8 @@ float nm_bubble_custom_distance(float x,float y,float half_width,float half_heig
     if(!controls || !isfinite(x)||!isfinite(y)||!isfinite(half_width)||
        !isfinite(half_height)||!isfinite(radius)||
        half_width<=0.0f||half_height<=0.0f) return NAN;
-    const float *v=&controls->left_inset;
-    for(int i=0;i<8;++i) if(!isfinite(v[i])) return NAN;
+    const float *v=&controls->tl_x;
+    for(int i=0;i<12;++i) if(!isfinite(v[i])) return NAN;
     return bubble((nm_p2){x,y},(nm_p2){half_width,half_height},radius,controls);
 }
 
@@ -277,7 +338,12 @@ float nm_authored_shape_distance(int shape_id,float x,float y,
     detail=nm_clamp(detail,0.08f,0.35f);
     const nm_p2 p={x,y},b={half_width,half_height};
     if(shape_id==NM_SHAPE_CHAT_BUBBLE) {
-        const nm_bubble_controls legacy={0,0,0,0,-0.78f,-0.34f,-0.72f,detail};
+        const float bottom=1.0f-1.8f*detail;
+        const nm_bubble_controls legacy={
+            -1.0f,-1.0f, 1.0f,-1.0f,
+             1.0f,bottom,-1.0f,bottom,
+             0.11f,0.33f,0.14f,detail
+        };
         return bubble(p,b,radius,&legacy);
     }
     if(shape_id==NM_SHAPE_ANGLED_CARD) return card(p,b,detail,radius);
