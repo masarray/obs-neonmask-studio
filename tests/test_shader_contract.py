@@ -23,6 +23,7 @@ assert uniforms["polygon_sides"] == "int"
 assert uniforms["shape_detail"] == "float"
 assert "NM_SHAPE_CHAT_BUBBLE" in host and "NM_SHAPE_ANGLED_CARD" in host
 assert "NM_SHAPE_HUD_PANEL" in host and "NM_SHAPE_SQUIRCLE" in host
+assert "NM_SHAPE_TECH_HUD" in host
 assert "NM_SHAPE_SVG_PATH" in host and "svgPathDistance(" in shader
 assert "nm_svg_read_local(" in host and "nm_svg_raster_sdf(" in host
 assert "shape_id == 12 && svg_ready == 0" in shader
@@ -34,6 +35,7 @@ assert "NM_PARAM(svg_ready, \"svg_ready\")" in host
 assert "obs_properties_add_path(mask_group, \"svg_path\"" in host
 assert "obs_enter_graphics();" in host and "gs_texture_destroy(f->svg_texture)" in host
 assert "hudPanelDistance(" in shader and "squircleDistance(" in shader
+assert "techHudDistance(" in shader and "shape_id == 13" in shader
 assert "return sqrt(ds)*(inside ? -1.0 : 1.0)" in shader
 assert "Preset.HUDCut" in host and "Preset.Squircle" in host
 assert "nm_geometry_visibility(" in host
@@ -43,6 +45,12 @@ assert "obs_property_set_visible(sides,shape_id==NM_SHAPE_POLYGON)" in host
 assert "float2 topA=float2(-half_size.x+cut*0.38" in shader
 assert "artBarA=saturate(artBarA+trace*art_intensity*0.88)" in shader
 assert "float2 v10=float2(-b.x,b.y-cut*0.70)" in shader
+assert "float2 v0=float2(-b.x+cut,-b.y)" in shader
+assert "float2 v3=float2( b.x-cut, b.y)" in shader
+assert "ornament_mode == 3 && shape_id == 13" in shader
+assert "float2 trH0=float2(half_size.x-armX,-half_size.y-gap)" in shader
+assert "float2 blC =float2(-half_size.x-gap,half_size.y+gap)" in shader
+assert "float diagD=min(segmentDistance(q,tlA,tlB)" in shader
 # The same saved Roundness slider affects both Bubble tail and Angled Card
 # cut-end fillets. Reject the old UI text claiming it is Angled-only.
 en_locale = (ROOT / "data" / "locale" / "en-US.ini").read_text(encoding="utf-8")
@@ -78,7 +86,10 @@ assert "nm_context_visibility(" in host
 assert "NM_SHOW(\"speed\",border && animation!=NM_ANIM_STATIC)" in host
 assert "NM_SHOW(\"glow_radius\",border && glow)" in host
 assert 'Bubble.TLX="Top-left X"' in en_locale
+assert 'Shape.TechHUD="Tech HUD Advanced — cut corners + brackets"' in en_locale
+assert 'Preset.TechHUD="Tech HUD Advanced — Cyan + Amber"' in en_locale
 assert 'Bubble.TLX="Sudut kiri-atas X"' in id_locale
+assert 'Shape.TechHUD="Tech HUD Advanced — sudut potong + bracket"' in id_locale
 # A primitive min is an occupancy union, NOT the exposed contour distance:
 # its hidden body bottom/tail base caused a phantom horizontal neon seam.
 assert "float ds=edgeDistanceSquared(p,tlN,trP)" in shader

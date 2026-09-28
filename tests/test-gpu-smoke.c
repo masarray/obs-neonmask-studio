@@ -29,7 +29,7 @@ static const char *const uniforms[] = {
 static int verify_pixel_fixture(gs_effect_t *effect, int variant)
 {
     enum { W = 64, H = 64 };
-    /* 38 validates D3 origin; 40 validates finite halo support. */
+    /* 38 validates D3 origin; 40 halo support; 41/42 D4B mask/overlay. */
     const bool expanded = variant == 38;
     const bool halo_guard = variant == 40;
     const bool padded = expanded || halo_guard;
@@ -40,12 +40,12 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                         (variant == 3 || variant == 4 || variant == 18 ||
                          variant == 19 || variant == 21 || variant == 22 ||
                          variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                          variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 ? 255 : 0);
+                          variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 || variant == 41 ? 255 : 0);
     const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
                           (variant == 3 || variant == 4 || variant == 18 ||
                            variant == 19 || variant == 21 || variant == 22 ||
                            variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                            variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 ? 255 : 0);
+                            variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 || variant == 41 ? 255 : 0);
     for (size_t i = 0; i < W * H; ++i) {
         pixels[4 * i + 0] = red;   /* premultiplied red */
         pixels[4 * i + 1] = 0;
@@ -79,7 +79,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_stagesurf_t *stage = gs_stagesurface_create(out_w, out_h, GS_RGBA);
     int failed = 0;
     const bool glow_case = variant == 5 || variant == 6 || variant == 9 ||
-                           variant == 10 || expanded || halo_guard;
+                           variant == 10 || expanded || halo_guard || variant == 42;
 
     if (!input || !target || !stage) {
         fprintf(stderr, "FAIL: GPU fixture resource creation\n");
@@ -139,11 +139,12 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                       variant == 40 ? 0 :
                       variant == 30 || variant == 31 ? 10 :
                        variant == 32 || variant == 33 ? 11 :
+                      variant == 41 || variant == 42 ? 13 :
                        variant == 21 || variant == 23 || variant >= 24 ? 9 : 0);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "border_width"), 4.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "style_id"), 0);
     int art_mode = variant == 11 ? 1 : variant == 13 ? 2 :
-                   variant == 15 ? 3 : variant == 16 ? 4 : 0;
+                   variant == 15 || variant == 42 ? 3 : variant == 16 ? 4 : 0;
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "ornament_mode"), art_mode);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "art_intensity"), 0.90f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "art_gap"), 2.0f);
@@ -169,7 +170,8 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                       variant == 2 || (variant >= 5 && variant <= 17) ||
                       variant == 20 || variant == 23 || variant == 26 ||
                        variant == 27 || variant == 29 || variant == 31 || variant == 33 ||
-                       variant == 35 || variant == 36 || expanded || halo_guard);
+                       variant == 35 || variant == 36 || expanded || halo_guard ||
+                       variant == 42);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), glow_case);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "svg_sdf"),svg_texture);
     gs_effect_set_int(gs_effect_get_param_by_name(effect,"svg_ready"),
@@ -254,6 +256,13 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *fillet_endpoint = mapped + 8u * stride + 46u * 4u;
     const uint8_t *square_top_left = mapped + 8u * stride + 8u * 4u;
     const uint8_t *square_bottom_right = mapped + 55u * stride + 55u * 4u;
+    const uint8_t *tech_tl = mapped + 9u * stride + 9u * 4u;
+    const uint8_t *tech_tr = mapped + 9u * stride + 55u * 4u;
+    const uint8_t *tech_br = mapped + 55u * stride + 55u * 4u;
+    const uint8_t *tech_bl = mapped + 55u * stride + 9u * 4u;
+    const uint8_t *tech_tr_bracket = mapped + 3u * stride + 61u * 4u;
+    const uint8_t *tech_bl_bracket = mapped + 61u * stride + 3u * 4u;
+    const uint8_t *tech_diag_overlay = mapped + 9u * stride + 9u * 4u;
 
 
     /* The black/transparent corner proves the mask is not an opaque box.
@@ -499,6 +508,28 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
         }
     }
 
+    else if(variant==41) {
+        if(center[0]<240 || center[3]<245 ||
+           tech_tl[3]>3 || tech_br[3]>3 ||
+           tech_tr[0]<240 || tech_tr[3]<245 ||
+           tech_bl[0]<240 || tech_bl[3]<245) {
+            fprintf(stderr,"FAIL: Tech HUD mask center=%u TL=%u TR=%u BR=%u BL=%u\n",
+                    center[3],tech_tl[3],tech_tr[3],tech_br[3],tech_bl[3]);
+            failed=1;
+        }
+    }
+
+    else if(variant==42) {
+        if(center[3]>3 ||
+           tech_tr_bracket[3]<120 || tech_bl_bracket[3]<120 ||
+           tech_diag_overlay[3]<80) {
+            fprintf(stderr,"FAIL: Tech HUD overlay center=%u TR=%u BL=%u diag=%u\n",
+                    center[3],tech_tr_bracket[3],tech_bl_bracket[3],
+                    tech_diag_overlay[3]);
+            failed=1;
+        }
+    }
+
     gs_stagesurface_unmap(stage);
 done:
     if (stage) gs_stagesurface_destroy(stage);
@@ -599,7 +630,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 41; ++variant)
+            for (int variant = 0; variant < 43; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
@@ -608,6 +639,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: libobs alpha/framing/light + SVG + expanded origin + freeform Bubble + halo cutoff GPU fixtures (partial G4)");
+    puts("PASS: libobs alpha/framing/light + SVG + D3 + freeform Bubble + Tech HUD overlay GPU fixtures (partial G4)");
     return 0;
 }

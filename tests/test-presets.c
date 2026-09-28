@@ -20,7 +20,7 @@ int main(void)
     check("null output invalid", !nm_get_preset(1, NULL));
     for (int id = 1; id <= 9; ++id) {
         check("known preset", nm_get_preset(id, &p));
-        check("valid shape", p.shape >= NM_SHAPE_ROUNDED && p.shape <= NM_SHAPE_SQUIRCLE);
+        check("valid shape", p.shape >= NM_SHAPE_ROUNDED && p.shape <= NM_SHAPE_TECH_HUD);
         check("valid animation", p.animation >= NM_ANIM_STATIC && p.animation <= NM_ANIM_FLOW);
         check("nonzero colors", p.primary != p.secondary && p.primary != 0 && p.secondary != 0);
         check("scale range", p.scale >= 0.10 && p.scale <= 0.98);
@@ -55,7 +55,8 @@ int main(void)
     check("ember static", p.animation == NM_ANIM_STATIC);
     check("ember minimal style", p.style == NM_STYLE_MINIMAL);
     nm_get_preset(5, &p);
-    check("HUD authored rectangle", p.shape == NM_SHAPE_RECTANGLE && p.ornament_mode == NM_ORNAMENT_TECH_HUD);
+    check("Tech HUD preset uses dedicated mask + ornament",
+          p.shape == NM_SHAPE_TECH_HUD && p.ornament_mode == NM_ORNAMENT_TECH_HUD);
     nm_get_preset(6, &p);
     check("Streamer preset becomes true bubble mask", p.shape == NM_SHAPE_CHAT_BUBBLE && p.ornament_mode == NM_ORNAMENT_NONE);
     nm_get_preset(7, &p);
@@ -66,6 +67,6 @@ int main(void)
     nm_get_preset(9, &p);
     check("Squircle preset uses genuine superellipse", p.shape == NM_SHAPE_SQUIRCLE);
     if (failures) return 1;
-    puts("PASS: nine preset configurations, integrated contours and recipe validation");
+    puts("PASS: nine stable preset IDs, including dedicated Tech HUD contour and recipe");
     return 0;
 }

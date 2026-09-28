@@ -173,6 +173,23 @@ int main(void)
           fabsf(D(hud,23,-23)-
                 nm_authored_shape_distance(hud,23,-23,bx,by,r,0.35f))>0.20f);
 
+    /* D4B Tech HUD: TL/BR are real mask chamfers, while TR/BL remain square
+     * anchors for the separate external bracket ornament. */
+    const int tech=NM_SHAPE_TECH_HUD;
+    const float tech_cut=fminf(fmaxf(2.0f,bx*detail*1.75f),bx*0.42f);
+    check("Tech HUD center contains source",D(tech,0,0)<-5.0f);
+    check("Tech HUD top-left cut removes source",D(tech,-23,-23)>1.0f);
+    check("Tech HUD top-right stays square",D(tech,23,-23)<-0.5f);
+    check("Tech HUD bottom-right cut removes source",D(tech,23,23)>1.0f);
+    check("Tech HUD bottom-left stays square",D(tech,-23,23)<-0.5f);
+    check("Tech HUD TL diagonal is exact contour",
+          fabsf(D(tech,-bx+tech_cut*0.5f,-by+tech_cut*0.5f))<0.002f);
+    check("Tech HUD BR diagonal is exact contour",
+          fabsf(D(tech,bx-tech_cut*0.5f,by-tech_cut*0.5f))<0.002f);
+    check("Tech HUD detail visibly changes chamfer",
+          D(tech,-18,-18)<0.0f &&
+          nm_authored_shape_distance(tech,-18,-18,bx,by,r,0.35f)>0.0f);
+
     /* Smooth superellipse has a continuous, aspect-correct implicit
      * contour; its exponent changes with the existing shape_detail. */
     check("squircle center contains source",D(squircle,0,0)<-10.0f);
