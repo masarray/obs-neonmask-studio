@@ -839,75 +839,106 @@ float4 drawNeonMask(VertData v_in) : TARGET
                             rail * gate * art_intensity * 0.78);
         }
 
-        // D4B Tech HUD Advanced: the mask already supplies TL/BR chamfers.
-        // Decoration stays OUTSIDE coverage: thick square-corner anchors at
-        // TR/BL plus slim companion rails parallel to both diagonal cuts.
+        // D4B.2 Tech HUD Advanced: a recognizable HUD assembly, not tiny
+        // corner ticks. The source mask still owns clipping; every element
+        // below is decorative light derived from that mask's authored bounds.
         if (ornament_mode == 3 && shape_id == 13 && art_intensity > 0.0) {
             float2 q=rotatePoint(p,shape_rotation);
-            float cut=min(max(2.0,min(half_size.x,half_size.y)*
-                              shape_detail*1.75),
-                          min(half_size.x,half_size.y)*0.42);
-            // D4B.1: fixed 1px-ish strokes disappear after a 720p/1080p
-            // source is scaled into OBS Filters preview. Derive the visual
-            // weight from the user's border and glow instead.
-            float accentHalf=max(2.2,border_width*1.15);
-            float traceHalf=max(1.4,border_width*0.72);
-            float glowSpread=max(4.0,glow_radius*0.22);
-            float gap=art_gap+max(4.0,border_width*1.30);
-            float armX=min(half_size.x*0.30,max(42.0,border_width*13.0));
-            float armY=min(half_size.y*0.34,max(38.0,border_width*12.0));
+            float hx=half_size.x, hy=half_size.y;
+            float cut=min(max(2.0,min(hx,hy)*shape_detail*1.75),
+                          min(hx,hy)*0.42);
 
-            // Thick L anchors on the two intentionally square corners.
-            float2 trH0=float2(half_size.x-armX,-half_size.y-gap);
-            float2 trH1=float2(half_size.x+gap,-half_size.y-gap);
-            float2 trV1=float2(half_size.x+gap,-half_size.y+armY);
-            float2 blV0=float2(-half_size.x-gap,half_size.y-armY);
-            float2 blC =float2(-half_size.x-gap,half_size.y+gap);
-            float2 blH1=float2(-half_size.x+armX,half_size.y+gap);
-            float bracketD=min(min(segmentDistance(q,trH0,trH1),
-                                   segmentDistance(q,trH1,trV1)),
-                               min(segmentDistance(q,blV0,blC),
-                                   segmentDistance(q,blC,blH1)));
+            // Make the assembly legible after a normal 720p/1080p source is
+            // downscaled into the OBS Filters preview. Length is deliberately
+            // proportional to the frame, while stroke weight follows border.
+            float majorHalf=max(2.6,border_width*1.28);
+            float minorHalf=max(1.5,border_width*0.70);
+            float glowSpread=max(4.5,glow_radius*0.24);
+            float gap=art_gap+max(4.0,border_width*1.20);
+            float armX=clamp(hx*0.38,56.0,120.0);
+            float armY=clamp(hy*0.46,48.0,100.0);
 
-            // Companion diagonal rails beside the actual cut mask edges.
+            // Two long square-corner assemblies: top-right and bottom-left.
+            float2 trH0=float2(hx-armX,-hy-gap);
+            float2 trC =float2(hx+gap,-hy-gap);
+            float2 trV1=float2(hx+gap,-hy+armY);
+            float2 blV0=float2(-hx-gap,hy-armY);
+            float2 blC =float2(-hx-gap,hy+gap);
+            float2 blH1=float2(-hx+armX,hy+gap);
+            float squareD=min(min(segmentDistance(q,trH0,trC),
+                                  segmentDistance(q,trC,trV1)),
+                              min(segmentDistance(q,blV0,blC),
+                                  segmentDistance(q,blC,blH1)));
+
+            // The two cut corners get a three-piece shell: short top/bottom
+            // rail, side rail, and a diagonal companion parallel to the mask.
             float diag=gap*0.70710678;
-            float2 tlA=float2(-half_size.x+cut*0.18-diag,
-                              -half_size.y+cut*0.82-diag);
-            float2 tlB=float2(-half_size.x+cut*0.82-diag,
-                              -half_size.y+cut*0.18-diag);
-            float2 brA=float2( half_size.x-cut*0.18+diag,
-                               half_size.y-cut*0.82+diag);
-            float2 brB=float2( half_size.x-cut*0.82+diag,
-                               half_size.y-cut*0.18+diag);
-            float diagD=min(segmentDistance(q,tlA,tlB),
-                            segmentDistance(q,brA,brB));
+            float shellLong=min(max(cut*1.10,28.0),min(hx,hy)*0.62);
+            float2 tlTopA=float2(-hx+cut*0.72,-hy-gap);
+            float2 tlTopB=float2(min(-hx+cut*0.72+shellLong,-hx+hx*0.52),-hy-gap);
+            float2 tlSideA=float2(-hx-gap,-hy+cut*0.72);
+            float2 tlSideB=float2(-hx-gap,min(-hy+cut*0.72+shellLong,-hy+hy*0.70));
+            float2 tlDiagA=float2(-hx+cut*0.12-diag,-hy+cut*0.88-diag);
+            float2 tlDiagB=float2(-hx+cut*0.88-diag,-hy+cut*0.12-diag);
 
-            float anchor=1.0-smoothstep(accentHalf-0.75,
-                                        accentHalf+0.75,bracketD);
-            float trace=1.0-smoothstep(traceHalf-0.60,
-                                       traceHalf+0.70,diagD);
-            artBarA=saturate(artBarA+art_intensity*
-                             (anchor*0.98+trace*0.76));
+            float2 brBottomA=float2(hx-cut*0.72,hy+gap);
+            float2 brBottomB=float2(max(hx-cut*0.72-shellLong,hx-hx*0.52),hy+gap);
+            float2 brSideA=float2(hx+gap,hy-cut*0.72);
+            float2 brSideB=float2(hx+gap,max(hy-cut*0.72-shellLong,hy-hy*0.70));
+            float2 brDiagA=float2(hx-cut*0.12+diag,hy-cut*0.88+diag);
+            float2 brDiagB=float2(hx-cut*0.88+diag,hy-cut*0.12+diag);
+
+            float shellD=segmentDistance(q,tlTopA,tlTopB);
+            shellD=min(shellD,segmentDistance(q,tlSideA,tlSideB));
+            shellD=min(shellD,segmentDistance(q,tlDiagA,tlDiagB));
+            shellD=min(shellD,segmentDistance(q,brBottomA,brBottomB));
+            shellD=min(shellD,segmentDistance(q,brSideA,brSideB));
+            shellD=min(shellD,segmentDistance(q,brDiagA,brDiagB));
+
+            // Four partial inner rails make the family read as a HUD even
+            // without motion. They sit close to the image edge and never cross
+            // the portrait center.
+            float inner=max(4.0,border_width*1.45);
+            float2 inTopA=float2(-hx*0.62,-hy+inner);
+            float2 inTopB=float2(-hx*0.10,-hy+inner);
+            float2 inRightA=float2(hx-inner,-hy*0.52);
+            float2 inRightB=float2(hx-inner,-hy*0.06);
+            float2 inBottomA=float2(hx*0.08,hy-inner);
+            float2 inBottomB=float2(hx*0.58,hy-inner);
+            float2 inLeftA=float2(-hx+inner,hy*0.02);
+            float2 inLeftB=float2(-hx+inner,hy*0.38);
+            float innerD=min(min(segmentDistance(q,inTopA,inTopB),
+                                 segmentDistance(q,inRightA,inRightB)),
+                             min(segmentDistance(q,inBottomA,inBottomB),
+                                 segmentDistance(q,inLeftA,inLeftB)));
+
+            float majorD=min(squareD,shellD);
+            float major=1.0-smoothstep(majorHalf-0.75,majorHalf+0.85,majorD);
+            float minor=1.0-smoothstep(minorHalf-0.55,minorHalf+0.70,innerD);
+            artBarA=saturate(artBarA+art_intensity*(major*0.99+minor*0.70));
+
             if(glow_enabled != 0) {
-                float ornamentGap=min(max(0.0,bracketD-accentHalf),
-                                      max(0.0,diagD-traceHalf));
+                float majorGap=max(0.0,majorD-majorHalf);
+                float minorGap=max(0.0,innerD-minorHalf);
+                float ornamentGap=min(majorGap,minorGap);
                 artBarGlowA=saturate(artBarGlowA+
-                    art_intensity*glow_strength*0.34*
+                    art_intensity*glow_strength*0.36*
                     (1.0-smoothstep(0.0,glowSpread,ornamentGap)));
             }
 
-            // A sparse exterior contour rail ties overlay to the neon border
-            // without turning it into another full rectangle.
-            float railGap=halfCore+art_gap+2.5;
-            float rail=1.0-smoothstep(0.25,1.25,abs(d-railGap));
-            float nx=q.x/max(half_size.x,1.0);
-            float ny=q.y/max(half_size.y,1.0);
-            float zone=max(smoothstep(0.48,0.82,nx)*
-                           (1.0-smoothstep(-0.20,0.55,ny)),
-                           smoothstep(-0.82,-0.48,nx)*
-                           smoothstep(-0.55,0.20,ny));
-            rimA=saturate(rimA*0.28+rail*zone*art_intensity*0.72);
-            glintA=saturate(glintA+rail*zone*art_intensity*0.34);
+            // A broken contour-following support rail adds one more depth
+            // layer, but remains sparse so the face stays dominant.
+            float railGap=halfCore+art_gap+max(3.0,border_width*0.85);
+            float rail=1.0-smoothstep(0.30,1.35,abs(d-railGap));
+            float nx=q.x/max(hx,1.0);
+            float ny=q.y/max(hy,1.0);
+            float zone=max(
+                max(smoothstep(-0.78,-0.44,nx)*(1.0-smoothstep(-0.48,0.18,ny)),
+                    smoothstep(0.44,0.78,nx)*smoothstep(-0.18,0.48,ny)),
+                max(smoothstep(-0.28,0.18,nx)*smoothstep(0.58,0.86,ny),
+                    smoothstep(-0.18,0.28,nx)*(1.0-smoothstep(-0.86,-0.58,ny))));
+            rimA=saturate(rimA*0.20+rail*zone*art_intensity*0.80);
+            glintA=saturate(glintA+rail*zone*art_intensity*0.38);
         }
 
         // HUD Cut Panel: an asymmetrical rail keyed to its actual stepped
