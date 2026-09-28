@@ -415,3 +415,26 @@ Acceptance requires CPU contour probes (cut/square corners/detail), OpenGL
 and D3D11 pixels for source clipping plus both outer brackets/diagonal trace,
 and an actual OBS comparison to the approved Tech HUD reference at normal and
 320x180 size before visual completion is claimed.
+
+## D4B.1 — visible ornament scale correction
+
+Real OBS testing with the Tech HUD preset active proved the state path was
+already correct (shape 13, ornament recipe Tech HUD, intensity 0.91, gap 2,
+HUD border style and glow all visible in Properties), yet the ornament was
+visually absent. Root cause: D4B's line-distance thresholds were fixed around
+1.2–1.55 **source pixels**. That is generous in the 64x64 GPU fixture but
+collapses to sub-pixel weight when a 720p/1080p camera is scaled into the OBS
+Filters preview.
+
+D4B.1 derives external L-bracket thickness from border_width (half-stroke
+max(2.2px, 1.15x border)), the diagonal companion trace from 0.72x border,
+and its separation from max(4px, 1.30x border)+art_gap. Arm length also scales
+with border/mask instead of a tiny fixed cap. Glow support is measured from
+the edge of those strokes. The D3 Tech HUD envelope mirrors the same gap,
+stroke and glow formulas.
+
+CI now includes a separate 320x180 GPU fixture. It requires substantial alpha
+more than three source pixels off the bracket centerline; the old 1.5px
+implementation cannot satisfy that test. The existing 64x64 fixtures remain
+for exact geometry. Actual OBS screenshot comparison remains the final visual
+gate.

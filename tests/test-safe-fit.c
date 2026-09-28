@@ -125,6 +125,16 @@ int main(void)
     check("turning off expansion recovers legacy size",
           nm_safe_fit_calculate(&c,640,360,&f) && f.fits &&
           f.output_width==640 && f.output_height==360 && f.pad_left==0);
+
+    nm_config_defaults(&c);
+    c.shape_id=NM_SHAPE_TECH_HUD;
+    c.ornament_mode=NM_ORNAMENT_TECH_HUD;
+    c.art_intensity=0.91f; c.art_gap=2.0f;
+    c.border_px=3.5f; c.glow_px=20.0f; c.show_glow=true;
+    c.expand_canvas=true;
+    check("Tech HUD visible bracket envelope participates in D3",
+          nm_safe_fit_calculate(&c,640,360,&f) && f.fits &&
+          f.envelope_px>=18.0f);
     /* D3 gate: deterministic coverage of input/output dimensions, asymmetric
      * offsets and rotated AABBs over landscape, square and portrait captures.
      * This tests geometry, not OBS scene-item transform semantics. */

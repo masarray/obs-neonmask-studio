@@ -847,9 +847,15 @@ float4 drawNeonMask(VertData v_in) : TARGET
             float cut=min(max(2.0,min(half_size.x,half_size.y)*
                               shape_detail*1.75),
                           min(half_size.x,half_size.y)*0.42);
-            float gap=art_gap+3.0;
-            float armX=min(half_size.x*0.24,34.0);
-            float armY=min(half_size.y*0.28,31.0);
+            // D4B.1: fixed 1px-ish strokes disappear after a 720p/1080p
+            // source is scaled into OBS Filters preview. Derive the visual
+            // weight from the user's border and glow instead.
+            float accentHalf=max(2.2,border_width*1.15);
+            float traceHalf=max(1.4,border_width*0.72);
+            float glowSpread=max(4.0,glow_radius*0.22);
+            float gap=art_gap+max(4.0,border_width*1.30);
+            float armX=min(half_size.x*0.30,max(42.0,border_width*13.0));
+            float armY=min(half_size.y*0.34,max(38.0,border_width*12.0));
 
             // Thick L anchors on the two intentionally square corners.
             float2 trH0=float2(half_size.x-armX,-half_size.y-gap);
@@ -876,15 +882,18 @@ float4 drawNeonMask(VertData v_in) : TARGET
             float diagD=min(segmentDistance(q,tlA,tlB),
                             segmentDistance(q,brA,brB));
 
-            float anchor=1.0-smoothstep(0.20,1.55,bracketD);
-            float trace=1.0-smoothstep(0.20,1.20,diagD);
+            float anchor=1.0-smoothstep(accentHalf-0.75,
+                                        accentHalf+0.75,bracketD);
+            float trace=1.0-smoothstep(traceHalf-0.60,
+                                       traceHalf+0.70,diagD);
             artBarA=saturate(artBarA+art_intensity*
-                             (anchor*0.97+trace*0.68));
+                             (anchor*0.98+trace*0.76));
             if(glow_enabled != 0) {
-                float g=min(bracketD,diagD);
+                float ornamentGap=min(max(0.0,bracketD-accentHalf),
+                                      max(0.0,diagD-traceHalf));
                 artBarGlowA=saturate(artBarGlowA+
-                    art_intensity*glow_strength*0.28*
-                    (1.0-smoothstep(0.0,4.2,g)));
+                    art_intensity*glow_strength*0.34*
+                    (1.0-smoothstep(0.0,glowSpread,ornamentGap)));
             }
 
             // A sparse exterior contour rail ties overlay to the neon border
