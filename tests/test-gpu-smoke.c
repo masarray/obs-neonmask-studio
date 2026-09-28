@@ -630,18 +630,26 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     uint8_t *mapped=NULL; uint32_t stride=0;
     if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;goto done_hires;}
 
-    /* TR horizontal centerline is around y=23.5. Require a 7px visual band:
-     * y=20 is >3px off center and would be nearly invisible with old D4B. */
-    const uint8_t *tr_center=mapped+23u*stride+245u*4u;
-    const uint8_t *tr_thick=mapped+20u*stride+245u*4u;
-    const uint8_t *tr_outside=mapped+14u*stride+245u*4u;
-    /* BL horizontal partner around y=157. */
-    const uint8_t *bl_thick=mapped+160u*stride+75u*4u;
-    if(tr_center[3]<180 || tr_thick[3]<90 || bl_thick[3]<90 ||
-       tr_outside[3]>70) {
+    /* D4B.2 must read as an assembly, not a tiny tick. Probe both ends of the
+     * long square brackets, both cut-corner shells, and the inner top rail. */
+    const uint8_t *tr_near=mapped+23u*stride+220u*4u;
+    const uint8_t *tr_far =mapped+23u*stride+270u*4u;
+    const uint8_t *tr_thick=mapped+19u*stride+245u*4u;
+    const uint8_t *bl_far =mapped+157u*stride+50u*4u;
+    const uint8_t *tl_shell_top=mapped+23u*stride+78u*4u;
+    const uint8_t *tl_shell_side=mapped+58u*stride+43u*4u;
+    const uint8_t *br_shell_bottom=mapped+157u*stride+242u*4u;
+    const uint8_t *inner_top=mapped+35u*stride+120u*4u;
+    const uint8_t *quiet_center=mapped+90u*stride+160u*4u;
+    if(tr_near[3]<150 || tr_far[3]<150 || tr_thick[3]<80 ||
+       bl_far[3]<150 || tl_shell_top[3]<90 || tl_shell_side[3]<90 ||
+       br_shell_bottom[3]<90 || inner_top[3]<55 ||
+       quiet_center[3]>20) {
         fprintf(stderr,
-                "FAIL: Tech HUD realistic stroke center=%u thick=%u BL=%u outside=%u\n",
-                tr_center[3],tr_thick[3],bl_thick[3],tr_outside[3]);
+                "FAIL: Tech HUD assembly TR=%u/%u thick=%u BL=%u TL=%u/%u BR=%u inner=%u center=%u\n",
+                tr_near[3],tr_far[3],tr_thick[3],bl_far[3],
+                tl_shell_top[3],tl_shell_side[3],br_shell_bottom[3],
+                inner_top[3],quiet_center[3]);
         failed=1;
     }
     gs_stagesurface_unmap(stage);

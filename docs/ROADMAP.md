@@ -494,3 +494,20 @@ more than three source pixels off the bracket centerline; the old 1.5px
 implementation cannot satisfy that test. The existing 64x64 fixtures remain
 for exact geometry. Actual OBS screenshot comparison remains the final visual
 gate.
+
+## D4B.2 — recognizable Tech HUD assembly
+
+A second real OBS screenshot showed D4B.1 technically visible but still
+visually far below the reference: only tiny top-right/bottom-left corner ticks
+read at preview scale. D4B.2 therefore changes the *ornament grammar*, not just
+stroke thickness. Tech HUD now has two long square-corner L assemblies, two
+three-piece shells around the actual TL/BR chamfers, four short inner rails
+near the image edge, and a sparse broken contour-support rail. Arm lengths are
+proportional to mask half-extents with bounded floors/caps; major/minor stroke
+weights remain derived from border width and glow.
+
+The 320x180 GPU acceptance fixture now samples distant points on both long
+brackets, both cut-corner shells and an inner rail while requiring the portrait
+center to stay quiet. This specifically rejects the prior "two tiny ticks"
+appearance even though those ticks were technically rendered. Actual OBS
+comparison to the supplied Tech HUD reference remains the visual gate.

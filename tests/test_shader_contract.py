@@ -51,11 +51,14 @@ assert "ornament_mode == 3 && shape_id == 13" in shader
 assert "float2 trH0=float2(half_size.x-armX,-half_size.y-gap)" in shader
 assert "float2 blC =float2(-half_size.x-gap,half_size.y+gap)" in shader
 assert "float diagD=min(segmentDistance(q,tlA,tlB)" in shader
-assert "float accentHalf=max(2.2,border_width*1.15)" in shader
-assert "float traceHalf=max(1.4,border_width*0.72)" in shader
-assert "float glowSpread=max(4.0,glow_radius*0.22)" in shader
-assert "float gap=art_gap+max(4.0,border_width*1.30)" in shader
-assert "smoothstep(accentHalf-0.75" in shader
+assert "float majorHalf=max(2.6,border_width*1.28)" in shader
+assert "float minorHalf=max(1.5,border_width*0.70)" in shader
+assert "float glowSpread=max(4.5,glow_radius*0.24)" in shader
+assert "float armX=clamp(hx*0.38,56.0,120.0)" in shader
+assert "float armY=clamp(hy*0.46,48.0,100.0)" in shader
+assert "float shellD=segmentDistance(q,tlTopA,tlTopB)" in shader
+assert "float innerD=min(min(segmentDistance(q,inTopA,inTopB)" in shader
+assert "artBarA=saturate(artBarA+art_intensity*(major*0.99+minor*0.70))" in shader
 # The same saved Roundness slider affects both Bubble tail and Angled Card
 # cut-end fillets. Reject the old UI text claiming it is Angled-only.
 en_locale = (ROOT / "data" / "locale" / "en-US.ini").read_text(encoding="utf-8")
