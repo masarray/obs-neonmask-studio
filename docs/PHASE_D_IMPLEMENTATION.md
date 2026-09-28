@@ -300,3 +300,33 @@ and transparent far-output pixel. This is partial G4 GPU proof;
 real OBS scene item anchor, filter order, source resize/restart, SVG reload,
 320x180 dark/light captures, render lag and soak are pending G4-V/G5/G6.
 Issue #24/#26 stay open. No claim of final automatic scene-origin parity.
+
+## D3 verification ledger and frontend acceptance boundary
+
+D3a/D3b geometry and shader code are present on main. The expanded output
+is bounded and opt-in, uses separate L/T/R/B padding and a source-relative
+input origin, and preserves old scenes when disabled. The D3 test matrix
+covers 320x180, 640x480, square, 1080x1920, 1920x1080 and 3840x2160,
+combined X/Y offsets and rotations; unsupported positions reject without
+changing reported original dimensions. Direct OpenGL/D3D11 pixel fixtures
+exercise the translated origin and transparent out-of-source samples.
+
+**D3 is not yet frontend-accepted solely by CI.** The remaining evidence is
+an actual OBS run using the artifact from the exact tested commit. Capture:
+
+1. Two matched source scenes with `expand_canvas` off and on, at 320x180
+   and source resolution. Verify input landmarks remain undistorted, halo and
+   tail do not clip, and output alpha outside the envelope is transparent.
+2. Off-center X-only, Y-only, combined shifts and rotated shape; record the
+   logged L/T/R/B. For exact old scene-world position, compensate scene-item
+   transform for the positive L/T content offset. Log the compensated
+   position; ordinary OBS filters cannot report a negative scene origin.
+3. Filter order before/after Crop, Color Correction and Chroma Key; source
+   resize, source disconnect/reconnect, scene duplicate, OBS save/restart,
+   SVG reload and missing/invalid SVG. Inspect alpha and source references.
+4. Static/Flow/Pulse, dark/light/moving backgrounds, plus GPU timing and
+   render lag on the declared Windows hardware. Eight-hour OBS soak is G6.
+
+Keep #24/#26 open until screenshots/clips and hardware records exist. D4A
+can proceed independently, but later new tail/body parameters must preserve
+the D3 bounded silhouette and re-run the matrix.

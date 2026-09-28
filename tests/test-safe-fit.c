@@ -125,6 +125,56 @@ int main(void)
     check("turning off expansion recovers legacy size",
           nm_safe_fit_calculate(&c,640,360,&f) && f.fits &&
           f.output_width==640 && f.output_height==360 && f.pad_left==0);
+    /* D3 gate: deterministic coverage of input/output dimensions, asymmetric
+     * offsets and rotated AABBs over landscape, square and portrait captures.
+     * This tests geometry, not OBS scene-item transform semantics. */
+    {
+        const uint32_t sizes[][2]={{320u,180u},{640u,480u},{640u,640u},
+                                  {1080u,1920u},{1920u,1080u},{3840u,2160u}};
+        const float shifts[]={-170.0f,-45.0f,0.0f,45.0f,170.0f};
+        const float rotations[]={-90.0f,-37.0f,0.0f,37.0f,90.0f};
+        unsigned valid=0,limited=0;
+        nm_config_defaults(&c);
+        c.expand_canvas=true;
+        c.safe_fit=true;
+        for(unsigned si=0;si<sizeof(sizes)/sizeof(sizes[0]);++si)
+          for(unsigned xi=0;xi<sizeof(shifts)/sizeof(shifts[0]);++xi)
+            for(unsigned yi=0;yi<sizeof(shifts)/sizeof(shifts[0]);++yi)
+              for(unsigned ri=0;ri<sizeof(rotations)/sizeof(rotations[0]);++ri){
+                const uint32_t w=sizes[si][0],h=sizes[si][1];
+                c.mask_x_px=shifts[xi]; c.mask_y_px=shifts[yi];
+                c.shape_rotation_deg=rotations[ri];
+                check("D3 matrix calculation",nm_safe_fit_calculate(&c,w,h,&f));
+                if(!f.fits){
+                    ++limited;
+                    check("rejected geometry retains original callback size",
+                          f.output_width==w && f.output_height==h);
+                    continue;
+                }
+                ++valid;
+                const float t=fabsf(cosf(c.shape_rotation_deg*0.01745329252f));
+                const float s=fabsf(sinf(c.shape_rotation_deg*0.01745329252f));
+                const float ex=t*f.half_width+s*f.half_height+f.envelope_px;
+                const float ey=s*f.half_width+t*f.half_height+f.envelope_px;
+                const float x=0.5f*w+c.mask_x_px+f.pad_left;
+                const float y=0.5f*h+c.mask_y_px+f.pad_top;
+                check("D3 matrix X min/max",x-ex>=-0.02f &&
+                      x+ex<=(float)f.output_width+0.02f);
+                check("D3 matrix Y min/max",y-ey>=-0.02f &&
+                      y+ey<=(float)f.output_height+0.02f);
+                check("D3 matrix output and padding identity",
+                      f.output_width==w+f.pad_left+f.pad_right &&
+                      f.output_height==h+f.pad_top+f.pad_bottom);
+                check("D3 matrix bounded output",f.pad_left<=512 && f.pad_top<=512 &&
+                      f.pad_right<=512 && f.pad_bottom<=512 &&
+                      f.output_width<=8192 && f.output_height<=8192);
+                check("D3 expansion never shrinks authored mask",
+                      near(f.scale,1.0f) &&
+                      near(f.half_width,0.5f*w*c.mask_width) &&
+                      near(f.half_height,0.5f*h*c.mask_height));
+              }
+        check("D3 matrix exercises fit and cap cases",valid>100 && limited>0);
+    }
     if (failures) return 1;
     puts("PASS: safe-fit and expanded-output bounds, rotation, limits, bloom and legacy geometry");
     return 0;
