@@ -539,6 +539,119 @@ done:
     return failed;
 }
 
+/* D4B.1 regression: the old bracket used an approximately 1.5px source-space
+ * stroke. It passed the 64x64 fixture yet disappeared when a normal camera was
+ * downscaled in OBS preview. Exercise a 320x180 source and require alpha three
+ * pixels away from the bracket centerline, which the old stroke cannot meet. */
+static int verify_tech_hud_preview_scale(gs_effect_t *effect)
+{
+    enum { W=320, H=180 };
+    uint8_t *pixels=bzalloc((size_t)W*H*4u);
+    if(!pixels) return 1;
+    const uint8_t *layers[]={pixels};
+    gs_texture_t *input=gs_texture_create(W,H,GS_RGBA,1,layers,0);
+    bfree(pixels);
+    gs_texrender_t *target=gs_texrender_create(GS_RGBA,GS_ZS_NONE);
+    gs_stagesurf_t *stage=gs_stagesurface_create(W,H,GS_RGBA);
+    if(!input||!target||!stage){
+        if(stage)gs_stagesurface_destroy(stage);
+        if(target)gs_texrender_destroy(target);
+        if(input)gs_texture_destroy(input);
+        fprintf(stderr,"FAIL: Tech HUD 320x180 resources\n");
+        return 1;
+    }
+
+    struct vec2 dims,zero,half;
+    struct vec4 magenta,btop,bbottom,btail;
+    vec2_set(&dims,(float)W,(float)H);
+    vec2_set(&zero,0.0f,0.0f);
+    vec2_set(&half,110.0f,60.0f);
+    vec4_set(&magenta,1.0f,0.0f,1.0f,1.0f);
+    vec4_set(&btop,-1,-1,1,-1);
+    vec4_set(&bbottom,1,0.6f,-1,0.6f);
+    vec4_set(&btail,0.11f,0.33f,0.14f,0.22f);
+#define P(name) gs_effect_get_param_by_name(effect,name)
+    gs_effect_set_vec2(P("uv_size"),&dims);
+    gs_effect_set_vec2(P("output_size"),&dims);
+    gs_effect_set_vec2(P("input_origin"),&zero);
+    gs_effect_set_vec2(P("half_size"),&half);
+    gs_effect_set_vec2(P("mask_offset"),&zero);
+    gs_effect_set_vec2(P("subject_pan"),&zero);
+    gs_effect_set_float(P("subject_zoom"),1.0f);
+    gs_effect_set_float(P("shape_rotation"),0.0f);
+    gs_effect_set_int(P("polygon_sides"),8);
+    gs_effect_set_float(P("shape_detail"),0.22f);
+    gs_effect_set_vec4(P("bubble_top"),&btop);
+    gs_effect_set_vec4(P("bubble_bottom"),&bbottom);
+    gs_effect_set_vec4(P("bubble_tail"),&btail);
+    gs_effect_set_float(P("corner_radius"),0.0f);
+    gs_effect_set_int(P("shape_id"),13);
+    gs_effect_set_float(P("border_width"),3.5f);
+    gs_effect_set_int(P("style_id"),3);
+    gs_effect_set_int(P("ornament_mode"),3);
+    gs_effect_set_float(P("art_intensity"),0.91f);
+    gs_effect_set_float(P("art_gap"),2.0f);
+    gs_effect_set_float(P("feather"),0.5f);
+    gs_effect_set_float(P("glow_radius"),20.0f);
+    gs_effect_set_float(P("glow_strength"),0.70f);
+    gs_effect_set_float(P("mid_glow_strength"),0.78f);
+    gs_effect_set_float(P("bloom_strength"),0.82f);
+    gs_effect_set_float(P("hotspot_strength"),0.0f);
+    gs_effect_set_float(P("hotspot_size"),0.09f);
+    gs_effect_set_vec4(P("color_a"),&magenta);
+    gs_effect_set_vec4(P("color_b"),&magenta);
+    gs_effect_set_float(P("color_phase"),0.0f);
+    gs_effect_set_float(P("pulse_phase"),0.0f);
+    gs_effect_set_float(P("flow_phase"),0.0f);
+    gs_effect_set_int(P("animation_id"),0);
+    gs_effect_set_int(P("segment_count"),0);
+    gs_effect_set_int(P("border_enabled"),1);
+    gs_effect_set_int(P("glow_enabled"),1);
+    gs_effect_set_texture(P("svg_sdf"),NULL);
+    gs_effect_set_int(P("svg_ready"),0);
+    gs_effect_set_texture(P("image"),input);
+#undef P
+
+    int failed=0;
+    if(!gs_texrender_begin(target,W,H)){failed=1;goto done_hires;}
+    const bool srgb=gs_framebuffer_srgb_enabled();
+    gs_enable_framebuffer_srgb(false);
+    gs_blend_state_push(); gs_enable_blending(false);
+    struct vec4 clear; vec4_zero(&clear);
+    gs_clear(GS_CLEAR_COLOR,&clear,0.0f,0);
+    gs_ortho(0,(float)W,0,(float)H,-100,100);
+    gs_matrix_push(); gs_matrix_identity();
+    const enum gs_cull_mode cull=gs_get_cull_mode(); gs_set_cull_mode(GS_NEITHER);
+    while(gs_effect_loop(effect,"Draw")) gs_draw_sprite(input,0,W,H);
+    gs_set_cull_mode(cull); gs_matrix_pop();
+    gs_blend_state_pop(); gs_enable_framebuffer_srgb(srgb);
+    gs_texrender_end(target);
+    gs_stage_texture(stage,gs_texrender_get_texture(target));
+    uint8_t *mapped=NULL; uint32_t stride=0;
+    if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;goto done_hires;}
+
+    /* TR horizontal centerline is around y=23.5. Require a 7px visual band:
+     * y=20 is >3px off center and would be nearly invisible with old D4B. */
+    const uint8_t *tr_center=mapped+23u*stride+245u*4u;
+    const uint8_t *tr_thick=mapped+20u*stride+245u*4u;
+    const uint8_t *tr_outside=mapped+14u*stride+245u*4u;
+    /* BL horizontal partner around y=157. */
+    const uint8_t *bl_thick=mapped+160u*stride+75u*4u;
+    if(tr_center[3]<180 || tr_thick[3]<90 || bl_thick[3]<90 ||
+       tr_outside[3]>70) {
+        fprintf(stderr,
+                "FAIL: Tech HUD realistic stroke center=%u thick=%u BL=%u outside=%u\n",
+                tr_center[3],tr_thick[3],bl_thick[3],tr_outside[3]);
+        failed=1;
+    }
+    gs_stagesurface_unmap(stage);
+done_hires:
+    gs_stagesurface_destroy(stage);
+    gs_texrender_destroy(target);
+    gs_texture_destroy(input);
+    return failed;
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2) {
@@ -632,6 +745,7 @@ int main(int argc, char **argv)
         if (!missing) {
             for (int variant = 0; variant < 43; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
+            missing += verify_tech_hud_preview_scale(effect);
         }
         gs_effect_destroy(effect);
     }
