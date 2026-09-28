@@ -288,9 +288,9 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_bool(settings, "glow_enabled", cfg.show_glow);
 }
 
-/* Shape-specific controls are intentionally sparse: Squircle/HUD do not
- * respond to the Roundness slider, and generic shapes do not respond to
- * the authored Shape Detail control. Never reset saved user values here. */
+/* Shape-specific controls stay sparse. Bubble has dedicated body/tail
+ * controls; generic Shape Detail now serves Card/HUD/Squircle only.
+ * Hidden values are never reset or deleted. */
 static void nm_geometry_visibility(obs_properties_t *props, int shape_id)
 {
     obs_property_t *group=obs_properties_get(props, "mask_geometry");

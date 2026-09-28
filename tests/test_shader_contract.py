@@ -49,8 +49,8 @@ en_locale = (ROOT / "data" / "locale" / "en-US.ini").read_text(encoding="utf-8")
 id_locale = (ROOT / "data" / "locale" / "id-ID.ini").read_text(encoding="utf-8")
 assert 'Roundness="Contour roundness"' in en_locale
 assert 'Roundness="Kelengkungan kontur"' in id_locale
-assert 'Mask.Detail="Shape detail (tail / cut / squircle)"' in en_locale
-assert 'Mask.Detail="Detail bentuk (ekor / potongan / squircle)"' in id_locale
+assert 'Mask.Detail="Shape detail (cut / squircle)"' in en_locale
+assert 'Mask.Detail="Detail bentuk (potongan / squircle)"' in id_locale
 assert "return chatBubbleDistance(" in shader and "return angledCardDistance(" in shader
 assert "float leftX = -b.x + 2.0*b.x*bubble_body.x;" in shader
 assert "float xL=clamp(b.x*bubble_tail.x,railL,railR-minBase);" in shader
