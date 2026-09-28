@@ -385,3 +385,33 @@ hue instead of whitening low-alpha pixels, receives a smooth finite 2.30R-
 black once total alpha is negligible. OpenGL/D3D11 fixtures add a far-envelope
 RGBA==0 guard and chromatic near-bloom check. Real OBS preview/full-canvas
 screenshots are still required to close visual acceptance.
+
+## D4A visual checkpoint and D4B Tech HUD Advanced
+
+Maintainer OBS review on 2026-09-28 accepted the revised four-corner Bubble
+interaction as the intended freeform behavior ("user bisa freeform"). This is
+useful G4-V product evidence for the geometry/UX direction, but it does not by
+itself close the full D3/D4 lifecycle, performance, 320x180 or halo matrix.
+The reported preview image showed a deliberately skewed Bubble with its tail
+remaining integrated; no claim is made here about unrecorded hardware data.
+
+D4B appends **shape ID 13, Tech HUD Advanced**, while preserving every prior
+shape ID and schema-3 setting. Its source mask is a six-edge rectangle-family
+silhouette: top-left and bottom-right are true diagonal cut corners, while
+top-right and bottom-left stay square. Therefore the webcam coverage itself
+matches the HUD silhouette rather than remaining a plain rectangle.
+
+With the existing Tech HUD ornament selected, D4B adds two exterior luminous
+L-brackets anchored to the square corners and two shorter companion traces
+parallel to the real cut edges. These accents never alter source alpha. The
+ordinary neon core/glow still follows the mask SDF, so mask border and overlay
+are separate but geometrically coordinated. Preset ID 5 is retained and now
+selects shape 13 when deliberately re-applied; already-saved scenes continue
+to load their stored shape. Existing HUD Cut Panel ID 10 remains unchanged.
+Shape Detail controls the two chamfers and is context-visible for this shape.
+D3's ornament envelope remains conservative for the new bracket reach.
+
+Acceptance requires CPU contour probes (cut/square corners/detail), OpenGL
+and D3D11 pixels for source clipping plus both outer brackets/diagonal trace,
+and an actual OBS comparison to the approved Tech HUD reference at normal and
+320x180 size before visual completion is claimed.

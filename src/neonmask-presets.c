@@ -12,8 +12,9 @@ static const nm_preset builtin[] = {
      0.81, 0.15, 4.0, 0.85, 18.0, 0.65, 0.65, 0, NM_STYLE_HUD, true, true, 0.72, 0.76, 0.74, 0.12, NM_ORNAMENT_NONE, 0.0, 2.0, 0.22},
     {NM_SHAPE_ROUNDED, NM_ANIM_STATIC, 0x00236BFFu, 0x0000CCFFu,
      0.81, 0.08, 4.0, 0.85, 18.0, 0.78, 0.65, 0, NM_STYLE_MINIMAL, true, true, 0.62, 0.60, 0.35, 0.12, NM_ORNAMENT_NONE, 0.0, 2.0, 0.22},
-    /* Geometrically distinct Tech HUD brackets; old IDs are untouched. */
-    {NM_SHAPE_RECTANGLE, NM_ANIM_FLOW, 0x00F5C62Au, 0x00FF9F00u,
+    /* D4B: dedicated mask silhouette (TL/BR chamfers) plus external HUD
+     * brackets. Preset ID 5 is stable; only deliberate re-application uses it. */
+    {NM_SHAPE_TECH_HUD, NM_ANIM_FLOW, 0x00F5C62Au, 0x00FF9F00u,
      0.78, 0.0, 3.5, 0.75, 20.0, 0.70, 0.55, 0, NM_STYLE_HUD,
      true, true, 0.78, 0.82, 0.83, 0.09, NM_ORNAMENT_TECH_HUD, 0.91, 2.0, 0.22},
     /* Reselecting Streamer now gives a real integrated bubble silhouette;

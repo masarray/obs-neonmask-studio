@@ -352,6 +352,7 @@ static void nm_geometry_visibility(obs_properties_t *props, int shape_id)
                        shape_id==NM_SHAPE_ANGLED_CARD;
     const bool authored=shape_id==NM_SHAPE_ANGLED_CARD ||
                         shape_id==NM_SHAPE_HUD_PANEL ||
+                        shape_id==NM_SHAPE_TECH_HUD ||
                         shape_id==NM_SHAPE_SQUIRCLE;
     if(round) obs_property_set_visible(round,rounded);
     if(detail) obs_property_set_visible(detail,authored);
@@ -559,6 +560,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(shape, obs_module_text("Shape.ChatBubble"), NM_SHAPE_CHAT_BUBBLE);
     obs_property_list_add_int(shape, obs_module_text("Shape.AngledCard"), NM_SHAPE_ANGLED_CARD);
     obs_property_list_add_int(shape, obs_module_text("Shape.HUDPanel"), NM_SHAPE_HUD_PANEL);
+    obs_property_list_add_int(shape, obs_module_text("Shape.TechHUD"), NM_SHAPE_TECH_HUD);
     obs_property_list_add_int(shape, obs_module_text("Shape.Squircle"), NM_SHAPE_SQUIRCLE);
     obs_property_list_add_int(shape, obs_module_text("Shape.SVG"), NM_SHAPE_SVG_PATH);
     obs_property_set_modified_callback(shape, nm_shape_changed);

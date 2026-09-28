@@ -125,7 +125,7 @@ void nm_config_validate(nm_config *cfg)
     cfg->primary |= 0xFF000000u;
     cfg->secondary |= 0xFF000000u;
 
-    if (cfg->shape_id < NM_SHAPE_ROUNDED || cfg->shape_id > NM_SHAPE_SVG_PATH)
+    if (cfg->shape_id < NM_SHAPE_ROUNDED || cfg->shape_id > NM_SHAPE_TECH_HUD)
         cfg->shape_id = NM_SHAPE_ROUNDED;
     if (cfg->animation_id < NM_ANIM_STATIC || cfg->animation_id > NM_ANIM_FLOW)
         cfg->animation_id = NM_ANIM_STATIC;
