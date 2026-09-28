@@ -131,7 +131,7 @@ int main(void)
     {
         const uint32_t sizes[][2]={{320u,180u},{640u,480u},{640u,640u},
                                   {1080u,1920u},{1920u,1080u},{3840u,2160u}};
-        const float shifts[]={-170.0f,-45.0f,0.0f,45.0f,170.0f};
+        const float shifts[]={-700.0f,-170.0f,0.0f,170.0f,700.0f};
         const float rotations[]={-90.0f,-37.0f,0.0f,37.0f,90.0f};
         unsigned valid=0,limited=0;
         nm_config_defaults(&c);
