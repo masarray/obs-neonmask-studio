@@ -455,3 +455,19 @@ brackets, both cut-corner shells and an inner rail while requiring the portrait
 center to stay quiet. This specifically rejects the prior "two tiny ticks"
 appearance even though those ticks were technically rendered. Actual OBS
 comparison to the supplied Tech HUD reference remains the visual gate.
+
+## D4C — Game UI
+
+D4C appends shape ID 14 and preset ID 10 without renumbering any existing
+shape/preset. The mask is a restrained symmetric eight-edge gaming panel with
+small chamfers on all four source corners. Its ornament recipe is distinct
+from Tech HUD: four mirrored, large exterior L brackets plus a complete
+secondary inner rail following the exact signed mask contour. Small inner
+corner nodes provide a gaming accent while the portrait center stays clear.
+
+All outer dimensions are proportional to mask size and border width; no
+1-pixel fixed ornament is accepted after the D4B lesson. The initial built-in
+Game UI preset is static neon green so its identity is visible without motion.
+The D3 envelope accounts for its bracket stroke/gap/glow. CPU geometry,
+config/preset/art contracts and 320x180 OpenGL/D3D11 visual-scale fixtures are
+required before merge; actual OBS screenshot remains the human visual gate.

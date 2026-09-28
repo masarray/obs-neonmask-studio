@@ -190,6 +190,21 @@ int main(void)
           nm_authored_shape_distance(tech,-20,-20,bx,by,r,0.08f)<0.0f &&
           nm_authored_shape_distance(tech,-20,-20,bx,by,r,0.35f)>0.0f);
 
+    /* D4C Game UI: all four source corners use a restrained, symmetric
+     * chamfer; the large L brackets and inner rail remain decoration. */
+    const int game=NM_SHAPE_GAME_UI;
+    const float game_cut=fminf(fmaxf(2.0f,bx*detail*0.72f),bx*0.18f);
+    check("Game UI center contains source",D(game,0,0)<-5.0f);
+    check("Game UI top-left corner clipped",D(game,-23.8f,-23.8f)>0.2f);
+    check("Game UI top-right corner clipped",D(game,23.8f,-23.8f)>0.2f);
+    check("Game UI bottom-right corner clipped",D(game,23.8f,23.8f)>0.2f);
+    check("Game UI bottom-left corner clipped",D(game,-23.8f,23.8f)>0.2f);
+    check("Game UI top-left diagonal exact contour",
+          fabsf(D(game,-bx+game_cut*0.5f,-by+game_cut*0.5f))<0.002f);
+    check("Game UI detail changes all-corner chamfer",
+          nm_authored_shape_distance(game,-22.0f,-22.0f,bx,by,r,0.08f)<0.0f &&
+          nm_authored_shape_distance(game,-22.0f,-22.0f,bx,by,r,0.35f)>0.0f);
+
     /* Smooth superellipse has a continuous, aspect-correct implicit
      * contour; its exponent changes with the existing shape_detail. */
     check("squircle center contains source",D(squircle,0,0)<-10.0f);

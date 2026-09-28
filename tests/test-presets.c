@@ -16,11 +16,11 @@ int main(void)
     nm_preset p = {0};
     check("custom preset invalid", !nm_get_preset(0, &p));
     check("negative preset invalid", !nm_get_preset(-1, &p));
-    check("unknown preset invalid", !nm_get_preset(10, &p));
+    check("unknown preset invalid", !nm_get_preset(11, &p));
     check("null output invalid", !nm_get_preset(1, NULL));
-    for (int id = 1; id <= 9; ++id) {
+    for (int id = 1; id <= 10; ++id) {
         check("known preset", nm_get_preset(id, &p));
-        check("valid shape", p.shape >= NM_SHAPE_ROUNDED && p.shape <= NM_SHAPE_TECH_HUD);
+        check("valid shape", p.shape >= NM_SHAPE_ROUNDED && p.shape <= NM_SHAPE_GAME_UI);
         check("valid animation", p.animation >= NM_ANIM_STATIC && p.animation <= NM_ANIM_FLOW);
         check("nonzero colors", p.primary != p.secondary && p.primary != 0 && p.secondary != 0);
         check("scale range", p.scale >= 0.10 && p.scale <= 0.98);
@@ -66,7 +66,11 @@ int main(void)
           p.shape == NM_SHAPE_HUD_PANEL && p.ornament_mode == NM_ORNAMENT_TECH_HUD);
     nm_get_preset(9, &p);
     check("Squircle preset uses genuine superellipse", p.shape == NM_SHAPE_SQUIRCLE);
+    nm_get_preset(10, &p);
+    check("Game UI preset uses dedicated mask and recipe",
+          p.shape == NM_SHAPE_GAME_UI && p.ornament_mode == NM_ORNAMENT_GAME_UI &&
+          p.animation == NM_ANIM_STATIC);
     if (failures) return 1;
-    puts("PASS: nine stable preset IDs, including dedicated Tech HUD contour and recipe");
+    puts("PASS: nine legacy preset IDs plus appended Game UI preset 10");
     return 0;
 }
