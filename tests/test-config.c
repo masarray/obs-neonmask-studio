@@ -179,6 +179,35 @@ int main(void)
     check("unknown preset rejected", !nm_config_apply_preset(&cfg, 99));
     check("null preset target rejected", !nm_config_apply_preset(NULL, 1));
 
+    nm_config_defaults(&cfg);
+    check("D4A bubble insets default zero",
+          cfg.bubble_left_inset==0.0f && cfg.bubble_right_inset==0.0f &&
+          cfg.bubble_top_inset==0.0f && cfg.bubble_bottom_inset==0.0f);
+    near("D4A legacy tail left",cfg.bubble_tail_left,-0.78f);
+    near("D4A legacy tail right",cfg.bubble_tail_right,-0.34f);
+    near("D4A legacy tail tip",cfg.bubble_tail_tip,-0.72f);
+    near("D4A default depth tracks preset shape detail",cfg.bubble_tail_depth,cfg.shape_detail);
+    cfg.bubble_left_inset=99.0f; cfg.bubble_right_inset=-1.0f;
+    cfg.bubble_top_inset=INFINITY; cfg.bubble_bottom_inset=NAN;
+    cfg.bubble_tail_left=0.79f; cfg.bubble_tail_right=-0.90f;
+    cfg.bubble_tail_tip=INFINITY; cfg.bubble_tail_depth=NAN;
+    nm_config_validate(&cfg);
+    near("D4A body inset max",cfg.bubble_left_inset,0.25f);
+    near("D4A body inset min",cfg.bubble_right_inset,0.0f);
+    near("D4A infinite inset is finite",cfg.bubble_top_inset,0.0f);
+    near("D4A NaN inset is finite",cfg.bubble_bottom_inset,0.0f);
+    check("D4A crossed tail anchors repaired",
+          cfg.bubble_tail_right>=cfg.bubble_tail_left+0.0799f &&
+          cfg.bubble_tail_right<=0.90f);
+    near("D4A invalid tail tip",cfg.bubble_tail_tip,-0.95f);
+    near("D4A invalid tail depth",cfg.bubble_tail_depth,0.08f);
+    cfg.bubble_left_inset=0.19f;
+    cfg.bubble_tail_tip=0.35f;
+    check("D4A preset operation resets authored geometry",
+          nm_config_apply_preset(&cfg,6) &&
+          cfg.bubble_left_inset==0.0f &&
+          fabsf(cfg.bubble_tail_tip+0.72f)<0.0001f &&
+          fabsf(cfg.bubble_tail_depth-cfg.shape_detail)<0.0001f);
     if (failures) return 1;
     puts("PASS: canonical config defaults, validation, complete presets and schema policy");
     return 0;

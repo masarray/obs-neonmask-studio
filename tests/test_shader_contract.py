@@ -7,15 +7,16 @@ ROOT = Path(__file__).resolve().parents[1]
 host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
-assert len(names) == len(set(names)) == 35, f"Expected 35 unique bindings: {names!r}"
+assert len(names) == len(set(names)) == 37, f"Expected 37 unique bindings: {names!r}"
 uniforms = {name: kind for kind, name in re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader)}
-assert len(uniforms) == 37, f"Unexpected number of shader uniforms: {uniforms}"
+assert len(uniforms) == 39, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
     "Host/shader uniform drift: " + str(set(names) ^ (set(uniforms) - {"ViewProj", "image"}))
 )
 assert uniforms["color_a"] == uniforms["color_b"] == "float4"
 assert uniforms["uv_size"] == uniforms["half_size"] == "float2"
 assert uniforms["output_size"] == uniforms["input_origin"] == "float2"
+assert uniforms["bubble_body"] == uniforms["bubble_tail"] == "float4"
 assert uniforms["mask_offset"] == uniforms["subject_pan"] == "float2"
 assert uniforms["subject_zoom"] == uniforms["shape_rotation"] == "float"
 assert uniforms["polygon_sides"] == "int"
@@ -51,6 +52,25 @@ assert 'Roundness="Kelengkungan kontur"' in id_locale
 assert 'Mask.Detail="Shape detail (tail / cut / squircle)"' in en_locale
 assert 'Mask.Detail="Detail bentuk (ekor / potongan / squircle)"' in id_locale
 assert "return chatBubbleDistance(" in shader and "return angledCardDistance(" in shader
+assert "float leftX = -b.x + 2.0*b.x*bubble_body.x;" in shader
+assert "float xL=clamp(b.x*bubble_tail.x,railL,railR-minBase);" in shader
+assert "float bodyDistance=roundedBoxDistance(bodyP,bodyHalf,r);" in shader
+assert "NM_PARAM(bubble_body, \"bubble_body\")" in host
+assert "NM_PARAM(bubble_tail, \"bubble_tail\")" in host
+assert "gs_effect_set_vec4(f->bubble_body, &bubble_body)" in host
+assert "gs_effect_set_vec4(f->bubble_tail, &bubble_tail)" in host
+for key in ("bubble_left_inset","bubble_right_inset","bubble_top_inset","bubble_bottom_inset",
+            "bubble_tail_left","bubble_tail_right","bubble_tail_tip","bubble_tail_depth"):
+    assert f'obs_data_has_user_value(settings, "{key}")' in host
+    assert f'obs_data_set_default_double(settings, "{key}"' in host
+    assert f'obs_data_set_double(settings, "{key}"' in host
+assert 'if (!obs_data_has_user_value(settings, "bubble_tail_depth"))' in host
+assert "bubble_body_controls" in host and "bubble_tail_controls" in host
+assert 'obs_property_set_visible(body,shape_id==NM_SHAPE_CHAT_BUBBLE)' in host
+assert 'obs_property_set_visible(tail,shape_id==NM_SHAPE_CHAT_BUBBLE)' in host
+assert "nm_context_visibility(" in host
+assert "NM_SHOW(\"speed\",border && animation!=NM_ANIM_STATIC)" in host
+assert "NM_SHOW(\"glow_radius\",border && glow)" in host
 # A primitive min is an occupancy union, NOT the exposed contour distance:
 # its hidden body bottom/tail base caused a phantom horizontal neon seam.
 assert "float ds = edgeDistanceSquared(p,topLeft,topRight)" in shader

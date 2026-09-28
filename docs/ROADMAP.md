@@ -386,3 +386,28 @@ Frontend scene-anchor/filter-chain/source-restart/PNG alpha proof and
 Windows GPU/soak remain mandatory, not silently reclassified as passing.
 The exact manual matrix is in PHASE_D_IMPLEMENTATION.md. D4A can begin on the
 verified code base without prematurely closing #24 or #26.
+
+## D4A v1 — parametric Bubble and context-aware OBS controls
+
+Bubble ID 8 gains four nonnegative body-side insets, two bottom-tail
+shoulders, independent tail tip X and tail depth, alongside the existing
+Roundness. All parameters persist as additive schema-v2 keys. The initial
+zero-inset/legacy-anchor values reproduce the old exposed contour exactly;
+legacy scenes with no new tail-depth key migrate from their authored
+`shape_detail` and pin that value once. Existing preset selection explicitly
+resets designer values, while switching Shape or hiding a UI control never
+silently deletes the custom geometry. A shared CPU oracle and shader retain
+ONE exterior contour: no neon along the hidden triangle base/body bottom.
+The new points stay within the original half-extents, preserving D3 padding
+conservatism. No arbitrary Bézier/drag point editor is claimed yet.
+
+The OBS Properties panel now shows Bubble Body/Tail groups only for Bubble,
+hides generic Shape Detail there (dedicated Tail Depth replaces it), and
+resolves border, ornament, glow, animation and expand/safe-fit visibility
+from the current selection. Hidden values remain persisted; no shader
+feature is implicitly disabled by hiding a slider. Shape ID and schema stay
+unchanged. Pure CPU legacy/custom/extreme geometry, shader binding and GPU
+custom-body/tail pixels require CI; actual OBS visual review at 320x180,
+small sizes, save/restart and live dropdown transitions remains G4-V/G5.
+D4A v2 may add a separate point-drag editor after this parametric model is
+accepted.
