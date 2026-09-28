@@ -173,40 +173,57 @@ int main(void)
     check("current schema supported", nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION));
     check("legacy v1 schema supported", nm_config_schema_supported(1));
     check("future schema rejected", !nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION + 1));
-    check("phase-b keeps schema v2 for additive default-backed fields",
-          NM_CONFIG_SCHEMA_VERSION == 2u);
+    check("D4A freeform migration advances schema to v3",
+          NM_CONFIG_SCHEMA_VERSION == 3u);
 
     check("unknown preset rejected", !nm_config_apply_preset(&cfg, 99));
     check("null preset target rejected", !nm_config_apply_preset(NULL, 1));
 
     nm_config_defaults(&cfg);
-    check("D4A bubble insets default zero",
-          cfg.bubble_left_inset==0.0f && cfg.bubble_right_inset==0.0f &&
-          cfg.bubble_top_inset==0.0f && cfg.bubble_bottom_inset==0.0f);
-    near("D4A legacy tail left",cfg.bubble_tail_left,-0.78f);
-    near("D4A legacy tail right",cfg.bubble_tail_right,-0.34f);
-    near("D4A legacy tail tip",cfg.bubble_tail_tip,-0.72f);
+    near("D4A TL X default",cfg.bubble_tl_x,-1.0f);
+    near("D4A TL Y default",cfg.bubble_tl_y,-1.0f);
+    near("D4A TR X default",cfg.bubble_tr_x,1.0f);
+    near("D4A TR Y default",cfg.bubble_tr_y,-1.0f);
+    near("D4A BR X default",cfg.bubble_br_x,1.0f);
+    near("D4A BL X default",cfg.bubble_bl_x,-1.0f);
+    near("D4A bottom default",cfg.bubble_br_y,1.0f-1.8f*cfg.shape_detail);
+    near("D4A bottom pair default",cfg.bubble_bl_y,cfg.bubble_br_y);
+    near("D4A tail start default",cfg.bubble_tail_start,0.11f);
+    near("D4A tail end default",cfg.bubble_tail_end,0.33f);
+    near("D4A tail tip-pos default",cfg.bubble_tail_tip_pos,0.14f);
     near("D4A default depth tracks preset shape detail",cfg.bubble_tail_depth,cfg.shape_detail);
-    cfg.bubble_left_inset=99.0f; cfg.bubble_right_inset=-1.0f;
-    cfg.bubble_top_inset=INFINITY; cfg.bubble_bottom_inset=NAN;
-    cfg.bubble_tail_left=0.79f; cfg.bubble_tail_right=-0.90f;
-    cfg.bubble_tail_tip=INFINITY; cfg.bubble_tail_depth=NAN;
+
+    cfg.bubble_tl_x=1.0f; cfg.bubble_tl_y=INFINITY;
+    cfg.bubble_tr_x=-1.0f; cfg.bubble_tr_y=NAN;
+    cfg.bubble_br_x=-1.0f; cfg.bubble_br_y=99.0f;
+    cfg.bubble_bl_x=1.0f; cfg.bubble_bl_y=-99.0f;
+    cfg.bubble_tail_start=0.90f; cfg.bubble_tail_end=0.01f;
+    cfg.bubble_tail_tip_pos=INFINITY; cfg.bubble_tail_depth=NAN;
     nm_config_validate(&cfg);
-    near("D4A body inset max",cfg.bubble_left_inset,0.25f);
-    near("D4A body inset min",cfg.bubble_right_inset,0.0f);
-    near("D4A infinite inset is finite",cfg.bubble_top_inset,0.0f);
-    near("D4A NaN inset is finite",cfg.bubble_bottom_inset,0.0f);
-    check("D4A crossed tail anchors repaired",
-          cfg.bubble_tail_right>=cfg.bubble_tail_left+0.0799f &&
-          cfg.bubble_tail_right<=0.90f);
-    near("D4A invalid tail tip",cfg.bubble_tail_tip,-0.95f);
+    near("D4A TL X quadrant clamp",cfg.bubble_tl_x,-0.35f);
+    near("D4A TL Y finite clamp",cfg.bubble_tl_y,-1.0f);
+    near("D4A TR X quadrant clamp",cfg.bubble_tr_x,0.35f);
+    near("D4A TR Y finite clamp",cfg.bubble_tr_y,-1.0f);
+    near("D4A BR X quadrant clamp",cfg.bubble_br_x,0.35f);
+    near("D4A BR Y clamp",cfg.bubble_br_y,0.92f);
+    near("D4A BL X quadrant clamp",cfg.bubble_bl_x,-0.35f);
+    near("D4A BL Y clamp",cfg.bubble_bl_y,0.35f);
+    check("D4A tail ordering repaired",
+          cfg.bubble_tail_end>=cfg.bubble_tail_start+0.0599f &&
+          cfg.bubble_tail_end<=0.98f);
+    near("D4A invalid tip position",cfg.bubble_tail_tip_pos,0.0f);
     near("D4A invalid tail depth",cfg.bubble_tail_depth,0.08f);
-    cfg.bubble_left_inset=0.19f;
-    cfg.bubble_tail_tip=0.35f;
-    check("D4A preset operation resets authored geometry",
+
+    cfg.bubble_tl_x=-0.55f; cfg.bubble_tr_y=-0.55f;
+    cfg.bubble_br_x=0.52f; cfg.bubble_bl_y=0.44f;
+    cfg.bubble_tail_start=0.30f; cfg.bubble_tail_tip_pos=0.65f;
+    check("D4A preset operation resets freeform geometry",
           nm_config_apply_preset(&cfg,6) &&
-          cfg.bubble_left_inset==0.0f &&
-          fabsf(cfg.bubble_tail_tip+0.72f)<0.0001f &&
+          fabsf(cfg.bubble_tl_x+1.0f)<0.0001f &&
+          fabsf(cfg.bubble_tr_y+1.0f)<0.0001f &&
+          fabsf(cfg.bubble_br_x-1.0f)<0.0001f &&
+          fabsf(cfg.bubble_tail_start-0.11f)<0.0001f &&
+          fabsf(cfg.bubble_tail_tip_pos-0.14f)<0.0001f &&
           fabsf(cfg.bubble_tail_depth-cfg.shape_detail)<0.0001f);
     if (failures) return 1;
     puts("PASS: canonical config defaults, validation, complete presets and schema policy");
