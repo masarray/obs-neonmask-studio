@@ -16,6 +16,9 @@ uniform float subject_zoom;
 uniform float shape_rotation;
 uniform int polygon_sides;
 uniform float shape_detail;
+// Opt-in Bubble ID 8 designer; zero insets and legacy anchors reproduce v2.
+uniform float4 bubble_body; // left/right/top/bottom inset (fraction of full extent)
+uniform float4 bubble_tail; // base left/right, tip X / half-width, depth
 uniform float corner_radius;
 uniform int shape_id;
 uniform float border_width;
@@ -235,24 +238,34 @@ float quarterArcDistanceSquared(float2 p, float2 center, float r, float2 signXY)
     return min(dot(p-xEnd,p-xEnd),dot(p-yEnd,p-yEnd));
 }
 
-float chatBubbleDistance(float2 p, float2 b, float radius, float detail)
+float chatBubbleDistance(float2 p, float2 b, float radius)
 {
-    float tail = max(3.0, b.y * detail * 1.8);
-    float bottom = b.y - tail, top = -b.y;
-    float2 left = float2(-0.78*b.x,bottom);
-    float2 right = float2(-0.34*b.x,bottom);
-    float2 tip = float2(-0.72*b.x,b.y-1.0);
-    // Constrain body corner radius before the tail shoulder so that the
-    // actual bottom rails never cross the body's corner arcs.
-    float r = min(max(radius,0.0),min(b.y-0.5*tail,0.22*b.x));
+    // Body-side inset is nonnegative and cannot escape the original mask
+    // rectangle. Tail tip remains inside it, so D3 padding stays conservative.
+    float tail = max(3.0, b.y * bubble_tail.w * 1.8);
+    float leftX = -b.x + 2.0*b.x*bubble_body.x;
+    float rightX = b.x - 2.0*b.x*bubble_body.y;
+    float top = -b.y + 2.0*b.y*bubble_body.z;
+    float bottom = b.y - tail - 2.0*b.y*bubble_body.w;
+    float r = min(max(radius,0.0),
+                  min(0.5*(bottom-top),min(0.22*b.x,0.24*(rightX-leftX))));
+
+    // The two shoulder points stay on the straight lower rail. Enforce a
+    // minimum nondegenerate base even when user-edited anchors cross.
+    float railL=leftX+r, railR=rightX-r;
+    float minBase=min(max(1.0,0.07*b.x),0.4*(railR-railL));
+    float xL=clamp(b.x*bubble_tail.x,railL,railR-minBase);
+    float xR=clamp(b.x*bubble_tail.y,xL+minBase,railR);
+    float2 left=float2(xL,bottom);
+    float2 right=float2(xR,bottom);
+    float2 tip=float2(b.x*bubble_tail.z,b.y-1.0);
+
     float2 lv = left-tip, rv = right-tip;
     float ll = length(lv), rl = length(rv);
     float2 ul = lv/max(ll,0.0001), ur = rv/max(rl,0.0001);
     float cosine = clamp(dot(ul,ur),-0.98,0.98);
     float sinHalf = sqrt(0.5*(1.0-cosine));
     float tanHalf = sinHalf/sqrt(max(0.01,0.5*(1.0+cosine)));
-    // A compact circular leaf tip, tangent to both tail sides. No
-    // additional UI control; the existing Roundness slider is authoritative.
     float desired = min(1.8,min(tail*0.12,r*0.24));
     float trim = min(desired/max(tanHalf,0.01),min(ll,rl)*0.32);
     float tipR = trim*tanHalf;
@@ -261,10 +274,10 @@ float chatBubbleDistance(float2 p, float2 b, float radius, float detail)
     float2 bis = ul+ur;
     float2 tipCenter = tip + bis*(tipR/max(sinHalf*length(bis),0.0001));
 
-    float2 topLeft = float2(-b.x+r,top), topRight = float2(b.x-r,top);
-    float2 rightTop = float2(b.x,top+r), rightBottom = float2(b.x,bottom-r);
-    float2 bottomRight = float2(b.x-r,bottom), bottomLeft = float2(-b.x+r,bottom);
-    float2 leftBottom = float2(-b.x,bottom-r), leftTop = float2(-b.x,top+r);
+    float2 topLeft = float2(leftX+r,top), topRight = float2(rightX-r,top);
+    float2 rightTop = float2(rightX,top+r), rightBottom = float2(rightX,bottom-r);
+    float2 bottomRight = float2(rightX-r,bottom), bottomLeft = float2(leftX+r,bottom);
+    float2 leftBottom = float2(leftX,bottom-r), leftTop = float2(leftX,top+r);
 
     float ds = edgeDistanceSquared(p,topLeft,topRight);
     ds = min(ds,edgeDistanceSquared(p,rightTop,rightBottom));
@@ -272,22 +285,23 @@ float chatBubbleDistance(float2 p, float2 b, float radius, float detail)
     ds = min(ds,edgeDistanceSquared(p,right,rightTangent));
     ds = min(ds,edgeDistanceSquared(p,leftTangent,left));
     ds = min(ds,edgeDistanceSquared(p,left,bottomLeft));
-    ds = min(ds,edgeDistanceSquared(p,leftBottom,leftTop));
-    ds = min(ds,quarterArcDistanceSquared(p,float2(b.x-r,top+r),r,float2(1.0,-1.0)));
-    ds = min(ds,quarterArcDistanceSquared(p,float2(b.x-r,bottom-r),r,float2(1.0,1.0)));
-    ds = min(ds,quarterArcDistanceSquared(p,float2(-b.x+r,bottom-r),r,float2(-1.0,1.0)));
-    ds = min(ds,quarterArcDistanceSquared(p,float2(-b.x+r,top+r),r,float2(-1.0,-1.0)));
+    ds = min(ds,quarterArcDistanceSquared(p,float2(rightX-r,top+r),r,float2(1.0,-1.0)));
+    ds = min(ds,quarterArcDistanceSquared(p,float2(rightX-r,bottom-r),r,float2(1.0,1.0)));
+    ds = min(ds,quarterArcDistanceSquared(p,float2(leftX+r,bottom-r),r,float2(-1.0,1.0)));
+    ds = min(ds,quarterArcDistanceSquared(p,float2(leftX+r,top+r),r,float2(-1.0,-1.0)));
     if(tipR > 0.0001)
         ds = min(ds,arcDistanceSquared(p,rightTangent,leftTangent,tipCenter,tipR));
     else
         ds = min(ds,edgeDistanceSquared(p,rightTangent,leftTangent));
 
-    // Occupancy only: the primitive base is NOT an external neon edge.
-    float2 bodyP = p+float2(0.0,0.5*tail);
-    float body = roundedBoxDistance(bodyP,float2(b.x,b.y-0.5*tail),r);
-    float wedge = signedTriangle(p,right,tip,left);
-    bool inside = body <= 0.0 || wedge <= 0.0;
-    bool removed = tipR > 0.0001 &&
+    // Do not illuminate the hidden body-bottom or triangle base: only ONE
+    // exterior contour controls alpha, fine rim and all glow layers.
+    float2 bodyHalf=float2(0.5*(rightX-leftX),0.5*(bottom-top));
+    float2 bodyP=p-float2(0.5*(leftX+rightX),0.5*(top+bottom));
+    float bodyDistance=roundedBoxDistance(bodyP,bodyHalf,r);
+    float wedge=signedTriangle(p,right,tip,left);
+    bool inside=bodyDistance<=0.0 || wedge<=0.0;
+    bool removed=tipR>0.0001 &&
         excisedCorner(p,rightTangent,tip,leftTangent,tipCenter,tipR);
     return sqrt(ds)*(inside && !removed ? -1.0 : 1.0);
 }
@@ -399,7 +413,7 @@ float shapeDistance(float2 p)
         return svg_ready != 0 ? svgPathDistance(p) : 4096.0;
     if (shape_id == 8)
         return chatBubbleDistance(rotatePoint(p,shape_rotation),half_size,
-                                  corner_radius,shape_detail);
+                                  corner_radius);
     if (shape_id == 9)
         return angledCardDistance(rotatePoint(p,shape_rotation),half_size,
                                   shape_detail,corner_radius);
