@@ -22,6 +22,14 @@ void nm_config_defaults(nm_config *cfg)
         .polygon_sides = 8,
         .roundness = 0.15f,
         .shape_detail = 0.22f,
+        .bubble_left_inset = 0.0f,
+        .bubble_right_inset = 0.0f,
+        .bubble_top_inset = 0.0f,
+        .bubble_bottom_inset = 0.0f,
+        .bubble_tail_left = -0.78f,
+        .bubble_tail_right = -0.34f,
+        .bubble_tail_tip = -0.72f,
+        .bubble_tail_depth = 0.22f,
         .border_px = 4.0f,
         .feather_px = 0.85f,
         .glow_px = 18.0f,
@@ -70,6 +78,15 @@ void nm_config_validate(nm_config *cfg)
     if (cfg->polygon_sides > 12) cfg->polygon_sides = 12;
     cfg->roundness = nm_clamp(cfg->roundness, 0.0f, 1.0f);
     cfg->shape_detail = nm_clamp(cfg->shape_detail, 0.08f, 0.35f);
+    cfg->bubble_left_inset = nm_clamp(cfg->bubble_left_inset, 0.0f, 0.25f);
+    cfg->bubble_right_inset = nm_clamp(cfg->bubble_right_inset, 0.0f, 0.25f);
+    cfg->bubble_top_inset = nm_clamp(cfg->bubble_top_inset, 0.0f, 0.25f);
+    cfg->bubble_bottom_inset = nm_clamp(cfg->bubble_bottom_inset, 0.0f, 0.25f);
+    cfg->bubble_tail_left = nm_clamp(cfg->bubble_tail_left, -0.90f, 0.80f);
+    cfg->bubble_tail_right = nm_clamp(cfg->bubble_tail_right,
+                                      cfg->bubble_tail_left + 0.08f, 0.90f);
+    cfg->bubble_tail_tip = nm_clamp(cfg->bubble_tail_tip, -0.95f, 0.95f);
+    cfg->bubble_tail_depth = nm_clamp(cfg->bubble_tail_depth, 0.08f, 0.35f);
     cfg->border_px = nm_clamp(cfg->border_px, 0.5f, 32.0f);
     cfg->feather_px = nm_clamp(cfg->feather_px, 0.5f, 30.0f);
     cfg->glow_px = nm_clamp(cfg->glow_px, 1.0f, 80.0f);
@@ -113,6 +130,14 @@ bool nm_config_apply_preset(nm_config *cfg, int preset_id)
     cfg->scale = (float)preset.scale;
     cfg->roundness = (float)preset.roundness;
     cfg->shape_detail = (float)preset.shape_detail;
+    /* Applying a named preset resets the bubble designer. Shape switching
+     * alone never resets user-authored values. */
+    cfg->bubble_left_inset = cfg->bubble_right_inset = 0.0f;
+    cfg->bubble_top_inset = cfg->bubble_bottom_inset = 0.0f;
+    cfg->bubble_tail_left = -0.78f;
+    cfg->bubble_tail_right = -0.34f;
+    cfg->bubble_tail_tip = -0.72f;
+    cfg->bubble_tail_depth = cfg->shape_detail;
     cfg->border_px = (float)preset.border_width;
     cfg->feather_px = (float)preset.feather;
     cfg->glow_px = (float)preset.glow_radius;

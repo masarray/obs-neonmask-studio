@@ -38,6 +38,36 @@ int main(void)
                                           bx,by,0.0f,detail))<0.001f);
     check("bubble external shoulder remains on contour",
           fabsf(D(bubble,-0.34f*bx,bottom))<0.001f);
+    /* D4A designer must reproduce every legacy Bubble pixel by default. */
+    nm_bubble_controls old={0,0,0,0,-0.78f,-0.34f,-0.72f,detail};
+    for(int yy=-26;yy<=26;yy+=2) for(int xx=-26;xx<=26;xx+=2) {
+        const float oldD=D(bubble,(float)xx,(float)yy);
+        const float newD=nm_bubble_custom_distance((float)xx,(float)yy,bx,by,r,&old);
+        check("D4A zero-inset matches legacy exterior",fabsf(oldD-newD)<0.0005f);
+    }
+    nm_bubble_controls custom={0.10f,0.25f,0.20f,0.05f,
+                               -0.40f,0.20f,0.15f,detail};
+#define BC(X,Y) nm_bubble_custom_distance((X),(Y),bx,by,r,&custom)
+    check("D4A center stays filled",BC(0,0)<-2.0f);
+    check("D4A independently inset top clips image",BC(0,-20)>2.0f);
+    check("D4A independently inset left clips image",BC(-22,0)>1.0f);
+    check("D4A independently inset right clips image",BC(15,0)>1.0f);
+    check("D4A tail translated into new location",BC(2,18)<-0.4f);
+    check("D4A area beside translated tail transparent",BC(14,18)>1.0f);
+    check("D4A internal shoulder remains away from exposed neon",
+          BC(0,11.664f)<-0.8f);
+    check("D4A tail tip remains bounded",BC(3.6f,24.5f)>0.2f);
+    check("D4A null control rejected",
+          isnan(nm_bubble_custom_distance(0,0,bx,by,r,NULL)));
+    custom.left_inset=custom.right_inset=0.25f;
+    custom.top_inset=custom.bottom_inset=0.25f;
+    custom.tail_left=-0.90f;custom.tail_right=0.90f;
+    custom.tail_tip=0.95f;custom.tail_depth=0.35f;
+    for(int i=-20;i<=20;++i) for(int j=-20;j<=20;++j)
+        check("D4A extreme valid shape stays finite",
+              isfinite(nm_bubble_custom_distance(0.4f*i,0.3f*j,
+                                                 8.0f,6.0f,30.0f,&custom)));
+#undef BC
     check("chamfered card center inside",D(card,0,0)<-5.0f);
     check("card top right removed",D(card,21,-21)>0.2f);
     check("card top right inside diagonal",D(card,13,-21)<-0.2f);

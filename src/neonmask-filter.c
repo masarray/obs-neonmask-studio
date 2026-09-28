@@ -25,6 +25,8 @@ struct nm_filter {
     gs_eparam_t *shape_rotation;
     gs_eparam_t *polygon_sides;
     gs_eparam_t *shape_detail;
+    gs_eparam_t *bubble_body;
+    gs_eparam_t *bubble_tail;
     gs_eparam_t *corner_radius;
     gs_eparam_t *shape;
     gs_eparam_t *border_width;
@@ -128,6 +130,14 @@ static void nm_update(void *data, obs_data_t *settings)
         .polygon_sides = legacy_framing ? 8 : (int)obs_data_get_int(settings, "polygon_sides"),
         .roundness = (float)obs_data_get_double(settings, "roundness"),
         .shape_detail = (float)obs_data_get_double(settings, "shape_detail"),
+        .bubble_left_inset = (float)obs_data_get_double(settings, "bubble_left_inset"),
+        .bubble_right_inset = (float)obs_data_get_double(settings, "bubble_right_inset"),
+        .bubble_top_inset = (float)obs_data_get_double(settings, "bubble_top_inset"),
+        .bubble_bottom_inset = (float)obs_data_get_double(settings, "bubble_bottom_inset"),
+        .bubble_tail_left = (float)obs_data_get_double(settings, "bubble_tail_left"),
+        .bubble_tail_right = (float)obs_data_get_double(settings, "bubble_tail_right"),
+        .bubble_tail_tip = (float)obs_data_get_double(settings, "bubble_tail_tip"),
+        .bubble_tail_depth = (float)obs_data_get_double(settings, "bubble_tail_depth"),
         .border_px = (float)obs_data_get_double(settings, "border_width"),
         .feather_px = (float)obs_data_get_double(settings, "feather"),
         .glow_px = (float)obs_data_get_double(settings, "glow_radius"),
@@ -157,6 +167,10 @@ static void nm_update(void *data, obs_data_t *settings)
     }else if(file_length){
         memcpy(next.svg_path,file,file_length+1);
     }
+    /* Older Bubble scenes used shape_detail for their tail. Preserve the
+     * exact authored depth until a new bubble depth was explicitly saved. */
+    if (!obs_data_has_user_value(settings, "bubble_tail_depth"))
+        next.bubble_tail_depth = next.shape_detail;
     nm_config_validate(&next);
     const bool asset_changed=strcmp(next.svg_path,f->config.svg_path)!=0;
     f->config = next;
@@ -180,6 +194,22 @@ static void nm_update(void *data, obs_data_t *settings)
      * current shape, subject pan/zoom, or any saved preset identity. */
     if (!obs_data_has_user_value(settings, "shape_detail"))
         obs_data_set_double(settings, "shape_detail", next.shape_detail);
+    if (!obs_data_has_user_value(settings, "bubble_left_inset"))
+        obs_data_set_double(settings, "bubble_left_inset", next.bubble_left_inset);
+    if (!obs_data_has_user_value(settings, "bubble_right_inset"))
+        obs_data_set_double(settings, "bubble_right_inset", next.bubble_right_inset);
+    if (!obs_data_has_user_value(settings, "bubble_top_inset"))
+        obs_data_set_double(settings, "bubble_top_inset", next.bubble_top_inset);
+    if (!obs_data_has_user_value(settings, "bubble_bottom_inset"))
+        obs_data_set_double(settings, "bubble_bottom_inset", next.bubble_bottom_inset);
+    if (!obs_data_has_user_value(settings, "bubble_tail_left"))
+        obs_data_set_double(settings, "bubble_tail_left", next.bubble_tail_left);
+    if (!obs_data_has_user_value(settings, "bubble_tail_right"))
+        obs_data_set_double(settings, "bubble_tail_right", next.bubble_tail_right);
+    if (!obs_data_has_user_value(settings, "bubble_tail_tip"))
+        obs_data_set_double(settings, "bubble_tail_tip", next.bubble_tail_tip);
+    if (!obs_data_has_user_value(settings, "bubble_tail_depth"))
+        obs_data_set_double(settings, "bubble_tail_depth", next.bubble_tail_depth);
 
     /* Existing scenes had no authored ornaments. Pin the old appearance
      * explicitly instead of silently adopting a new default in a future build. */
@@ -229,6 +259,14 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_int(settings, "polygon_sides", cfg.polygon_sides);
     obs_data_set_default_double(settings, "roundness", cfg.roundness);
     obs_data_set_default_double(settings, "shape_detail", cfg.shape_detail);
+    obs_data_set_default_double(settings, "bubble_left_inset", cfg.bubble_left_inset);
+    obs_data_set_default_double(settings, "bubble_right_inset", cfg.bubble_right_inset);
+    obs_data_set_default_double(settings, "bubble_top_inset", cfg.bubble_top_inset);
+    obs_data_set_default_double(settings, "bubble_bottom_inset", cfg.bubble_bottom_inset);
+    obs_data_set_default_double(settings, "bubble_tail_left", cfg.bubble_tail_left);
+    obs_data_set_default_double(settings, "bubble_tail_right", cfg.bubble_tail_right);
+    obs_data_set_default_double(settings, "bubble_tail_tip", cfg.bubble_tail_tip);
+    obs_data_set_default_double(settings, "bubble_tail_depth", cfg.bubble_tail_depth);
     obs_data_set_default_double(settings, "border_width", cfg.border_px);
     obs_data_set_default_double(settings, "feather", cfg.feather_px);
     obs_data_set_default_double(settings, "glow_radius", cfg.glow_px);
@@ -250,9 +288,9 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_bool(settings, "glow_enabled", cfg.show_glow);
 }
 
-/* Shape-specific controls are intentionally sparse: Squircle/HUD do not
- * respond to the Roundness slider, and generic shapes do not respond to
- * the authored Shape Detail control. Never reset saved user values here. */
+/* Shape-specific controls stay sparse. Bubble has dedicated body/tail
+ * controls; generic Shape Detail now serves Card/HUD/Squircle only.
+ * Hidden values are never reset or deleted. */
 static void nm_geometry_visibility(obs_properties_t *props, int shape_id)
 {
     obs_property_t *group=obs_properties_get(props, "mask_geometry");
@@ -263,11 +301,12 @@ static void nm_geometry_visibility(obs_properties_t *props, int shape_id)
     obs_property_t *sides=obs_properties_get(geometry,"polygon_sides");
     obs_property_t *svg=obs_properties_get(geometry,"svg_path");
     obs_property_t *reload=obs_properties_get(geometry,"svg_reload");
+    obs_property_t *body=obs_properties_get(geometry,"bubble_body_controls");
+    obs_property_t *tail=obs_properties_get(geometry,"bubble_tail_controls");
     const bool rounded=shape_id==NM_SHAPE_ROUNDED ||
                        shape_id==NM_SHAPE_CHAT_BUBBLE ||
                        shape_id==NM_SHAPE_ANGLED_CARD;
-    const bool authored=shape_id==NM_SHAPE_CHAT_BUBBLE ||
-                        shape_id==NM_SHAPE_ANGLED_CARD ||
+    const bool authored=shape_id==NM_SHAPE_ANGLED_CARD ||
                         shape_id==NM_SHAPE_HUD_PANEL ||
                         shape_id==NM_SHAPE_SQUIRCLE;
     if(round) obs_property_set_visible(round,rounded);
@@ -275,6 +314,60 @@ static void nm_geometry_visibility(obs_properties_t *props, int shape_id)
     if(sides) obs_property_set_visible(sides,shape_id==NM_SHAPE_POLYGON);
     if(svg) obs_property_set_visible(svg,shape_id==NM_SHAPE_SVG_PATH);
     if(reload) obs_property_set_visible(reload,shape_id==NM_SHAPE_SVG_PATH);
+    if(body) obs_property_set_visible(body,shape_id==NM_SHAPE_CHAT_BUBBLE);
+    if(tail) obs_property_set_visible(tail,shape_id==NM_SHAPE_CHAT_BUBBLE);
+}
+
+/* One visibility resolver for preset, Shape, Animation, Ornament and
+ * on/off controls. Hidden values are retained in OBS settings, never reset. */
+static void nm_context_visibility(obs_properties_t *props, int shape_id,
+                                  int animation, int ornament, bool border,
+                                  bool glow, bool expanded)
+{
+    nm_geometry_visibility(props,shape_id);
+    obs_property_t *p;
+#define NM_SHOW(key, yes) do { p=obs_properties_get(props,key); \
+                              if(p) obs_property_set_visible(p,yes); } while(0)
+    NM_SHOW("border_width",border);
+    NM_SHOW("style",border);
+    NM_SHOW("primary",border);
+    NM_SHOW("secondary",border);
+    NM_SHOW("signature_art",border);
+    NM_SHOW("glow_enabled",border);
+    NM_SHOW("glow_radius",border && glow);
+    NM_SHOW("glow_strength",border && glow);
+    NM_SHOW("premium_lighting",border && (glow || animation==NM_ANIM_FLOW));
+    NM_SHOW("speed",border && animation!=NM_ANIM_STATIC);
+    NM_SHOW("segments",border);
+#undef NM_SHOW
+    obs_property_t *art=obs_properties_get(props,"signature_art");
+    obs_properties_t *arts=art?obs_property_group_content(art):NULL;
+    if(arts) {
+        p=obs_properties_get(arts,"art_intensity");
+        if(p) obs_property_set_visible(p,ornament!=NM_ORNAMENT_NONE);
+        p=obs_properties_get(arts,"art_gap");
+        if(p) obs_property_set_visible(p,ornament!=NM_ORNAMENT_NONE);
+    }
+    obs_property_t *light=obs_properties_get(props,"premium_lighting");
+    obs_properties_t *lights=light?obs_property_group_content(light):NULL;
+    if(lights) {
+        const char *const glow_keys[]={"mid_glow_strength","bloom_strength"};
+        for(size_t i=0;i<2;++i) {
+            p=obs_properties_get(lights,glow_keys[i]);
+            if(p) obs_property_set_visible(p,glow);
+        }
+        const char *const flow_keys[]={"hotspot_strength","hotspot_size"};
+        for(size_t i=0;i<2;++i) {
+            p=obs_properties_get(lights,flow_keys[i]);
+            if(p) obs_property_set_visible(p,animation==NM_ANIM_FLOW);
+        }
+    }
+    obs_property_t *mask=obs_properties_get(props,"mask_geometry");
+    obs_properties_t *geometry=mask?obs_property_group_content(mask):NULL;
+    if(geometry) {
+        p=obs_properties_get(geometry,"safe_fit");
+        if(p) obs_property_set_visible(p,!expanded);
+    }
 }
 
 /* Apply preset as real user-editable property values: no hidden runtime overrides. */
@@ -298,6 +391,14 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_double(settings, "mask_height", cfg.scale);
     obs_data_set_double(settings, "roundness", cfg.roundness);
     obs_data_set_double(settings, "shape_detail", cfg.shape_detail);
+    obs_data_set_double(settings, "bubble_left_inset", cfg.bubble_left_inset);
+    obs_data_set_double(settings, "bubble_right_inset", cfg.bubble_right_inset);
+    obs_data_set_double(settings, "bubble_top_inset", cfg.bubble_top_inset);
+    obs_data_set_double(settings, "bubble_bottom_inset", cfg.bubble_bottom_inset);
+    obs_data_set_double(settings, "bubble_tail_left", cfg.bubble_tail_left);
+    obs_data_set_double(settings, "bubble_tail_right", cfg.bubble_tail_right);
+    obs_data_set_double(settings, "bubble_tail_tip", cfg.bubble_tail_tip);
+    obs_data_set_double(settings, "bubble_tail_depth", cfg.bubble_tail_depth);
     obs_data_set_double(settings, "border_width", cfg.border_px);
     obs_data_set_double(settings, "feather", cfg.feather_px);
     obs_data_set_double(settings, "glow_radius", cfg.glow_px);
@@ -314,7 +415,10 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_double(settings, "art_gap", cfg.art_gap);
     obs_data_set_bool(settings, "border_enabled", cfg.show_border);
     obs_data_set_bool(settings, "glow_enabled", cfg.show_glow);
-    nm_geometry_visibility(props,cfg.shape_id);
+    /* Preset selection preserves opt-in output mode from the current scene. */
+    nm_context_visibility(props,cfg.shape_id,cfg.animation_id,cfg.ornament_mode,
+                          cfg.show_border,cfg.show_glow,
+                          obs_data_get_bool(settings,"expand_canvas"));
     return true;
 }
 
@@ -328,12 +432,23 @@ static bool nm_custom_changed(obs_properties_t *props, obs_property_t *property,
     return true;
 }
 
+static bool nm_context_changed(obs_properties_t *props, obs_property_t *property,
+                               obs_data_t *settings)
+{
+    nm_custom_changed(props,property,settings);
+    nm_context_visibility(props,(int)obs_data_get_int(settings,"shape"),
+                          (int)obs_data_get_int(settings,"animation"),
+                          (int)obs_data_get_int(settings,"ornament_mode"),
+                          obs_data_get_bool(settings,"border_enabled"),
+                          obs_data_get_bool(settings,"glow_enabled"),
+                          obs_data_get_bool(settings,"expand_canvas"));
+    return true;
+}
+
 static bool nm_shape_changed(obs_properties_t *props, obs_property_t *property,
                              obs_data_t *settings)
 {
-    nm_custom_changed(props,property,settings);
-    nm_geometry_visibility(props,(int)obs_data_get_int(settings,"shape"));
-    return true;
+    return nm_context_changed(props,property,settings);
 }
 
 static bool nm_reload_svg(obs_properties_t *props,obs_property_t *property,
@@ -405,8 +520,21 @@ static obs_properties_t *nm_properties(void *data)
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_width", obs_module_text("Mask.Width"), 0.10, 0.98, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "mask_height", obs_module_text("Mask.Height"), 0.10, 0.98, 0.01));
     NM_CUSTOM(obs_properties_add_bool(mask_group, "safe_fit", obs_module_text("Mask.SafeFit")));
-    NM_CUSTOM(obs_properties_add_bool(mask_group, "expand_canvas", obs_module_text("Mask.ExpandCanvas")));
+    obs_property_t *expand=obs_properties_add_bool(mask_group,"expand_canvas",obs_module_text("Mask.ExpandCanvas"));
+    obs_property_set_modified_callback(expand,nm_context_changed);
     NM_CUSTOM(obs_properties_add_float_slider(mask_group, "shape_detail", obs_module_text("Mask.Detail"), 0.08, 0.35, 0.01));
+    obs_properties_t *bubble_body_props=obs_properties_create();
+    NM_CUSTOM(obs_properties_add_float_slider(bubble_body_props,"bubble_left_inset",obs_module_text("Bubble.InsetLeft"),0.0,0.25,0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(bubble_body_props,"bubble_right_inset",obs_module_text("Bubble.InsetRight"),0.0,0.25,0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(bubble_body_props,"bubble_top_inset",obs_module_text("Bubble.InsetTop"),0.0,0.25,0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(bubble_body_props,"bubble_bottom_inset",obs_module_text("Bubble.InsetBottom"),0.0,0.25,0.01));
+    obs_properties_add_group(mask_group,"bubble_body_controls",obs_module_text("Bubble.Body"),OBS_GROUP_NORMAL,bubble_body_props);
+    obs_properties_t *bubble_tail_props=obs_properties_create();
+    NM_CUSTOM(obs_properties_add_float_slider(bubble_tail_props,"bubble_tail_left",obs_module_text("Bubble.TailLeft"),-0.90,0.80,0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(bubble_tail_props,"bubble_tail_right",obs_module_text("Bubble.TailRight"),-0.80,0.90,0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(bubble_tail_props,"bubble_tail_tip",obs_module_text("Bubble.TailTip"),-0.95,0.95,0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(bubble_tail_props,"bubble_tail_depth",obs_module_text("Bubble.TailDepth"),0.08,0.35,0.01));
+    obs_properties_add_group(mask_group,"bubble_tail_controls",obs_module_text("Bubble.Tail"),OBS_GROUP_NORMAL,bubble_tail_props);
     /* One persisted slider: rounded-box corners, Bubble tail-tip curvature,
      * and ONLY the Angled Card diagonal endpoints (square corners stay sharp).
      * Shape-neutral label avoids misleading Bubble users. */
@@ -430,7 +558,8 @@ static obs_properties_t *nm_properties(void *data)
 
 
     NM_CUSTOM(obs_properties_add_float_slider(props, "feather", obs_module_text("Feather"), 0.5, 30.0, 0.5));
-    NM_CUSTOM(obs_properties_add_bool(props, "border_enabled", obs_module_text("Border.Enabled")));
+    obs_property_t *border_switch=obs_properties_add_bool(props,"border_enabled",obs_module_text("Border.Enabled"));
+    obs_property_set_modified_callback(border_switch,nm_context_changed);
     NM_CUSTOM(obs_properties_add_float_slider(props, "border_width", obs_module_text("Border.Width"), 0.5, 32.0, 0.5));
     obs_property_t *style = obs_properties_add_list(props, "style", obs_module_text("Border.Style"),
                                                     OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
@@ -447,7 +576,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(ornament, obs_module_text("Art.Reactor"), NM_ORNAMENT_REACTOR);
     obs_property_list_add_int(ornament, obs_module_text("Art.TechHUD"), NM_ORNAMENT_TECH_HUD);
     obs_property_list_add_int(ornament, obs_module_text("Art.Streamer"), NM_ORNAMENT_STREAMER);
-    obs_property_set_modified_callback(ornament, nm_custom_changed);
+    obs_property_set_modified_callback(ornament, nm_context_changed);
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "art_intensity",
                          obs_module_text("Art.Intensity"), 0.0, 1.0, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "art_gap",
@@ -456,7 +585,8 @@ static obs_properties_t *nm_properties(void *data)
                              OBS_GROUP_NORMAL, art_group);
     NM_CUSTOM(obs_properties_add_color(props, "primary", obs_module_text("Color.Primary")));
     NM_CUSTOM(obs_properties_add_color(props, "secondary", obs_module_text("Color.Secondary")));
-    NM_CUSTOM(obs_properties_add_bool(props, "glow_enabled", obs_module_text("Glow.Enabled")));
+    obs_property_t *glow_switch=obs_properties_add_bool(props,"glow_enabled",obs_module_text("Glow.Enabled"));
+    obs_property_set_modified_callback(glow_switch,nm_context_changed);
     NM_CUSTOM(obs_properties_add_float_slider(props, "glow_radius", obs_module_text("Glow.Radius"), 1.0, 80.0, 1.0));
     NM_CUSTOM(obs_properties_add_float_slider(props, "glow_strength", obs_module_text("Glow.Strength"), 0.0, 1.0, 0.01));
     obs_properties_t *light_group = obs_properties_create();
@@ -471,12 +601,16 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(animation, obs_module_text("Animation.Static"), NM_ANIM_STATIC);
     obs_property_list_add_int(animation, obs_module_text("Animation.Pulse"), NM_ANIM_PULSE);
     obs_property_list_add_int(animation, obs_module_text("Animation.Flow"), NM_ANIM_FLOW);
-    obs_property_set_modified_callback(animation, nm_custom_changed);
+    obs_property_set_modified_callback(animation, nm_context_changed);
     NM_CUSTOM(obs_properties_add_float_slider(props, "speed", obs_module_text("Speed"), 0.0, 5.0, 0.05));
     NM_CUSTOM(obs_properties_add_int_slider(props, "segments", obs_module_text("Segments"), 0, 48, 1));
 #undef NM_CUSTOM
     struct nm_filter *current = data;
-    nm_geometry_visibility(props,current ? current->config.shape_id : NM_SHAPE_ROUNDED);
+    nm_config initial;
+    if(!current) nm_config_defaults(&initial);
+    const nm_config *cfg=current?&current->config:&initial;
+    nm_context_visibility(props,cfg->shape_id,cfg->animation_id,cfg->ornament_mode,
+                          cfg->show_border,cfg->show_glow,cfg->expand_canvas);
     return props;
 }
 
@@ -508,6 +642,8 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         NM_PARAM(shape_rotation, "shape_rotation");
         NM_PARAM(polygon_sides, "polygon_sides");
         NM_PARAM(shape_detail, "shape_detail");
+        NM_PARAM(bubble_body, "bubble_body");
+        NM_PARAM(bubble_tail, "bubble_tail");
         NM_PARAM(corner_radius, "corner_radius");
         NM_PARAM(shape, "shape_id");
         NM_PARAM(border_width, "border_width");
@@ -703,6 +839,15 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_float(f->shape_rotation, f->config.shape_rotation_deg * 0.01745329251994329577f);
     gs_effect_set_int(f->polygon_sides, f->config.polygon_sides);
     gs_effect_set_float(f->shape_detail, f->config.shape_detail);
+    struct vec4 bubble_body, bubble_tail;
+    vec4_set(&bubble_body, f->config.bubble_left_inset,
+             f->config.bubble_right_inset, f->config.bubble_top_inset,
+             f->config.bubble_bottom_inset);
+    vec4_set(&bubble_tail, f->config.bubble_tail_left,
+             f->config.bubble_tail_right, f->config.bubble_tail_tip,
+             f->config.bubble_tail_depth);
+    gs_effect_set_vec4(f->bubble_body, &bubble_body);
+    gs_effect_set_vec4(f->bubble_tail, &bubble_tail);
     gs_effect_set_float(f->corner_radius, corner_radius);
     gs_effect_set_int(f->shape, f->config.shape_id);
     gs_effect_set_float(f->border_width, f->config.border_px);

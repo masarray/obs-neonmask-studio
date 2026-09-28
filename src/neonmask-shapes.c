@@ -74,19 +74,26 @@ static float quarter_arc2(nm_p2 p,nm_p2 center,float r,float sx,float sy)
  * occupancy union but is NOT a true interior distance: the box's hidden
  * bottom and triangle's hidden base create a bright phantom horizontal rim.
  * Evaluate only exterior paths; the same distance drives mask and neon. */
-static float bubble(nm_p2 p,nm_p2 b,float radius,float detail)
+static float bubble(nm_p2 p,nm_p2 b,float radius,
+                    const nm_bubble_controls *c)
 {
-    const float tail=fmaxf(3.0f,b.y*detail*1.8f);
-    const float bottom=b.y-tail,top=-b.y;
-    const nm_p2 left={-0.78f*b.x,bottom};
-    const nm_p2 right={-0.34f*b.x,bottom};
-    const nm_p2 tip={-0.72f*b.x,b.y-1.0f};
-    /* Keep the bottom-left body tangent before the start of the tail. */
+    const float tail=fmaxf(3.0f,b.y*c->tail_depth*1.8f);
+    const float lx=-b.x+2.0f*b.x*c->left_inset;
+    const float rx=b.x-2.0f*b.x*c->right_inset;
+    const float top=-b.y+2.0f*b.y*c->top_inset;
+    const float bottom=b.y-tail-2.0f*b.y*c->bottom_inset;
     const float r=fminf(fmaxf(radius,0.0f),
-                        fminf(b.y-0.5f*tail,0.22f*b.x));
+                      fminf(0.5f*(bottom-top),fminf(0.22f*b.x,0.24f*(rx-lx))));
+    const float rail_l=lx+r,rail_r=rx-r;
+    const float min_base=fminf(fmaxf(1.0f,0.07f*b.x),0.4f*(rail_r-rail_l));
+    const float base_l=nm_clamp(b.x*c->tail_left,rail_l,rail_r-min_base);
+    const float base_r=nm_clamp(b.x*c->tail_right,base_l+min_base,rail_r);
+    const nm_p2 left={base_l,bottom},right={base_r,bottom};
+    const nm_p2 tip={b.x*c->tail_tip,b.y-1.0f};
     const nm_p2 lv=sub(left,tip),rv=sub(right,tip);
     const float ll=hypotf(lv.x,lv.y),rl=hypotf(rv.x,rv.y);
-    const nm_p2 ul={lv.x/ll,lv.y/ll},ur={rv.x/rl,rv.y/rl};
+    const nm_p2 ul={lv.x/fmaxf(ll,0.0001f),lv.y/fmaxf(ll,0.0001f)};
+    const nm_p2 ur={rv.x/fmaxf(rl,0.0001f),rv.y/fmaxf(rl,0.0001f)};
     const float cosine=nm_clamp(dot(ul,ur),-0.98f,0.98f);
     const float sin_half=sqrtf(0.5f*(1.0f-cosine));
     const float tan_half=sin_half/sqrtf(fmaxf(0.01f,0.5f*(1.0f+cosine)));
@@ -94,42 +101,45 @@ static float bubble(nm_p2 p,nm_p2 b,float radius,float detail)
     const float trim=fminf(desired/fmaxf(tan_half,0.01f),
                            fminf(ll,rl)*0.32f);
     const float tr=trim*tan_half;
-    const nm_p2 right_tangent={tip.x+ur.x*trim,tip.y+ur.y*trim};
-    const nm_p2 left_tangent={tip.x+ul.x*trim,tip.y+ul.y*trim};
+    const nm_p2 rt={tip.x+ur.x*trim,tip.y+ur.y*trim};
+    const nm_p2 lt={tip.x+ul.x*trim,tip.y+ul.y*trim};
     const nm_p2 bis={ul.x+ur.x,ul.y+ur.y};
-    const float bis_len=hypotf(bis.x,bis.y);
-    const float offset=tr/fmaxf(sin_half*bis_len,0.0001f);
-    const nm_p2 tip_center={tip.x+bis.x*offset,tip.y+bis.y*offset};
-
-    /* Straight exposed rails; the internal body-bottom span under the
-     * leaf-tail is deliberately omitted from the distance calculation. */
-    const nm_p2 tl={-b.x+r,top},top_right={b.x-r,top};
-    const nm_p2 rt={b.x,top+r},rb={b.x,bottom-r};
-    const nm_p2 br={b.x-r,bottom},bl={-b.x+r,bottom};
-    const nm_p2 lb={-b.x,bottom-r},lt={-b.x,top+r};
+    const float offset=tr/fmaxf(sin_half*hypotf(bis.x,bis.y),0.0001f);
+    const nm_p2 tc={tip.x+bis.x*offset,tip.y+bis.y*offset};
+    const nm_p2 tl={lx+r,top},top_right={rx-r,top};
+    const nm_p2 rtop={rx,top+r},rb={rx,bottom-r};
+    const nm_p2 br={rx-r,bottom},bl={lx+r,bottom};
+    const nm_p2 lb={lx,bottom-r},ltop={lx,top+r};
     float ds=edge2(p,tl,top_right);
-    ds=fminf(ds,edge2(p,rt,rb));
+    ds=fminf(ds,edge2(p,rtop,rb));
     ds=fminf(ds,edge2(p,br,right));
-    ds=fminf(ds,edge2(p,right,right_tangent));
-    ds=fminf(ds,edge2(p,left_tangent,left));
+    ds=fminf(ds,edge2(p,right,rt));
+    ds=fminf(ds,edge2(p,lt,left));
     ds=fminf(ds,edge2(p,left,bl));
-    ds=fminf(ds,edge2(p,lb,lt));
-    ds=fminf(ds,quarter_arc2(p,(nm_p2){b.x-r,top+r},r,1,-1));
-    ds=fminf(ds,quarter_arc2(p,(nm_p2){b.x-r,bottom-r},r,1,1));
-    ds=fminf(ds,quarter_arc2(p,(nm_p2){-b.x+r,bottom-r},r,-1,1));
-    ds=fminf(ds,quarter_arc2(p,(nm_p2){-b.x+r,top+r},r,-1,-1));
-    if(tr>0.0001f)
-        ds=fminf(ds,arc2(p,right_tangent,left_tangent,tip_center,tr));
-    else
-        ds=fminf(ds,edge2(p,right_tangent,left_tangent));
-
-    const nm_p2 body_p={p.x,p.y+0.5f*tail};
-    const nm_p2 body_b={b.x,b.y-0.5f*tail};
+    ds=fminf(ds,edge2(p,lb,ltop));
+    ds=fminf(ds,quarter_arc2(p,(nm_p2){rx-r,top+r},r,1,-1));
+    ds=fminf(ds,quarter_arc2(p,(nm_p2){rx-r,bottom-r},r,1,1));
+    ds=fminf(ds,quarter_arc2(p,(nm_p2){lx+r,bottom-r},r,-1,1));
+    ds=fminf(ds,quarter_arc2(p,(nm_p2){lx+r,top+r},r,-1,-1));
+    if(tr>0.0001f) ds=fminf(ds,arc2(p,rt,lt,tc,tr));
+    else ds=fminf(ds,edge2(p,rt,lt));
+    const nm_p2 body_p={p.x-0.5f*(lx+rx),p.y-0.5f*(top+bottom)};
+    const nm_p2 body_b={0.5f*(rx-lx),0.5f*(bottom-top)};
     const int inside=box(body_p,body_b,r)<=0.0f ||
                      triangle(p,right,tip,left)<=0.0f;
-    const int removed=tr>0.0001f &&
-        excised(p,right_tangent,tip,left_tangent,tip_center,tr);
+    const int removed=tr>0.0001f && excised(p,rt,tip,lt,tc,tr);
     return sqrtf(ds)*(inside&&!removed?-1.0f:1.0f);
+}
+
+float nm_bubble_custom_distance(float x,float y,float half_width,float half_height,
+                                float radius,const nm_bubble_controls *controls)
+{
+    if(!controls || !isfinite(x)||!isfinite(y)||!isfinite(half_width)||
+       !isfinite(half_height)||!isfinite(radius)||
+       half_width<=0.0f||half_height<=0.0f) return NAN;
+    const float *v=&controls->left_inset;
+    for(int i=0;i<8;++i) if(!isfinite(v[i])) return NAN;
+    return bubble((nm_p2){x,y},(nm_p2){half_width,half_height},radius,controls);
 }
 
 static float card(nm_p2 p,nm_p2 b,float detail,float radius)
@@ -266,7 +276,10 @@ float nm_authored_shape_distance(int shape_id,float x,float y,
         half_width<=0||half_height<=0) return NAN;
     detail=nm_clamp(detail,0.08f,0.35f);
     const nm_p2 p={x,y},b={half_width,half_height};
-    if(shape_id==NM_SHAPE_CHAT_BUBBLE) return bubble(p,b,radius,detail);
+    if(shape_id==NM_SHAPE_CHAT_BUBBLE) {
+        const nm_bubble_controls legacy={0,0,0,0,-0.78f,-0.34f,-0.72f,detail};
+        return bubble(p,b,radius,&legacy);
+    }
     if(shape_id==NM_SHAPE_ANGLED_CARD) return card(p,b,detail,radius);
     if(shape_id==NM_SHAPE_HUD_PANEL) return hud_panel(p,b,detail);
     if(shape_id==NM_SHAPE_SQUIRCLE) return squircle(p,b,detail);

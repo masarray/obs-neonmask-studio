@@ -14,7 +14,7 @@
 
 static const char *const uniforms[] = {
     "uv_size", "half_size", "mask_offset", "subject_pan", "subject_zoom",
-    "shape_rotation", "polygon_sides", "shape_detail", "corner_radius", "shape_id", "border_width",
+    "shape_rotation", "polygon_sides", "shape_detail", "bubble_body", "bubble_tail", "corner_radius", "shape_id", "border_width",
     "feather", "glow_radius", "glow_strength", "mid_glow_strength",
     "bloom_strength", "hotspot_strength", "hotspot_size", "color_a", "color_b",
     "color_phase", "pulse_phase", "flow_phase", "animation_id", "segment_count",
@@ -38,12 +38,12 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                         (variant == 3 || variant == 4 || variant == 18 ||
                          variant == 19 || variant == 21 || variant == 22 ||
                          variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                          variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 ? 255 : 0);
+                          variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 ? 255 : 0);
     const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
                           (variant == 3 || variant == 4 || variant == 18 ||
                            variant == 19 || variant == 21 || variant == 22 ||
                            variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                            variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 ? 255 : 0);
+                            variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 ? 255 : 0);
     for (size_t i = 0; i < W * H; ++i) {
         pixels[4 * i + 0] = red;   /* premultiplied red */
         pixels[4 * i + 1] = 0;
@@ -90,6 +90,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     struct vec2 extents;
     struct vec2 zero2;
     struct vec4 magenta;
+    struct vec4 bubble_body, bubble_tail;
     vec2_set(&dims, (float)W, (float)H);
     vec2_set(&output_dims, (float)out_w, (float)out_h);
     vec2_set(&source_origin, expanded ? 16.0f : 0.0f, expanded ? 8.0f : 0.0f);
@@ -101,6 +102,13 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
              variant == 37 ? 0.45f : expanded ? -20.0f : 0.0f, 0.0f);
     vec2_set(&subject_shift, variant == 3 ? 96.0f : 0.0f, 0.0f);
     vec4_set(&magenta, 1.0f, 0.0f, 1.0f, 1.0f);
+    if (variant == 39) {
+        vec4_set(&bubble_body,0.10f,0.25f,0.20f,0.05f);
+        vec4_set(&bubble_tail,-0.40f,0.20f,0.15f,0.23f);
+    } else {
+        vec4_set(&bubble_body,0.0f,0.0f,0.0f,0.0f);
+        vec4_set(&bubble_tail,-0.78f,-0.34f,-0.72f,0.23f);
+    }
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "uv_size"), &dims);
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "output_size"), &output_dims);
     gs_effect_set_vec2(gs_effect_get_param_by_name(effect, "input_origin"), &source_origin);
@@ -111,6 +119,8 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_rotation"), 0.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "polygon_sides"), 8);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_detail"), 0.23f);
+    gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "bubble_body"), &bubble_body);
+    gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "bubble_tail"), &bubble_tail);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "corner_radius"),
                         variant == 24 ? 0.0f :
                         (variant == 25 || variant == 26 ? 10.5f :
@@ -118,7 +128,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "shape_id"),
                       variant == 13 || variant == 14 ? 1 :
                       variant == 15 || variant == 22 ? 5 :
-                      variant == 18 || variant == 20 || variant == 27 ? 8 :
+                      variant == 18 || variant == 20 || variant == 27 || variant == 39 ? 8 :
                       variant >= 34 && variant <= 37 ? 12 :
                       variant == 30 || variant == 31 ? 10 :
                        variant == 32 || variant == 33 ? 11 :
@@ -453,6 +463,23 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
         }
     }
 
+    else if(variant==39) {
+        const uint8_t *top_clipped=mapped+10u*stride+32u*4u;
+        const uint8_t *left_clipped=mapped+32u*stride+10u*4u;
+        const uint8_t *right_clipped=mapped+32u*stride+55u*4u;
+        const uint8_t *new_tail=mapped+50u*stride+34u*4u;
+        const uint8_t *tail_side=mapped+50u*stride+46u*4u;
+        if(center[0]<240 || center[3]<245 ||
+           top_clipped[3]>2 || left_clipped[3]>2 ||
+           right_clipped[3]>2 || new_tail[0]<240 ||
+           new_tail[3]<245 || tail_side[3]>2) {
+            fprintf(stderr,"FAIL: D4A custom bubble center=%u top=%u left=%u right=%u tail=%u side=%u\n",
+                    center[3],top_clipped[3],left_clipped[3],
+                    right_clipped[3],new_tail[3],tail_side[3]);
+            failed=1;
+        }
+    }
+
     gs_stagesurface_unmap(stage);
 done:
     if (stage) gs_stagesurface_destroy(stage);
@@ -553,7 +580,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 39; ++variant)
+            for (int variant = 0; variant < 40; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
         }
         gs_effect_destroy(effect);
@@ -562,6 +589,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: libobs alpha/framing/light + SVG + expanded origin GPU fixtures (partial G4)");
+    puts("PASS: libobs alpha/framing/light + SVG + expanded origin + custom bubble GPU fixtures (partial G4)");
     return 0;
 }
