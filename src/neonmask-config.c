@@ -29,6 +29,13 @@ void nm_config_defaults(nm_config *cfg)
         .bubble_tail_left = -0.78f,
         .bubble_tail_right = -0.34f,
         .bubble_tail_tip = -0.72f,
+        .bubble_tl_x = -1.0f, .bubble_tl_y = -1.0f,
+        .bubble_tr_x = 1.0f,  .bubble_tr_y = -1.0f,
+        .bubble_br_x = 1.0f,  .bubble_br_y = 0.604f,
+        .bubble_bl_x = -1.0f, .bubble_bl_y = 0.604f,
+        .bubble_tail_start = 0.11f,
+        .bubble_tail_end = 0.33f,
+        .bubble_tail_tip_pos = 0.14f,
         .bubble_tail_depth = 0.22f,
         .border_px = 4.0f,
         .feather_px = 0.85f,
@@ -86,6 +93,20 @@ void nm_config_validate(nm_config *cfg)
     cfg->bubble_tail_right = nm_clamp(cfg->bubble_tail_right,
                                       cfg->bubble_tail_left + 0.08f, 0.90f);
     cfg->bubble_tail_tip = nm_clamp(cfg->bubble_tail_tip, -0.95f, 0.95f);
+    /* Freeform corners deliberately stay in four disjoint quadrants. This
+     * makes every slider combination a convex, non-self-intersecting body. */
+    cfg->bubble_tl_x = nm_clamp(cfg->bubble_tl_x, -1.0f, -0.35f);
+    cfg->bubble_tl_y = nm_clamp(cfg->bubble_tl_y, -1.0f, -0.35f);
+    cfg->bubble_tr_x = nm_clamp(cfg->bubble_tr_x, 0.35f, 1.0f);
+    cfg->bubble_tr_y = nm_clamp(cfg->bubble_tr_y, -1.0f, -0.35f);
+    cfg->bubble_br_x = nm_clamp(cfg->bubble_br_x, 0.35f, 1.0f);
+    cfg->bubble_br_y = nm_clamp(cfg->bubble_br_y, 0.35f, 0.92f);
+    cfg->bubble_bl_x = nm_clamp(cfg->bubble_bl_x, -1.0f, -0.35f);
+    cfg->bubble_bl_y = nm_clamp(cfg->bubble_bl_y, 0.35f, 0.92f);
+    cfg->bubble_tail_start = nm_clamp(cfg->bubble_tail_start, 0.02f, 0.88f);
+    cfg->bubble_tail_end = nm_clamp(cfg->bubble_tail_end,
+                                    cfg->bubble_tail_start + 0.06f, 0.98f);
+    cfg->bubble_tail_tip_pos = nm_clamp(cfg->bubble_tail_tip_pos, 0.0f, 1.0f);
     cfg->bubble_tail_depth = nm_clamp(cfg->bubble_tail_depth, 0.08f, 0.35f);
     cfg->border_px = nm_clamp(cfg->border_px, 0.5f, 32.0f);
     cfg->feather_px = nm_clamp(cfg->feather_px, 0.5f, 30.0f);
@@ -137,6 +158,13 @@ bool nm_config_apply_preset(nm_config *cfg, int preset_id)
     cfg->bubble_tail_left = -0.78f;
     cfg->bubble_tail_right = -0.34f;
     cfg->bubble_tail_tip = -0.72f;
+    cfg->bubble_tl_x = -1.0f; cfg->bubble_tl_y = -1.0f;
+    cfg->bubble_tr_x = 1.0f;  cfg->bubble_tr_y = -1.0f;
+    cfg->bubble_br_x = 1.0f;  cfg->bubble_br_y = 1.0f-1.8f*cfg->shape_detail;
+    cfg->bubble_bl_x = -1.0f; cfg->bubble_bl_y = cfg->bubble_br_y;
+    cfg->bubble_tail_start = 0.11f;
+    cfg->bubble_tail_end = 0.33f;
+    cfg->bubble_tail_tip_pos = 0.14f;
     cfg->bubble_tail_depth = cfg->shape_detail;
     cfg->border_px = (float)preset.border_width;
     cfg->feather_px = (float)preset.feather;
