@@ -40,12 +40,12 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                         (variant == 3 || variant == 4 || variant == 18 ||
                          variant == 19 || variant == 21 || variant == 22 ||
                          variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                          variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 || variant == 41 ? 255 : 0);
+                          variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 || variant == 41 || variant == 43 ? 255 : 0);
     const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
                           (variant == 3 || variant == 4 || variant == 18 ||
                            variant == 19 || variant == 21 || variant == 22 ||
                            variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                            variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 || variant == 41 ? 255 : 0);
+                            variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 || variant == 41 || variant == 43 ? 255 : 0);
     for (size_t i = 0; i < W * H; ++i) {
         pixels[4 * i + 0] = red;   /* premultiplied red */
         pixels[4 * i + 1] = 0;
@@ -140,11 +140,13 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                       variant == 30 || variant == 31 ? 10 :
                        variant == 32 || variant == 33 ? 11 :
                       variant == 41 || variant == 42 ? 13 :
-                       variant == 21 || variant == 23 || variant >= 24 ? 9 : 0);
+                      variant == 43 || variant == 44 ? 14 :
+                       variant == 21 || variant == 23 || (variant >= 24 && variant <= 29) ? 9 : 0);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "border_width"), 4.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "style_id"), 0);
     int art_mode = variant == 11 ? 1 : variant == 13 ? 2 :
-                   variant == 15 || variant == 42 ? 3 : variant == 16 ? 4 : 0;
+                   variant == 15 || variant == 42 ? 3 : variant == 16 ? 4 :
+                   variant == 44 ? 5 : 0;
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "ornament_mode"), art_mode);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "art_intensity"), 0.90f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "art_gap"), 2.0f);
@@ -171,7 +173,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                       variant == 20 || variant == 23 || variant == 26 ||
                        variant == 27 || variant == 29 || variant == 31 || variant == 33 ||
                        variant == 35 || variant == 36 || expanded || halo_guard ||
-                       variant == 42);
+                       variant == 42 || variant == 44);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "glow_enabled"), glow_case);
     gs_effect_set_texture(gs_effect_get_param_by_name(effect, "svg_sdf"),svg_texture);
     gs_effect_set_int(gs_effect_get_param_by_name(effect,"svg_ready"),
@@ -263,6 +265,13 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *tech_tr_bracket = mapped + 3u * stride + 61u * 4u;
     const uint8_t *tech_bl_bracket = mapped + 61u * stride + 3u * 4u;
     const uint8_t *tech_diag_overlay = mapped + 9u * stride + 9u * 4u;
+    const uint8_t *game_corner_tl = mapped + 1u * stride + 1u * 4u;
+    const uint8_t *game_corner_tr = mapped + 1u * stride + 62u * 4u;
+    const uint8_t *game_corner_br = mapped + 62u * stride + 62u * 4u;
+    const uint8_t *game_corner_bl = mapped + 62u * stride + 1u * 4u;
+    const uint8_t *game_mask_tl = mapped + 8u * stride + 8u * 4u;
+    const uint8_t *game_mask_top = mapped + 8u * stride + 14u * 4u;
+    const uint8_t *game_inner_top = mapped + 16u * stride + 32u * 4u;
 
 
     /* The black/transparent corner proves the mask is not an opaque box.
@@ -530,6 +539,26 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
         }
     }
 
+    else if(variant==43) {
+        if(center[0]<240 || center[3]<245 ||
+           game_mask_tl[3]>3 || game_mask_top[0]<220 || game_mask_top[3]<220) {
+            fprintf(stderr,"FAIL: Game UI mask center=%u TL=%u top=%u\n",
+                    center[3],game_mask_tl[3],game_mask_top[3]);
+            failed=1;
+        }
+    }
+
+    else if(variant==44) {
+        if(center[3]>3 || game_inner_top[3]<80 ||
+           game_corner_tl[3]<80 || game_corner_tr[3]<80 ||
+           game_corner_br[3]<80 || game_corner_bl[3]<80) {
+            fprintf(stderr,"FAIL: Game UI ornament center=%u inner=%u corners=%u/%u/%u/%u\n",
+                    center[3],game_inner_top[3],game_corner_tl[3],
+                    game_corner_tr[3],game_corner_br[3],game_corner_bl[3]);
+            failed=1;
+        }
+    }
+
     gs_stagesurface_unmap(stage);
 done:
     if (stage) gs_stagesurface_destroy(stage);
@@ -660,6 +689,109 @@ done_hires:
     return failed;
 }
 
+/* D4C acceptance at preview scale: the four L corners and the true inner
+ * rail must remain visible at 320x180 without relying on bloom. */
+static int verify_game_ui_preview_scale(gs_effect_t *effect)
+{
+    enum { W=320,H=180 };
+    uint8_t *pixels=bzalloc((size_t)W*H*4u);
+    if(!pixels) return 1;
+    const uint8_t *layers[]={pixels};
+    gs_texture_t *input=gs_texture_create(W,H,GS_RGBA,1,layers,0);
+    bfree(pixels);
+    gs_texrender_t *target=gs_texrender_create(GS_RGBA,GS_ZS_NONE);
+    gs_stagesurf_t *stage=gs_stagesurface_create(W,H,GS_RGBA);
+    if(!input||!target||!stage){
+        if(stage)gs_stagesurface_destroy(stage);
+        if(target)gs_texrender_destroy(target);
+        if(input)gs_texture_destroy(input);
+        fprintf(stderr,"FAIL: Game UI 320x180 resources\n");
+        return 1;
+    }
+    struct vec2 dims,zero,half;
+    struct vec4 green,btop,bbottom,btail;
+    vec2_set(&dims,(float)W,(float)H); vec2_set(&zero,0,0);
+    vec2_set(&half,110.0f,60.0f);
+    vec4_set(&green,0.2f,1.0f,0.25f,1.0f);
+    vec4_set(&btop,-1,-1,1,-1); vec4_set(&bbottom,1,.6f,-1,.6f);
+    vec4_set(&btail,.11f,.33f,.14f,.22f);
+#define P(name) gs_effect_get_param_by_name(effect,name)
+    gs_effect_set_vec2(P("uv_size"),&dims);
+    gs_effect_set_vec2(P("output_size"),&dims);
+    gs_effect_set_vec2(P("input_origin"),&zero);
+    gs_effect_set_vec2(P("half_size"),&half);
+    gs_effect_set_vec2(P("mask_offset"),&zero);
+    gs_effect_set_vec2(P("subject_pan"),&zero);
+    gs_effect_set_float(P("subject_zoom"),1.0f);
+    gs_effect_set_float(P("shape_rotation"),0.0f);
+    gs_effect_set_int(P("polygon_sides"),8);
+    gs_effect_set_float(P("shape_detail"),0.14f);
+    gs_effect_set_vec4(P("bubble_top"),&btop);
+    gs_effect_set_vec4(P("bubble_bottom"),&bbottom);
+    gs_effect_set_vec4(P("bubble_tail"),&btail);
+    gs_effect_set_float(P("corner_radius"),0.0f);
+    gs_effect_set_int(P("shape_id"),14);
+    gs_effect_set_float(P("border_width"),4.0f);
+    gs_effect_set_int(P("style_id"),0);
+    gs_effect_set_int(P("ornament_mode"),5);
+    gs_effect_set_float(P("art_intensity"),0.92f);
+    gs_effect_set_float(P("art_gap"),3.0f);
+    gs_effect_set_float(P("feather"),0.5f);
+    gs_effect_set_float(P("glow_radius"),18.0f);
+    gs_effect_set_float(P("glow_strength"),0.0f);
+    gs_effect_set_float(P("mid_glow_strength"),0.8f);
+    gs_effect_set_float(P("bloom_strength"),0.84f);
+    gs_effect_set_float(P("hotspot_strength"),0.0f);
+    gs_effect_set_float(P("hotspot_size"),0.1f);
+    gs_effect_set_vec4(P("color_a"),&green);
+    gs_effect_set_vec4(P("color_b"),&green);
+    gs_effect_set_float(P("color_phase"),0);
+    gs_effect_set_float(P("pulse_phase"),0);
+    gs_effect_set_float(P("flow_phase"),0);
+    gs_effect_set_int(P("animation_id"),0);
+    gs_effect_set_int(P("segment_count"),0);
+    gs_effect_set_int(P("border_enabled"),1);
+    gs_effect_set_int(P("glow_enabled"),0);
+    gs_effect_set_texture(P("svg_sdf"),NULL);
+    gs_effect_set_int(P("svg_ready"),0);
+    gs_effect_set_texture(P("image"),input);
+#undef P
+
+    int failed=0;
+    if(!gs_texrender_begin(target,W,H)){failed=1;goto done_game;}
+    const bool srgb=gs_framebuffer_srgb_enabled();
+    gs_enable_framebuffer_srgb(false); gs_blend_state_push(); gs_enable_blending(false);
+    struct vec4 clear; vec4_zero(&clear); gs_clear(GS_CLEAR_COLOR,&clear,0,0);
+    gs_ortho(0,(float)W,0,(float)H,-100,100);
+    gs_matrix_push(); gs_matrix_identity();
+    const enum gs_cull_mode cull=gs_get_cull_mode(); gs_set_cull_mode(GS_NEITHER);
+    while(gs_effect_loop(effect,"Draw")) gs_draw_sprite(input,0,W,H);
+    gs_set_cull_mode(cull); gs_matrix_pop(); gs_blend_state_pop();
+    gs_enable_framebuffer_srgb(srgb); gs_texrender_end(target);
+    gs_stage_texture(stage,gs_texrender_get_texture(target));
+    uint8_t *mapped=NULL; uint32_t stride=0;
+    if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;goto done_game;}
+
+    const uint8_t *tl=mapped+22u*stride+70u*4u;
+    const uint8_t *tr=mapped+22u*stride+250u*4u;
+    const uint8_t *bl=mapped+158u*stride+70u*4u;
+    const uint8_t *br=mapped+158u*stride+250u*4u;
+    const uint8_t *innerTop=mapped+38u*stride+160u*4u;
+    const uint8_t *innerRight=mapped+90u*stride+262u*4u;
+    const uint8_t *center=mapped+90u*stride+160u*4u;
+    if(tl[3]<120||tr[3]<120||bl[3]<120||br[3]<120||
+       innerTop[3]<65||innerRight[3]<65||center[3]>3){
+        fprintf(stderr,"FAIL: Game UI preview TL/TR/BL/BR=%u/%u/%u/%u inner=%u/%u center=%u\n",
+                tl[3],tr[3],bl[3],br[3],innerTop[3],innerRight[3],center[3]);
+        failed=1;
+    }
+    gs_stagesurface_unmap(stage);
+done_game:
+    gs_stagesurface_destroy(stage); gs_texrender_destroy(target);
+    gs_texture_destroy(input);
+    return failed;
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2) {
@@ -751,9 +883,10 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 43; ++variant)
+            for (int variant = 0; variant < 45; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
             missing += verify_tech_hud_preview_scale(effect);
+            missing += verify_game_ui_preview_scale(effect);
         }
         gs_effect_destroy(effect);
     }
@@ -761,6 +894,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: libobs alpha/framing/light + SVG + D3 + freeform Bubble + Tech HUD overlay GPU fixtures (partial G4)");
+    puts("PASS: libobs alpha/framing/light + SVG + D3 + freeform Bubble + Tech HUD + Game UI GPU fixtures (partial G4)");
     return 0;
 }
