@@ -118,14 +118,14 @@ void nm_config_validate(nm_config *cfg)
     cfg->hotspot_size = nm_clamp(cfg->hotspot_size, 0.04f, 0.25f);
     cfg->art_gap = nm_clamp(cfg->art_gap, 1.0f, 16.0f);
     cfg->art_intensity = nm_clamp(cfg->art_intensity, 0.0f, 1.0f);
-    if (cfg->ornament_mode < NM_ORNAMENT_NONE || cfg->ornament_mode > NM_ORNAMENT_STREAMER)
+    if (cfg->ornament_mode < NM_ORNAMENT_NONE || cfg->ornament_mode > NM_ORNAMENT_GAME_UI)
         cfg->ornament_mode = NM_ORNAMENT_NONE;
     cfg->animation_speed = nm_clamp(cfg->animation_speed, 0.0f, 5.0f);
 
     cfg->primary |= 0xFF000000u;
     cfg->secondary |= 0xFF000000u;
 
-    if (cfg->shape_id < NM_SHAPE_ROUNDED || cfg->shape_id > NM_SHAPE_TECH_HUD)
+    if (cfg->shape_id < NM_SHAPE_ROUNDED || cfg->shape_id > NM_SHAPE_GAME_UI)
         cfg->shape_id = NM_SHAPE_ROUNDED;
     if (cfg->animation_id < NM_ANIM_STATIC || cfg->animation_id > NM_ANIM_FLOW)
         cfg->animation_id = NM_ANIM_STATIC;

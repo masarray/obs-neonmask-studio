@@ -314,6 +314,26 @@ static float tech_hud(nm_p2 p,nm_p2 b,float detail)
     return sqrtf(ds)*(side>=0.0f?-1.0f:1.0f);
 }
 
+/* D4C Game UI: the source itself uses a restrained eight-edge gaming
+ * panel. Outer L brackets and the inner rail are decoration only. */
+static float game_ui(nm_p2 p,nm_p2 b,float detail)
+{
+    const float cut=fminf(fmaxf(2.0f,fminf(b.x,b.y)*detail*0.72f),
+                          fminf(b.x,b.y)*0.18f);
+    const nm_p2 v[8]={
+        {-b.x+cut,-b.y},{b.x-cut,-b.y},{b.x,-b.y+cut},{b.x,b.y-cut},
+        {b.x-cut,b.y},{-b.x+cut,b.y},{-b.x,b.y-cut},{-b.x,-b.y+cut}
+    };
+    float side=cross(sub(v[1],v[0]),sub(p,v[0]));
+    float ds=edge2(p,v[0],v[1]);
+    for(int i=1;i<8;++i){
+        const nm_p2 a=v[i],n=v[(i+1)%8];
+        side=fminf(side,cross(sub(n,a),sub(p,a)));
+        ds=fminf(ds,edge2(p,a,n));
+    }
+    return sqrtf(ds)*(side>=0.0f?-1.0f:1.0f);
+}
+
 static float squircle(nm_p2 p,nm_p2 b,float detail)
 {
     const float exponent=4.0f+(detail-0.08f)/0.27f;
@@ -370,6 +390,7 @@ float nm_authored_shape_distance(int shape_id,float x,float y,
     if(shape_id==NM_SHAPE_ANGLED_CARD) return card(p,b,detail,radius);
     if(shape_id==NM_SHAPE_HUD_PANEL) return hud_panel(p,b,detail);
     if(shape_id==NM_SHAPE_TECH_HUD) return tech_hud(p,b,detail);
+    if(shape_id==NM_SHAPE_GAME_UI) return game_ui(p,b,detail);
     if(shape_id==NM_SHAPE_SQUIRCLE) return squircle(p,b,detail);
     return NAN;
 }

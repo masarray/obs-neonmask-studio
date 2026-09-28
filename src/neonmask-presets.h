@@ -18,7 +18,8 @@ enum nm_shape {
     NM_SHAPE_HUD_PANEL = 10,
     NM_SHAPE_SQUIRCLE = 11,
     NM_SHAPE_SVG_PATH = 12,
-    NM_SHAPE_TECH_HUD = 13
+    NM_SHAPE_TECH_HUD = 13,
+    NM_SHAPE_GAME_UI = 14
 };
 
 enum nm_animation {

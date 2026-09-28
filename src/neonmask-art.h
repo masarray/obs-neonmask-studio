@@ -9,7 +9,8 @@ enum nm_ornament {
     NM_ORNAMENT_CYBER = 1,
     NM_ORNAMENT_REACTOR = 2,
     NM_ORNAMENT_TECH_HUD = 3,
-    NM_ORNAMENT_STREAMER = 4
+    NM_ORNAMENT_STREAMER = 4,
+    NM_ORNAMENT_GAME_UI = 5
 };
 
 /* Signed-distance contour coordinate in turns [0,1). Starts at the top-left

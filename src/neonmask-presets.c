@@ -34,7 +34,12 @@ static const nm_preset builtin[] = {
     /* Smooth superellipse instead of a generic radius-based rounded box. */
     {NM_SHAPE_SQUIRCLE, NM_ANIM_PULSE, 0x00FD55CAu, 0x00FFFF35u,
      0.81, 0.15, 4.0, 0.85, 20.0, 0.74, 0.54, 0, NM_STYLE_DOUBLE,
-     true, true, 0.77, 0.88, 0.65, 0.12, NM_ORNAMENT_NONE, 0.0, 2.0, 0.22}
+     true, true, 0.77, 0.88, 0.65, 0.12, NM_ORNAMENT_NONE, 0.0, 2.0, 0.22},
+    /* D4C: four large outer corner brackets plus a complete inner rail.
+     * Static default keeps the Game UI identity readable without motion. */
+    {NM_SHAPE_GAME_UI, NM_ANIM_STATIC, 0x0055FF55u, 0x0000FFB0u,
+     0.80, 0.0, 4.0, 0.75, 18.0, 0.72, 0.55, 0, NM_STYLE_CLASSIC,
+     true, true, 0.80, 0.84, 0.70, 0.10, NM_ORNAMENT_GAME_UI, 0.92, 3.0, 0.14}
 };
 
 bool nm_get_preset(int id, nm_preset *out)
