@@ -415,8 +415,10 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_double(settings, "art_gap", cfg.art_gap);
     obs_data_set_bool(settings, "border_enabled", cfg.show_border);
     obs_data_set_bool(settings, "glow_enabled", cfg.show_glow);
+    /* Preset selection preserves opt-in output mode from the current scene. */
     nm_context_visibility(props,cfg.shape_id,cfg.animation_id,cfg.ornament_mode,
-                          cfg.show_border,cfg.show_glow,cfg.expand_canvas);
+                          cfg.show_border,cfg.show_glow,
+                          obs_data_get_bool(settings,"expand_canvas"));
     return true;
 }
 
