@@ -48,9 +48,9 @@ assert "float2 v10=float2(-b.x,b.y-cut*0.70)" in shader
 assert "float2 v0=float2(-b.x+cut,-b.y)" in shader
 assert "float2 v3=float2( b.x-cut, b.y)" in shader
 assert "ornament_mode == 3 && shape_id == 13" in shader
-assert "float2 trH0=float2(half_size.x-armX,-half_size.y-gap)" in shader
-assert "float2 blC =float2(-half_size.x-gap,half_size.y+gap)" in shader
-assert "float diagD=min(segmentDistance(q,tlA,tlB)" in shader
+assert "float2 trH0=float2(hx-armX,-hy-gap)" in shader
+assert "float2 blC =float2(-hx-gap,hy+gap)" in shader
+assert "float2 tlDiagA=float2(-hx+cut*0.12-diag" in shader
 assert "float majorHalf=max(2.6,border_width*1.28)" in shader
 assert "float minorHalf=max(1.5,border_width*0.70)" in shader
 assert "float glowSpread=max(4.5,glow_radius*0.24)" in shader
