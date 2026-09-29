@@ -602,3 +602,30 @@ explicitly, and the D3 checkbox is renamed to "Expand output for glow / outer
 ornaments". Users choosing very large gap+width values should enable expansion
 to avoid source-bound clipping. D3's existing envelope already includes
 `gap + full ornament width + glow support`.
+
+## D4H — canvas-aware outer ornament fit
+
+Real OBS evidence after D4G shows the connected-L geometry is correct, but a
+large top ornament can still be clipped by the source render-target boundary
+when the frame sits closer to the top than the bottom. This is not an elbow
+defect: for example Game UI gap 30 + width 38.5 needs roughly 68.5 px of
+outward support before glow, while the screenshot's available top margin is
+smaller.
+
+The existing D3 safe-fit path already solves this without scene-space
+translation: it uniformly reduces only mask half-extents until the complete
+light/ornament envelope lies inside the source. D4H makes the curated Tech HUD
+and Game UI preset operation opt into safe-fit automatically when expanded
+output is not already enabled. This happens only when the user applies the
+preset; saved/custom scenes are not silently changed. Once enabled, later
+gap/width edits continuously recompute fit, so an aggressive L cannot be
+silently cropped.
+
+Users who need the authored mask size unchanged can instead enable expanded
+output. The UI now describes both choices explicitly: safe-fit trades mask
+size for fixed source dimensions, while expansion preserves mask size but
+adds output padding (with the documented scene-item +left/+top shift).
+
+Pure-C regression cases use the real screenshot-scale values (Game UI
+30/38.5/22.5 and Tech HUD 31/46.5/19) and require the resulting
+half-size + D4F/D4G ornament envelope to remain within a 640x480 source.

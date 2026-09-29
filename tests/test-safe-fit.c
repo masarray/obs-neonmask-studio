@@ -146,6 +146,36 @@ int main(void)
     check("Game UI D4F true-gap envelope participates in D3",
           nm_safe_fit_calculate(&c,640,360,&f) && f.fits &&
           f.envelope_px>=32.0f);
+
+    /* D4H regression from real OBS screenshots: large connected-L controls
+     * must remain entirely inside an unexpanded source when safe-fit is on. */
+    nm_config_defaults(&c);
+    c.safe_fit=true;
+    c.mask_width=0.80f; c.mask_height=0.80f;
+    c.shape_id=NM_SHAPE_GAME_UI;
+    c.ornament_mode=NM_ORNAMENT_GAME_UI;
+    c.art_intensity=1.0f;
+    c.art_gap=30.0f; c.ornament_width_px=38.5f;
+    c.border_px=22.5f; c.show_glow=false;
+    check("D4H Game UI large outer L triggers in-source shrink",
+          nm_safe_fit_calculate(&c,640,480,&f) && f.fits &&
+          f.scale<1.0f && f.scale>0.0f &&
+          f.half_height+f.envelope_px<=240.001f &&
+          f.half_width+f.envelope_px<=320.001f);
+
+    nm_config_defaults(&c);
+    c.safe_fit=true;
+    c.mask_width=0.78f; c.mask_height=0.78f;
+    c.shape_id=NM_SHAPE_TECH_HUD;
+    c.ornament_mode=NM_ORNAMENT_TECH_HUD;
+    c.art_intensity=1.0f;
+    c.art_gap=31.0f; c.ornament_width_px=46.5f;
+    c.border_px=19.0f; c.show_glow=false;
+    check("D4H Tech HUD large TR/BL L triggers in-source shrink",
+          nm_safe_fit_calculate(&c,640,480,&f) && f.fits &&
+          f.scale<1.0f && f.scale>0.0f &&
+          f.half_height+f.envelope_px<=240.001f &&
+          f.half_width+f.envelope_px<=320.001f);
     /* D3 gate: deterministic coverage of input/output dimensions, asymmetric
      * offsets and rotated AABBs over landscape, square and portrait captures.
      * This tests geometry, not OBS scene-item transform semantics. */

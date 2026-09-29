@@ -545,10 +545,24 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_double(settings, "inner_rail_width", cfg.inner_rail_width_px);
     obs_data_set_bool(settings, "border_enabled", cfg.show_border);
     obs_data_set_bool(settings, "glow_enabled", cfg.show_glow);
-    /* Preset selection preserves opt-in output mode from the current scene. */
+
+    /* D4H: curated frames with authored OUTER geometry must not be born
+     * clipped. If expanded output is already enabled, preserve that explicit
+     * choice. Otherwise opt the applied Tech HUD/Game UI preset into D3 safe
+     * fit so later gap/width edits shrink only the mask as needed. Custom and
+     * previously saved scenes are untouched until a preset is applied. */
+    const bool outer_authored =
+        (cfg.shape_id == NM_SHAPE_TECH_HUD &&
+         cfg.ornament_mode == NM_ORNAMENT_TECH_HUD) ||
+        (cfg.shape_id == NM_SHAPE_GAME_UI &&
+         cfg.ornament_mode == NM_ORNAMENT_GAME_UI);
+    const bool expanded = obs_data_get_bool(settings,"expand_canvas");
+    if (outer_authored && !expanded)
+        obs_data_set_bool(settings,"safe_fit",true);
+
     nm_context_visibility(props,cfg.shape_id,cfg.animation_id,cfg.ornament_mode,
                           cfg.color_mode,cfg.show_border,cfg.show_glow,
-                          obs_data_get_bool(settings,"expand_canvas"));
+                          expanded);
     return true;
 }
 
