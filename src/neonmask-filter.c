@@ -35,6 +35,10 @@ struct nm_filter {
     gs_eparam_t *ornament_mode;
     gs_eparam_t *art_intensity;
     gs_eparam_t *art_gap;
+    gs_eparam_t *ornament_width;
+    gs_eparam_t *ornament_length_x;
+    gs_eparam_t *ornament_length_y;
+    gs_eparam_t *inner_rail_width;
     gs_eparam_t *feather;
     gs_eparam_t *glow_radius;
     gs_eparam_t *glow_strength;
@@ -178,6 +182,10 @@ static void nm_update(void *data, obs_data_t *settings)
         .ornament_mode = (int)obs_data_get_int(settings, "ornament_mode"),
         .art_intensity = (float)obs_data_get_double(settings, "art_intensity"),
         .art_gap = (float)obs_data_get_double(settings, "art_gap"),
+        .ornament_width_px = (float)obs_data_get_double(settings, "ornament_width"),
+        .ornament_length_x_px = (float)obs_data_get_double(settings, "ornament_length_x"),
+        .ornament_length_y_px = (float)obs_data_get_double(settings, "ornament_length_y"),
+        .inner_rail_width_px = (float)obs_data_get_double(settings, "inner_rail_width"),
         .show_border = obs_data_get_bool(settings, "border_enabled"),
         .show_glow = obs_data_get_bool(settings, "glow_enabled"),
     };
@@ -270,6 +278,16 @@ static void nm_update(void *data, obs_data_t *settings)
         obs_data_set_double(settings, "art_intensity", next.art_intensity);
     if (!obs_data_has_user_value(settings, "art_gap"))
         obs_data_set_double(settings, "art_gap", next.art_gap);
+    const char *const d4f_keys[] = {
+        "ornament_width","ornament_length_x","ornament_length_y","inner_rail_width"
+    };
+    const double d4f_values[] = {
+        next.ornament_width_px,next.ornament_length_x_px,
+        next.ornament_length_y_px,next.inner_rail_width_px
+    };
+    for (size_t i=0;i<sizeof(d4f_values)/sizeof(d4f_values[0]);++i)
+        if (!obs_data_has_user_value(settings,d4f_keys[i]))
+            obs_data_set_double(settings,d4f_keys[i],d4f_values[i]);
 
     /* v0/v1 used one uniform scale. Migrate once to independent dimensions
      * while keeping all old keys and enum values intact. */
@@ -356,6 +374,10 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_int(settings, "ornament_mode", cfg.ornament_mode);
     obs_data_set_default_double(settings, "art_intensity", cfg.art_intensity);
     obs_data_set_default_double(settings, "art_gap", cfg.art_gap);
+    obs_data_set_default_double(settings, "ornament_width", cfg.ornament_width_px);
+    obs_data_set_default_double(settings, "ornament_length_x", cfg.ornament_length_x_px);
+    obs_data_set_default_double(settings, "ornament_length_y", cfg.ornament_length_y_px);
+    obs_data_set_default_double(settings, "inner_rail_width", cfg.inner_rail_width_px);
     obs_data_set_default_bool(settings, "border_enabled", cfg.show_border);
     obs_data_set_default_bool(settings, "glow_enabled", cfg.show_glow);
 }
@@ -422,6 +444,18 @@ static void nm_context_visibility(obs_properties_t *props, int shape_id,
         if(p) obs_property_set_visible(p,ornament!=NM_ORNAMENT_NONE);
         p=obs_properties_get(arts,"art_gap");
         if(p) obs_property_set_visible(p,ornament!=NM_ORNAMENT_NONE);
+        const bool tech = shape_id==NM_SHAPE_TECH_HUD &&
+                          ornament==NM_ORNAMENT_TECH_HUD;
+        const bool game = shape_id==NM_SHAPE_GAME_UI &&
+                          ornament==NM_ORNAMENT_GAME_UI;
+        p=obs_properties_get(arts,"ornament_width");
+        if(p) obs_property_set_visible(p,tech || game);
+        p=obs_properties_get(arts,"ornament_length_x");
+        if(p) obs_property_set_visible(p,tech || game);
+        p=obs_properties_get(arts,"ornament_length_y");
+        if(p) obs_property_set_visible(p,tech || game);
+        p=obs_properties_get(arts,"inner_rail_width");
+        if(p) obs_property_set_visible(p,game);
     }
     obs_property_t *light=obs_properties_get(props,"premium_lighting");
     obs_properties_t *lights=light?obs_property_group_content(light):NULL;
@@ -503,6 +537,10 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_int(settings, "ornament_mode", cfg.ornament_mode);
     obs_data_set_double(settings, "art_intensity", cfg.art_intensity);
     obs_data_set_double(settings, "art_gap", cfg.art_gap);
+    obs_data_set_double(settings, "ornament_width", cfg.ornament_width_px);
+    obs_data_set_double(settings, "ornament_length_x", cfg.ornament_length_x_px);
+    obs_data_set_double(settings, "ornament_length_y", cfg.ornament_length_y_px);
+    obs_data_set_double(settings, "inner_rail_width", cfg.inner_rail_width_px);
     obs_data_set_bool(settings, "border_enabled", cfg.show_border);
     obs_data_set_bool(settings, "glow_enabled", cfg.show_glow);
     /* Preset selection preserves opt-in output mode from the current scene. */
@@ -658,7 +696,7 @@ static obs_properties_t *nm_properties(void *data)
     NM_CUSTOM(obs_properties_add_float_slider(props, "feather", obs_module_text("Feather"), 0.5, 30.0, 0.5));
     obs_property_t *border_switch=obs_properties_add_bool(props,"border_enabled",obs_module_text("Border.Enabled"));
     obs_property_set_modified_callback(border_switch,nm_context_changed);
-    NM_CUSTOM(obs_properties_add_float_slider(props, "border_width", obs_module_text("Border.Width"), 0.5, 32.0, 0.5));
+    NM_CUSTOM(obs_properties_add_float_slider(props, "border_width", obs_module_text("Border.Width"), 0.5, 64.0, 0.5));
     obs_property_t *style = obs_properties_add_list(props, "style", obs_module_text("Border.Style"),
                                                     OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
     obs_property_list_add_int(style, obs_module_text("Border.Style.Classic"), NM_STYLE_CLASSIC);
@@ -679,7 +717,15 @@ static obs_properties_t *nm_properties(void *data)
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "art_intensity",
                          obs_module_text("Art.Intensity"), 0.0, 1.0, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "art_gap",
-                         obs_module_text("Art.Gap"), 1.0, 16.0, 0.5));
+                         obs_module_text("Art.Gap"), 0.0, 96.0, 1.0));
+    NM_CUSTOM(obs_properties_add_float_slider(art_group, "ornament_width",
+                         obs_module_text("Art.Width"), 1.0, 64.0, 0.5));
+    NM_CUSTOM(obs_properties_add_float_slider(art_group, "ornament_length_x",
+                         obs_module_text("Art.LengthX"), 8.0, 240.0, 1.0));
+    NM_CUSTOM(obs_properties_add_float_slider(art_group, "ornament_length_y",
+                         obs_module_text("Art.LengthY"), 8.0, 240.0, 1.0));
+    NM_CUSTOM(obs_properties_add_float_slider(art_group, "inner_rail_width",
+                         obs_module_text("Art.InnerWidth"), 0.5, 12.0, 0.25));
     obs_properties_add_group(props, "signature_art", obs_module_text("Art.Group"),
                              OBS_GROUP_NORMAL, art_group);
     obs_property_t *color_mode=obs_properties_add_list(props,"color_mode",
@@ -770,6 +816,10 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         NM_PARAM(ornament_mode, "ornament_mode");
         NM_PARAM(art_intensity, "art_intensity");
         NM_PARAM(art_gap, "art_gap");
+        NM_PARAM(ornament_width, "ornament_width");
+        NM_PARAM(ornament_length_x, "ornament_length_x");
+        NM_PARAM(ornament_length_y, "ornament_length_y");
+        NM_PARAM(inner_rail_width, "inner_rail_width");
         NM_PARAM(feather, "feather");
         NM_PARAM(glow_radius, "glow_radius");
         NM_PARAM(glow_strength, "glow_strength");
@@ -983,6 +1033,10 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_int(f->ornament_mode, f->config.ornament_mode);
     gs_effect_set_float(f->art_intensity, f->config.art_intensity);
     gs_effect_set_float(f->art_gap, f->config.art_gap);
+    gs_effect_set_float(f->ornament_width, f->config.ornament_width_px);
+    gs_effect_set_float(f->ornament_length_x, f->config.ornament_length_x_px);
+    gs_effect_set_float(f->ornament_length_y, f->config.ornament_length_y_px);
+    gs_effect_set_float(f->inner_rail_width, f->config.inner_rail_width_px);
     gs_effect_set_float(f->feather, f->config.feather_px);
     gs_effect_set_float(f->glow_radius, f->config.glow_px);
     gs_effect_set_float(f->glow_strength, f->config.glow_amount);
