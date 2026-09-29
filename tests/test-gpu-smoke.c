@@ -616,19 +616,19 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     gs_effect_set_float(P("subject_zoom"),1.0f);
     gs_effect_set_float(P("shape_rotation"),0.0f);
     gs_effect_set_int(P("polygon_sides"),8);
-    gs_effect_set_float(P("shape_detail"),0.14f);
+    gs_effect_set_float(P("shape_detail"),0.12f);
     gs_effect_set_vec4(P("bubble_top"),&btop);
     gs_effect_set_vec4(P("bubble_bottom"),&bbottom);
     gs_effect_set_vec4(P("bubble_tail"),&btail);
     gs_effect_set_float(P("corner_radius"),0.0f);
     gs_effect_set_int(P("shape_id"),13);
-    gs_effect_set_float(P("border_width"),3.2f);
+    gs_effect_set_float(P("border_width"),1.8f);
     gs_effect_set_int(P("style_id"),3);
     gs_effect_set_int(P("ornament_mode"),3);
-    gs_effect_set_float(P("art_intensity"),0.96f);
-    gs_effect_set_float(P("art_gap"),6.0f);
+    gs_effect_set_float(P("art_intensity"),1.0f);
+    gs_effect_set_float(P("art_gap"),7.0f);
     gs_effect_set_float(P("feather"),0.5f);
-    gs_effect_set_float(P("glow_radius"),16.0f);
+    gs_effect_set_float(P("glow_radius"),14.0f);
     gs_effect_set_float(P("glow_strength"),0.0f);
     gs_effect_set_float(P("mid_glow_strength"),0.72f);
     gs_effect_set_float(P("bloom_strength"),0.76f);
@@ -671,26 +671,29 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     uint8_t *mapped=NULL; uint32_t stride=0;
     if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;goto done_hires;}
 
-    /* D4B.3: four intentional modules must be readable, while the old
-     * floating-inner-rail region stays quiet with glow disabled. */
-    const uint8_t *tr_h=mapped+19u*stride+245u*4u;
-    const uint8_t *tr_v=mapped+48u*stride+281u*4u;
-    const uint8_t *bl_h=mapped+161u*stride+72u*4u;
-    const uint8_t *bl_v=mapped+132u*stride+39u*4u;
-    const uint8_t *tl_top=mapped+19u*stride+72u*4u;
-    const uint8_t *tl_side=mapped+49u*stride+39u*4u;
-    const uint8_t *br_bottom=mapped+161u*stride+248u*4u;
-    const uint8_t *br_side=mapped+131u*stride+281u*4u;
+    /* D4E: thick TL bar must retain mass several pixels from its
+     * centerline; secondary Ls and BR blades remain present, while the old
+     * noisy inner fragment region stays transparent. */
+    const uint8_t *tl_h=mapped+17u*stride+70u*4u;
+    const uint8_t *tl_h_thick=mapped+21u*stride+70u*4u;
+    const uint8_t *tl_v=mapped+45u*stride+37u*4u;
+    const uint8_t *tr_h=mapped+17u*stride+260u*4u;
+    const uint8_t *tr_v=mapped+35u*stride+283u*4u;
+    const uint8_t *bl_h=mapped+163u*stride+60u*4u;
+    const uint8_t *bl_v=mapped+145u*stride+37u*4u;
+    const uint8_t *br_blade=mapped+157u*stride+258u*4u;
+    const uint8_t *base_top=mapped+30u*stride+160u*4u;
     const uint8_t *old_inner_noise=mapped+35u*stride+120u*4u;
     const uint8_t *quiet_center=mapped+90u*stride+160u*4u;
-    if(tr_h[3]<150 || tr_v[3]<150 || bl_h[3]<150 || bl_v[3]<150 ||
-       tl_top[3]<90 || tl_side[3]<90 ||
-       br_bottom[3]<90 || br_side[3]<90 ||
-       old_inner_noise[3]>12 || quiet_center[3]>3) {
+    if(tl_h[3]<210 || tl_h_thick[3]<150 || tl_v[3]<210 ||
+       tr_h[3]<150 || tr_v[3]<150 || bl_h[3]<150 || bl_v[3]<150 ||
+       br_blade[3]<100 || old_inner_noise[3]>12 || quiet_center[3]>3 ||
+       tl_h_thick[3] <= base_top[3]+35) {
         fprintf(stderr,
-                "FAIL: clean Tech HUD TR=%u/%u BL=%u/%u TL=%u/%u BR=%u/%u noise=%u center=%u\n",
-                tr_h[3],tr_v[3],bl_h[3],bl_v[3],tl_top[3],tl_side[3],
-                br_bottom[3],br_side[3],old_inner_noise[3],quiet_center[3]);
+                "FAIL: D4E Tech mass TL=%u/%u/%u TR=%u/%u BL=%u/%u BR=%u base=%u noise=%u center=%u\n",
+                tl_h[3],tl_h_thick[3],tl_v[3],tr_h[3],tr_v[3],
+                bl_h[3],bl_v[3],br_blade[3],base_top[3],
+                old_inner_noise[3],quiet_center[3]);
         failed=1;
     }
     gs_stagesurface_unmap(stage);
@@ -743,13 +746,13 @@ static int verify_game_ui_preview_scale(gs_effect_t *effect)
     gs_effect_set_vec4(P("bubble_tail"),&btail);
     gs_effect_set_float(P("corner_radius"),0.0f);
     gs_effect_set_int(P("shape_id"),14);
-    gs_effect_set_float(P("border_width"),2.8f);
+    gs_effect_set_float(P("border_width"),1.6f);
     gs_effect_set_int(P("style_id"),0);
     gs_effect_set_int(P("ornament_mode"),5);
-    gs_effect_set_float(P("art_intensity"),0.96f);
-    gs_effect_set_float(P("art_gap"),8.0f);
+    gs_effect_set_float(P("art_intensity"),1.0f);
+    gs_effect_set_float(P("art_gap"),7.0f);
     gs_effect_set_float(P("feather"),0.5f);
-    gs_effect_set_float(P("glow_radius"),14.0f);
+    gs_effect_set_float(P("glow_radius"),12.0f);
     gs_effect_set_float(P("glow_strength"),0.0f);
     gs_effect_set_float(P("mid_glow_strength"),0.8f);
     gs_effect_set_float(P("bloom_strength"),0.84f);
@@ -789,28 +792,36 @@ static int verify_game_ui_preview_scale(gs_effect_t *effect)
     uint8_t *mapped=NULL; uint32_t stride=0;
     if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;goto done_game;}
 
-    const uint8_t *tl_h=mapped+15u*stride+72u*4u;
-    const uint8_t *tl_v=mapped+50u*stride+35u*4u;
-    const uint8_t *tr_h=mapped+15u*stride+248u*4u;
-    const uint8_t *tr_v=mapped+50u*stride+285u*4u;
-    const uint8_t *bl_h=mapped+165u*stride+72u*4u;
-    const uint8_t *bl_v=mapped+130u*stride+35u*4u;
-    const uint8_t *br_h=mapped+165u*stride+248u*4u;
-    const uint8_t *br_v=mapped+130u*stride+285u*4u;
-    const uint8_t *innerTop=mapped+36u*stride+160u*4u;
-    const uint8_t *innerRight=mapped+90u*stride+264u*4u;
-    const uint8_t *innerBottom=mapped+144u*stride+160u*4u;
-    const uint8_t *innerLeft=mapped+90u*stride+56u*4u;
+    /* Outer bar is intentionally massive; inner rail is a hairline.
+     * Probe 4px off the outer centerline (still bright), but 2px off the
+     * inner rail (already quiet) to enforce the hierarchy. */
+    const uint8_t *tl_h=mapped+16u*stride+72u*4u;
+    const uint8_t *tl_h_thick=mapped+20u*stride+72u*4u;
+    const uint8_t *tl_v=mapped+50u*stride+36u*4u;
+    const uint8_t *tr_h=mapped+16u*stride+248u*4u;
+    const uint8_t *tr_v=mapped+50u*stride+284u*4u;
+    const uint8_t *bl_h=mapped+164u*stride+72u*4u;
+    const uint8_t *bl_v=mapped+130u*stride+36u*4u;
+    const uint8_t *br_h=mapped+164u*stride+248u*4u;
+    const uint8_t *br_v=mapped+130u*stride+284u*4u;
+    const uint8_t *innerTop=mapped+37u*stride+160u*4u;
+    const uint8_t *innerTopOff=mapped+39u*stride+160u*4u;
+    const uint8_t *innerRight=mapped+90u*stride+263u*4u;
+    const uint8_t *innerBottom=mapped+143u*stride+160u*4u;
+    const uint8_t *innerLeft=mapped+90u*stride+57u*4u;
     const uint8_t *center=mapped+90u*stride+160u*4u;
-    if(tl_h[3]<140||tl_v[3]<140||tr_h[3]<140||tr_v[3]<140||
-       bl_h[3]<140||bl_v[3]<140||br_h[3]<140||br_v[3]<140||
-       innerTop[3]<75||innerRight[3]<75||innerBottom[3]<75||innerLeft[3]<75||
-       center[3]>3){
+    if(tl_h[3]<200||tl_h_thick[3]<120||tl_v[3]<200||
+       tr_h[3]<200||tr_v[3]<200||bl_h[3]<200||bl_v[3]<200||
+       br_h[3]<200||br_v[3]<200||
+       innerTop[3]<70||innerRight[3]<70||innerBottom[3]<70||innerLeft[3]<70||
+       innerTopOff[3]>35||center[3]>3||
+       tl_h_thick[3] <= innerTop[3]+45){
         fprintf(stderr,
-                "FAIL: clean Game UI outer=%u/%u/%u/%u/%u/%u/%u/%u inner=%u/%u/%u/%u center=%u\n",
-                tl_h[3],tl_v[3],tr_h[3],tr_v[3],bl_h[3],bl_v[3],
-                br_h[3],br_v[3],innerTop[3],innerRight[3],
-                innerBottom[3],innerLeft[3],center[3]);
+                "FAIL: D4E Game hierarchy outer=%u/%u/%u/%u/%u/%u/%u/%u/%u inner=%u/%u/%u/%u off=%u center=%u\n",
+                tl_h[3],tl_h_thick[3],tl_v[3],tr_h[3],tr_v[3],
+                bl_h[3],bl_v[3],br_h[3],br_v[3],innerTop[3],
+                innerRight[3],innerBottom[3],innerLeft[3],
+                innerTopOff[3],center[3]);
         failed=1;
     }
     gs_stagesurface_unmap(stage);
