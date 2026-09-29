@@ -44,6 +44,11 @@ struct nm_filter {
     gs_eparam_t *hotspot_size;
     gs_eparam_t *color_a;
     gs_eparam_t *color_b;
+    gs_eparam_t *color_mode;
+    gs_eparam_t *rainbow_phase;
+    gs_eparam_t *rainbow_saturation;
+    gs_eparam_t *rainbow_hue_offset;
+    gs_eparam_t *rainbow_spread;
     gs_eparam_t *color_phase;
     gs_eparam_t *pulse_phase;
     gs_eparam_t *flow_phase;
@@ -161,6 +166,11 @@ static void nm_update(void *data, obs_data_t *settings)
         .animation_speed = (float)obs_data_get_double(settings, "speed"),
         .primary = (uint32_t)obs_data_get_int(settings, "primary"),
         .secondary = (uint32_t)obs_data_get_int(settings, "secondary"),
+        .color_mode = (int)obs_data_get_int(settings, "color_mode"),
+        .rainbow_speed = (float)obs_data_get_double(settings, "rainbow_speed"),
+        .rainbow_saturation = (float)obs_data_get_double(settings, "rainbow_saturation"),
+        .rainbow_hue_offset = (float)obs_data_get_double(settings, "rainbow_hue_offset"),
+        .rainbow_spread = (float)obs_data_get_double(settings, "rainbow_spread"),
         .shape_id = (int)obs_data_get_int(settings, "shape"),
         .animation_id = (int)obs_data_get_int(settings, "animation"),
         .segment_count = (int)obs_data_get_int(settings, "segments"),
@@ -218,6 +228,19 @@ static void nm_update(void *data, obs_data_t *settings)
         obs_data_set_double(settings, "hotspot_strength", next.hotspot_strength);
     if (!obs_data_has_user_value(settings, "hotspot_size"))
         obs_data_set_double(settings, "hotspot_size", next.hotspot_size);
+
+    /* D4D is additive and intentionally does not bump the scene schema.
+     * Missing fields resolve to Dual, reproducing the previous shader path. */
+    if (!obs_data_has_user_value(settings, "color_mode"))
+        obs_data_set_int(settings, "color_mode", next.color_mode);
+    if (!obs_data_has_user_value(settings, "rainbow_speed"))
+        obs_data_set_double(settings, "rainbow_speed", next.rainbow_speed);
+    if (!obs_data_has_user_value(settings, "rainbow_saturation"))
+        obs_data_set_double(settings, "rainbow_saturation", next.rainbow_saturation);
+    if (!obs_data_has_user_value(settings, "rainbow_hue_offset"))
+        obs_data_set_double(settings, "rainbow_hue_offset", next.rainbow_hue_offset);
+    if (!obs_data_has_user_value(settings, "rainbow_spread"))
+        obs_data_set_double(settings, "rainbow_spread", next.rainbow_spread);
 
     /* D1 additive setting. Pin the resolved default without changing the
      * current shape, subject pan/zoom, or any saved preset identity. */
@@ -321,6 +344,11 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_double(settings, "hotspot_size", cfg.hotspot_size);
     obs_data_set_default_int(settings, "primary", cfg.primary & 0x00FFFFFFu);
     obs_data_set_default_int(settings, "secondary", cfg.secondary & 0x00FFFFFFu);
+    obs_data_set_default_int(settings, "color_mode", cfg.color_mode);
+    obs_data_set_default_double(settings, "rainbow_speed", cfg.rainbow_speed);
+    obs_data_set_default_double(settings, "rainbow_saturation", cfg.rainbow_saturation);
+    obs_data_set_default_double(settings, "rainbow_hue_offset", cfg.rainbow_hue_offset);
+    obs_data_set_default_double(settings, "rainbow_spread", cfg.rainbow_spread);
     obs_data_set_default_int(settings, "animation", cfg.animation_id);
     obs_data_set_default_double(settings, "speed", cfg.animation_speed);
     obs_data_set_default_int(settings, "segments", cfg.segment_count);
@@ -367,8 +395,8 @@ static void nm_geometry_visibility(obs_properties_t *props, int shape_id)
 /* One visibility resolver for preset, Shape, Animation, Ornament and
  * on/off controls. Hidden values are retained in OBS settings, never reset. */
 static void nm_context_visibility(obs_properties_t *props, int shape_id,
-                                  int animation, int ornament, bool border,
-                                  bool glow, bool expanded)
+                                  int animation, int ornament, int color_mode,
+                                  bool border, bool glow, bool expanded)
 {
     nm_geometry_visibility(props,shape_id);
     obs_property_t *p;
@@ -376,8 +404,10 @@ static void nm_context_visibility(obs_properties_t *props, int shape_id,
                               if(p) obs_property_set_visible(p,yes); } while(0)
     NM_SHOW("border_width",border);
     NM_SHOW("style",border);
-    NM_SHOW("primary",border);
-    NM_SHOW("secondary",border);
+    NM_SHOW("color_mode",border);
+    NM_SHOW("primary",border && color_mode != NM_COLOR_RAINBOW);
+    NM_SHOW("secondary",border && color_mode == NM_COLOR_DUAL);
+    NM_SHOW("rainbow_color",border && color_mode == NM_COLOR_RAINBOW);
     NM_SHOW("signature_art",border);
     NM_SHOW("glow_enabled",border);
     NM_SHOW("glow_radius",border && glow);
@@ -408,6 +438,12 @@ static void nm_context_visibility(obs_properties_t *props, int shape_id,
             if(p) obs_property_set_visible(p,animation==NM_ANIM_FLOW);
         }
     }
+    obs_property_t *rainbow=obs_properties_get(props,"rainbow_color");
+    obs_properties_t *rainbow_props=rainbow?obs_property_group_content(rainbow):NULL;
+    if(rainbow_props) {
+        p=obs_properties_get(rainbow_props,"rainbow_speed");
+        if(p) obs_property_set_visible(p,animation!=NM_ANIM_STATIC);
+    }
     obs_property_t *mask=obs_properties_get(props,"mask_geometry");
     obs_properties_t *geometry=mask?obs_property_group_content(mask):NULL;
     if(geometry) {
@@ -432,6 +468,11 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_int(settings, "animation", cfg.animation_id);
     obs_data_set_int(settings, "primary", cfg.primary & 0x00FFFFFFu);
     obs_data_set_int(settings, "secondary", cfg.secondary & 0x00FFFFFFu);
+    obs_data_set_int(settings, "color_mode", cfg.color_mode);
+    obs_data_set_double(settings, "rainbow_speed", cfg.rainbow_speed);
+    obs_data_set_double(settings, "rainbow_saturation", cfg.rainbow_saturation);
+    obs_data_set_double(settings, "rainbow_hue_offset", cfg.rainbow_hue_offset);
+    obs_data_set_double(settings, "rainbow_spread", cfg.rainbow_spread);
     obs_data_set_double(settings, "scale", cfg.scale);
     obs_data_set_double(settings, "mask_width", cfg.scale);
     obs_data_set_double(settings, "mask_height", cfg.scale);
@@ -467,7 +508,7 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_bool(settings, "glow_enabled", cfg.show_glow);
     /* Preset selection preserves opt-in output mode from the current scene. */
     nm_context_visibility(props,cfg.shape_id,cfg.animation_id,cfg.ornament_mode,
-                          cfg.show_border,cfg.show_glow,
+                          cfg.color_mode,cfg.show_border,cfg.show_glow,
                           obs_data_get_bool(settings,"expand_canvas"));
     return true;
 }
@@ -489,6 +530,7 @@ static bool nm_context_changed(obs_properties_t *props, obs_property_t *property
     nm_context_visibility(props,(int)obs_data_get_int(settings,"shape"),
                           (int)obs_data_get_int(settings,"animation"),
                           (int)obs_data_get_int(settings,"ornament_mode"),
+                          (int)obs_data_get_int(settings,"color_mode"),
                           obs_data_get_bool(settings,"border_enabled"),
                           obs_data_get_bool(settings,"glow_enabled"),
                           obs_data_get_bool(settings,"expand_canvas"));
@@ -641,8 +683,26 @@ static obs_properties_t *nm_properties(void *data)
                          obs_module_text("Art.Gap"), 1.0, 16.0, 0.5));
     obs_properties_add_group(props, "signature_art", obs_module_text("Art.Group"),
                              OBS_GROUP_NORMAL, art_group);
+    obs_property_t *color_mode=obs_properties_add_list(props,"color_mode",
+                         obs_module_text("Color.Mode"),OBS_COMBO_TYPE_LIST,
+                         OBS_COMBO_FORMAT_INT);
+    obs_property_list_add_int(color_mode,obs_module_text("Color.Mode.Solid"),NM_COLOR_SOLID);
+    obs_property_list_add_int(color_mode,obs_module_text("Color.Mode.Dual"),NM_COLOR_DUAL);
+    obs_property_list_add_int(color_mode,obs_module_text("Color.Mode.Rainbow"),NM_COLOR_RAINBOW);
+    obs_property_set_modified_callback(color_mode,nm_context_changed);
     NM_CUSTOM(obs_properties_add_color(props, "primary", obs_module_text("Color.Primary")));
     NM_CUSTOM(obs_properties_add_color(props, "secondary", obs_module_text("Color.Secondary")));
+    obs_properties_t *rainbow_group=obs_properties_create();
+    NM_CUSTOM(obs_properties_add_float_slider(rainbow_group,"rainbow_speed",
+                         obs_module_text("Rainbow.Speed"),0.0,5.0,0.05));
+    NM_CUSTOM(obs_properties_add_float_slider(rainbow_group,"rainbow_saturation",
+                         obs_module_text("Rainbow.Saturation"),0.0,1.0,0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(rainbow_group,"rainbow_hue_offset",
+                         obs_module_text("Rainbow.HueOffset"),0.0,1.0,0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(rainbow_group,"rainbow_spread",
+                         obs_module_text("Rainbow.Spread"),0.25,3.0,0.05));
+    obs_properties_add_group(props,"rainbow_color",obs_module_text("Rainbow.Group"),
+                             OBS_GROUP_NORMAL,rainbow_group);
     obs_property_t *glow_switch=obs_properties_add_bool(props,"glow_enabled",obs_module_text("Glow.Enabled"));
     obs_property_set_modified_callback(glow_switch,nm_context_changed);
     NM_CUSTOM(obs_properties_add_float_slider(props, "glow_radius", obs_module_text("Glow.Radius"), 1.0, 80.0, 1.0));
@@ -668,7 +728,8 @@ static obs_properties_t *nm_properties(void *data)
     if(!current) nm_config_defaults(&initial);
     const nm_config *cfg=current?&current->config:&initial;
     nm_context_visibility(props,cfg->shape_id,cfg->animation_id,cfg->ornament_mode,
-                          cfg->show_border,cfg->show_glow,cfg->expand_canvas);
+                          cfg->color_mode,cfg->show_border,cfg->show_glow,
+                          cfg->expand_canvas);
     return props;
 }
 
@@ -719,6 +780,11 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         NM_PARAM(hotspot_size, "hotspot_size");
         NM_PARAM(color_a, "color_a");
         NM_PARAM(color_b, "color_b");
+        NM_PARAM(color_mode, "color_mode");
+        NM_PARAM(rainbow_phase, "rainbow_phase");
+        NM_PARAM(rainbow_saturation, "rainbow_saturation");
+        NM_PARAM(rainbow_hue_offset, "rainbow_hue_offset");
+        NM_PARAM(rainbow_spread, "rainbow_spread");
         NM_PARAM(color_phase, "color_phase");
         NM_PARAM(pulse_phase, "pulse_phase");
         NM_PARAM(flow_phase, "flow_phase");
@@ -759,6 +825,8 @@ static void nm_tick(void *data, float seconds)
     struct nm_filter *f = data;
     if (!f) return;
     nm_motion_tick(&f->motion, seconds, f->config.animation_speed, f->config.animation_id);
+    nm_rainbow_tick(&f->motion,seconds,f->config.rainbow_speed,
+                    f->config.animation_id,f->config.color_mode);
     if(f->config.shape_id!=NM_SHAPE_SVG_PATH) return;
     obs_source_t *target=obs_filter_get_target(f->context);
     if(!target) return;
@@ -925,6 +993,11 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_float(f->hotspot_size, f->config.hotspot_size);
     gs_effect_set_vec4(f->color_a, &primary);
     gs_effect_set_vec4(f->color_b, &secondary);
+    gs_effect_set_int(f->color_mode,f->config.color_mode);
+    gs_effect_set_float(f->rainbow_phase,(float)f->motion.rainbow_turns);
+    gs_effect_set_float(f->rainbow_saturation,f->config.rainbow_saturation);
+    gs_effect_set_float(f->rainbow_hue_offset,f->config.rainbow_hue_offset);
+    gs_effect_set_float(f->rainbow_spread,f->config.rainbow_spread);
     gs_effect_set_float(f->color_phase, (float)f->motion.color_turns);
     gs_effect_set_float(f->pulse_phase, (float)f->motion.pulse_turns);
     gs_effect_set_float(f->flow_phase, (float)f->motion.flow_turns);

@@ -37,7 +37,10 @@ int main(void)
     nm_motion_tick(&m, NAN, 1.0f, NM_ANIM_FLOW);
     nm_motion_tick(&m, -1.0f, 1.0f, NM_ANIM_FLOW);
     nm_motion_tick(&m, 1.0f, NAN, NM_ANIM_FLOW);
-    check("bad inputs preserve motion", m.color_turns == 0.0 && m.pulse_turns == 0.0 && m.flow_turns == 0.0);
+    nm_rainbow_tick(&m,NAN,1.0f,NM_ANIM_FLOW,NM_COLOR_RAINBOW);
+    nm_rainbow_tick(&m,1.0f,NAN,NM_ANIM_FLOW,NM_COLOR_RAINBOW);
+    check("bad inputs preserve motion", m.color_turns == 0.0 && m.pulse_turns == 0.0 &&
+          m.flow_turns == 0.0 && m.rainbow_turns == 0.0);
 
     nm_motion_tick(&m, 0.25f, 1.0f, NM_ANIM_FLOW);
     near("color frequency", m.color_turns, 0.25 * 0.15 / TAU_D, 1e-12);
@@ -50,7 +53,19 @@ int main(void)
           m.pulse_turns == frozen.pulse_turns && m.flow_turns == frozen.flow_turns);
     nm_motion_tick(&m, 0.5f, 0.0f, NM_ANIM_FLOW);
     check("zero speed freezes ALL phases", m.color_turns == frozen.color_turns &&
-          m.pulse_turns == frozen.pulse_turns && m.flow_turns == frozen.flow_turns);
+          m.pulse_turns == frozen.pulse_turns && m.flow_turns == frozen.flow_turns &&
+          m.rainbow_turns == frozen.rainbow_turns);
+
+    nm_motion rainbow = {0};
+    nm_rainbow_tick(&rainbow,0.5f,1.0f,NM_ANIM_FLOW,NM_COLOR_DUAL);
+    check("Dual mode never advances rainbow",rainbow.rainbow_turns == 0.0);
+    nm_rainbow_tick(&rainbow,0.5f,1.0f,NM_ANIM_STATIC,NM_COLOR_RAINBOW);
+    check("Static freezes rainbow",rainbow.rainbow_turns == 0.0);
+    nm_rainbow_tick(&rainbow,0.25f,1.0f,NM_ANIM_FLOW,NM_COLOR_RAINBOW);
+    near("rainbow independent frequency",rainbow.rainbow_turns,0.02,1e-12);
+    const nm_motion rainbow_frozen=rainbow;
+    nm_rainbow_tick(&rainbow,0.5f,0.0f,NM_ANIM_FLOW,NM_COLOR_RAINBOW);
+    check("rainbow zero speed freezes phase",rainbow.rainbow_turns == rainbow_frozen.rainbow_turns);
 
     nm_motion_tick(&m, 0.25f, 2.0f, NM_ANIM_FLOW);
     near("speed change no phase reset", m.color_turns, frozen.color_turns + 0.5 * 0.15 / TAU_D, 1e-12);
@@ -64,9 +79,11 @@ int main(void)
     for (int i = 0; i < iterations; ++i) {
         prev = long_run;
         nm_motion_tick(&long_run, dt, 1.0f, NM_ANIM_FLOW);
+        nm_rainbow_tick(&long_run,dt,1.0f,NM_ANIM_FLOW,NM_COLOR_RAINBOW);
         check("bounded phases", long_run.color_turns >= 0.0 && long_run.color_turns < 1.0 &&
               long_run.pulse_turns >= 0.0 && long_run.pulse_turns < 1.0 &&
-              long_run.flow_turns >= 0.0 && long_run.flow_turns < 1.0);
+              long_run.flow_turns >= 0.0 && long_run.flow_turns < 1.0 &&
+              long_run.rainbow_turns >= 0.0 && long_run.rainbow_turns < 1.0);
         if (i == 60 * 60 * 60 - 1 || i == iterations - 1) {
             near("color seam continuous", forward_turns(prev.color_turns, long_run.color_turns),
                  (double)dt * 0.15 / TAU_D, 2e-11);
@@ -74,14 +91,17 @@ int main(void)
                  (double)dt, 2e-11);
             near("flow seam continuous", forward_turns(prev.flow_turns, long_run.flow_turns),
                  (double)dt * 0.2, 2e-11);
+            near("rainbow seam continuous",forward_turns(prev.rainbow_turns,long_run.rainbow_turns),
+                 (double)dt * 0.08,2e-11);
         }
     }
     const double total = (double)dt * iterations;
     near("eight-hour color position", long_run.color_turns, fmod(total * 0.15 / TAU_D, 1.0), 1e-6);
     near("eight-hour pulse position", long_run.pulse_turns, fmod(total, 1.0), 1e-6);
     near("eight-hour flow position", long_run.flow_turns, fmod(total * 0.2, 1.0), 1e-6);
+    near("eight-hour rainbow position",long_run.rainbow_turns,fmod(total*0.08,1.0),1e-6);
 
     if (failures) return 1;
-    puts("PASS: static/zero-speed, speed changes and simulated 8-hour phase continuity");
+    puts("PASS: static/zero-speed, independent rainbow rate and simulated 8-hour phase continuity");
     return 0;
 }

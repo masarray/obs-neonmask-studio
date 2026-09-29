@@ -7,13 +7,16 @@ ROOT = Path(__file__).resolve().parents[1]
 host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
-assert len(names) == len(set(names)) == 38, f"Expected 38 unique bindings: {names!r}"
+assert len(names) == len(set(names)) == 43, f"Expected 43 unique bindings: {names!r}"
 uniforms = {name: kind for kind, name in re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader)}
-assert len(uniforms) == 40, f"Unexpected number of shader uniforms: {uniforms}"
+assert len(uniforms) == 45, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
     "Host/shader uniform drift: " + str(set(names) ^ (set(uniforms) - {"ViewProj", "image"}))
 )
 assert uniforms["color_a"] == uniforms["color_b"] == "float4"
+assert uniforms["color_mode"] == "int"
+for key in ("rainbow_phase","rainbow_saturation","rainbow_hue_offset","rainbow_spread"):
+    assert uniforms[key] == "float"
 assert uniforms["uv_size"] == uniforms["half_size"] == "float2"
 assert uniforms["output_size"] == uniforms["input_origin"] == "float2"
 assert uniforms["bubble_top"] == uniforms["bubble_bottom"] == uniforms["bubble_tail"] == "float4"
@@ -99,6 +102,10 @@ assert 'Shape.TechHUD="Tech HUD Advanced — cut corners + brackets"' in en_loca
 assert 'Preset.TechHUD="Tech HUD Advanced — Cyan + Amber"' in en_locale
 assert 'Shape.GameUI="Game UI — corner brackets + inner rail"' in en_locale
 assert 'Preset.GameUI="Game UI — Neon Green"' in en_locale
+assert 'Color.Mode.Rainbow="Rainbow gradient"' in en_locale
+assert 'Rainbow.Spread="Gradient spread"' in en_locale
+assert 'Color.Mode.Rainbow="Gradien pelangi"' in id_locale
+assert 'Rainbow.Spread="Sebaran gradien"' in id_locale
 assert 'Bubble.TLX="Sudut kiri-atas X"' in id_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — sudut potong + bracket"' in id_locale
 # A primitive min is an occupancy union, NOT the exposed contour distance:
@@ -117,6 +124,11 @@ assert 'gs_effect_set_float(f->shape_detail, f->config.shape_detail)' in host
 assert uniforms["style_id"] == uniforms["ornament_mode"] == "int"
 assert uniforms["art_intensity"] == uniforms["art_gap"] == "float"
 assert "roundedContourTurn" in shader
+assert "float3 hsvToRgb(" in shader and "float rainbowContourTurn(" in shader
+assert "if(color_mode == 1)" in shader and "else if(color_mode == 2)" in shader
+assert "contourTurn*rainbow_spread" in shader
+assert "rainbow_hue_offset+rainbow_phase" in shader
+assert "float3 outerColor = neon;" in shader
 assert "float gapGate" in shader and "float hbar" in shader and "float vbar" in shader
 assert "artBarA" in shader and "artBarGlowA" in shader
 assert "NM_ORNAMENT_CYBER" in host and "NM_ORNAMENT_NONE" in host
@@ -201,6 +213,13 @@ assert "obs_source_skip_video_filter(" not in render, "Unmasked bypass in render
 assert "filter will render transparent" in host
 
 assert "nm_custom_changed" in host, "User edits should reset preset status to Custom"
+assert 'obs_properties_add_list(props,"color_mode"' in host
+assert 'obs_properties_add_group(props,"rainbow_color"' in host
+assert 'NM_SHOW("secondary",border && color_mode == NM_COLOR_DUAL)' in host
+assert 'NM_SHOW("rainbow_color",border && color_mode == NM_COLOR_RAINBOW)' in host
+for key in ("color_mode","rainbow_phase","rainbow_saturation","rainbow_hue_offset","rainbow_spread"):
+    assert f'NM_PARAM({key}, "{key}")' in host
+assert "nm_rainbow_tick(&f->motion" in host
 assert "sourcePos - mask_offset" in shader
 assert "sourcePos - subject_pan" in shader and "/ max(subject_zoom" in shader
 assert "insideSource" in shader and "float4(0.0, 0.0, 0.0, 0.0)" in shader

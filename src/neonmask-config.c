@@ -51,6 +51,11 @@ void nm_config_defaults(nm_config *cfg)
         .animation_speed = 0.65f,
         .primary = 0xFFDD31FFu,
         .secondary = 0xFFFFDB36u,
+        .color_mode = NM_COLOR_DUAL,
+        .rainbow_speed = 0.65f,
+        .rainbow_saturation = 0.92f,
+        .rainbow_hue_offset = 0.0f,
+        .rainbow_spread = 1.0f,
         .shape_id = NM_SHAPE_ROUNDED,
         .animation_id = NM_ANIM_FLOW,
         .segment_count = 0,
@@ -121,6 +126,12 @@ void nm_config_validate(nm_config *cfg)
     if (cfg->ornament_mode < NM_ORNAMENT_NONE || cfg->ornament_mode > NM_ORNAMENT_GAME_UI)
         cfg->ornament_mode = NM_ORNAMENT_NONE;
     cfg->animation_speed = nm_clamp(cfg->animation_speed, 0.0f, 5.0f);
+    if (cfg->color_mode < NM_COLOR_SOLID || cfg->color_mode > NM_COLOR_RAINBOW)
+        cfg->color_mode = NM_COLOR_DUAL;
+    cfg->rainbow_speed = nm_clamp(cfg->rainbow_speed, 0.0f, 5.0f);
+    cfg->rainbow_saturation = nm_clamp(cfg->rainbow_saturation, 0.0f, 1.0f);
+    cfg->rainbow_hue_offset = nm_clamp(cfg->rainbow_hue_offset, 0.0f, 1.0f);
+    cfg->rainbow_spread = nm_clamp(cfg->rainbow_spread, 0.25f, 3.0f);
 
     cfg->primary |= 0xFF000000u;
     cfg->secondary |= 0xFF000000u;
@@ -148,6 +159,13 @@ bool nm_config_apply_preset(nm_config *cfg, int preset_id)
     cfg->animation_id = preset.animation;
     cfg->primary = preset.primary | 0xFF000000u;
     cfg->secondary = preset.secondary | 0xFF000000u;
+    /* Named presets retain their authored two-color identity. Rainbow is an
+     * explicit user customization and never leaks across preset selection. */
+    cfg->color_mode = NM_COLOR_DUAL;
+    cfg->rainbow_speed = 0.65f;
+    cfg->rainbow_saturation = 0.92f;
+    cfg->rainbow_hue_offset = 0.0f;
+    cfg->rainbow_spread = 1.0f;
     cfg->scale = (float)preset.scale;
     cfg->roundness = (float)preset.roundness;
     cfg->shape_detail = (float)preset.shape_detail;
