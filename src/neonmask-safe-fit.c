@@ -29,18 +29,18 @@ static float nm_light_envelope(const nm_config *cfg)
             accent = cfg->art_gap + 13.0f;
         if (cfg->ornament_mode == NM_ORNAMENT_TECH_HUD &&
             cfg->shape_id == NM_SHAPE_TECH_HUD) {
-            const float stroke = fmaxf(2.2f,cfg->border_px*1.15f);
-            const float gap = cfg->art_gap + fmaxf(4.0f,cfg->border_px*1.30f);
+            const float stroke = fmaxf(2.4f,cfg->border_px*1.16f);
+            const float gap = cfg->art_gap + fmaxf(5.0f,cfg->border_px*1.25f);
             const float glow = cfg->show_glow ?
-                fmaxf(4.0f,cfg->glow_px*0.22f) : 0.0f;
+                fmaxf(4.0f,cfg->glow_px*0.20f) : 0.0f;
             accent = gap + stroke + glow + 2.0f;
         }
         if (cfg->ornament_mode == NM_ORNAMENT_GAME_UI &&
             cfg->shape_id == NM_SHAPE_GAME_UI) {
-            const float stroke=fmaxf(2.6f,cfg->border_px*1.25f);
-            const float gap=cfg->art_gap+fmaxf(4.0f,cfg->border_px*1.15f);
+            const float stroke=fmaxf(3.0f,cfg->border_px*1.34f);
+            const float gap=cfg->art_gap+fmaxf(7.0f,cfg->border_px*1.35f);
             const float glow=cfg->show_glow ?
-                fmaxf(4.0f,cfg->glow_px*0.20f) : 0.0f;
+                fmaxf(4.0f,cfg->glow_px*0.18f) : 0.0f;
             accent=gap+stroke+glow+2.0f;
         }
         if (cfg->ornament_mode != NM_ORNAMENT_NONE)
