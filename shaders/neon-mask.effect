@@ -471,7 +471,7 @@ float techHudDistance(float2 p,float2 b,float detail)
 // contour while corner brackets and the secondary rail remain independent.
 float gameUiDistance(float2 p,float2 b,float detail)
 {
-    (void)detail;
+    // detail intentionally does not alter the clean rectangular Game UI mask.
     return roundedBoxDistance(p,b,0.0);
 }
 
