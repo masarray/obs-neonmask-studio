@@ -685,6 +685,8 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     /* D4F Tech grammar: only TR + BL are dominant outer Ls. The true
      * 24px empty gap remains dark between base frame and outer bar. */
     const uint8_t *tr_h=mapped+12u*stride+250u*4u;
+    /* D4G: inside the outer elbow quadrant that was missing in D4F. */
+    const uint8_t *tr_joint=mapped+5u*stride+289u*4u;
     const uint8_t *tr_h_thick=mapped+18u*stride+250u*4u;
     const uint8_t *tr_v=mapped+40u*stride+283u*4u;
     const uint8_t *bl_h=mapped+168u*stride+70u*4u;
@@ -693,13 +695,14 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     const uint8_t *br_forbidden=mapped+168u*stride+283u*4u;
     const uint8_t *true_gap=mapped+32u*stride+250u*4u;
     const uint8_t *quiet_center=mapped+90u*stride+160u*4u;
-    if(tr_h[3]<190 || tr_h_thick[3]<130 || tr_v[3]<190 ||
+    if(tr_h[3]<190 || tr_joint[3]<150 ||
+       tr_h_thick[3]<130 || tr_v[3]<190 ||
        bl_h[3]<190 || bl_v[3]<190 ||
        tl_forbidden[3]>15 || br_forbidden[3]>15 ||
        true_gap[3]>15 || quiet_center[3]>3) {
         fprintf(stderr,
-                "FAIL: D4F Tech two-corner TR=%u/%u/%u BL=%u/%u forbidden=%u/%u gap=%u center=%u\n",
-                tr_h[3],tr_h_thick[3],tr_v[3],bl_h[3],bl_v[3],
+                "FAIL: D4G Tech connected joint TR=%u joint=%u thick=%u V=%u BL=%u/%u forbidden=%u/%u gap=%u center=%u\n",
+                tr_h[3],tr_joint[3],tr_h_thick[3],tr_v[3],bl_h[3],bl_v[3],
                 tl_forbidden[3],br_forbidden[3],true_gap[3],quiet_center[3]);
         failed=1;
     }
@@ -814,19 +817,21 @@ static int verify_game_ui_preview_scale(gs_effect_t *effect)
     const uint8_t *bl_v=mapped+130u*stride+48u*4u;
     const uint8_t *br_h=mapped+157u*stride+250u*4u;
     const uint8_t *br_v=mapped+130u*stride+272u*4u;
+    /* D4G: BR elbow-square quadrant that D4F left empty. */
+    const uint8_t *br_joint=mapped+161u*stride+276u*4u;
     const uint8_t *innerTop=mapped+54u*stride+160u*4u;
     const uint8_t *innerTopOff=mapped+57u*stride+160u*4u;
     const uint8_t *true_gap=mapped+38u*stride+70u*4u;
     const uint8_t *center=mapped+90u*stride+160u*4u;
     if(tl_h[3]<190||tl_h_thick[3]<120||tl_v[3]<190||
        tr_h[3]<190||tr_v[3]<190||bl_h[3]<190||bl_v[3]<190||
-       br_h[3]<190||br_v[3]<190||
+       br_h[3]<190||br_v[3]<190||br_joint[3]<150||
        innerTop[3]<40||innerTopOff[3]>35||true_gap[3]>15||center[3]>3||
        tl_h_thick[3] <= innerTop[3]+40){
         fprintf(stderr,
-                "FAIL: D4F Game outer=%u/%u/%u/%u/%u/%u/%u/%u/%u inner=%u off=%u gap=%u center=%u\n",
+                "FAIL: D4G Game connected outer=%u/%u/%u/%u/%u/%u/%u/%u/%u joint=%u inner=%u off=%u gap=%u center=%u\n",
                 tl_h[3],tl_h_thick[3],tl_v[3],tr_h[3],tr_v[3],
-                bl_h[3],bl_v[3],br_h[3],br_v[3],innerTop[3],
+                bl_h[3],bl_v[3],br_h[3],br_v[3],br_joint[3],innerTop[3],
                 innerTopOff[3],true_gap[3],center[3]);
         failed=1;
     }

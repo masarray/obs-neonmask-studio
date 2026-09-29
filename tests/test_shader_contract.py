@@ -54,13 +54,11 @@ assert "float2 v0=float2(-b.x+cut,-b.y)" in shader
 assert "float2 v3=float2( b.x-cut, b.y)" in shader
 assert "ornament_mode == 3 && shape_id == 13" in shader
 assert "bool authoredOverlay = (shape_id == 13 && ornament_mode == 3)" in shader
-assert "float majorHalf=max(0.5,ornament_width*0.5)" in shader
-assert "float2 trCorner=float2(hx+gap+majorHalf,-hy-gap-majorHalf)" in shader
-assert "float2 blCorner=float2(-hx-gap-majorHalf,hy+gap+majorHalf)" in shader
-assert "float trH=roundedBoxDistance(" in shader
-assert "float trV=roundedBoxDistance(" in shader
-assert "float blH=roundedBoxDistance(" in shader
-assert "float blV=roundedBoxDistance(" in shader
+assert "float thickness=safeLCornerThickness(ornament_width,armX,armY)" in shader
+assert "float2 trOuter=float2(hx+gap+thickness," in shader
+assert "float2 blOuter=float2(-hx-gap-thickness," in shader
+assert "q,trOuter,float2(-1.0,1.0),armX,armY,thickness" in shader
+assert "q,blOuter,float2(1.0,-1.0),armX,armY,thickness" in shader
 assert "Other corners get only thin diagonal technical accents, never Ls." in shader
 assert "float2 tlCorner=" not in shader
 assert "coreA*=0.84" in shader and "outerA*=0.52" in shader
@@ -97,11 +95,14 @@ assert "bubble_body_controls" in host and "bubble_tail_controls" in host
 assert 'obs_property_set_visible(body,shape_id==NM_SHAPE_CHAT_BUBBLE)' in host
 assert 'obs_property_set_visible(tail,shape_id==NM_SHAPE_CHAT_BUBBLE)' in host
 assert "nm_context_visibility(" in host
+assert 'obs_properties_add_text(art_group,"art_clip_hint"' in host
+assert 'obs_property_set_visible(p,tech || game)' in host
 assert "NM_SHOW(\"speed\",border && animation!=NM_ANIM_STATIC)" in host
 assert "NM_SHOW(\"glow_radius\",border && glow)" in host
 assert 'Bubble.TLX="Top-left X"' in en_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — cut corners + brackets"' in en_locale
 assert 'Art.Width="Outer ornament width (px)"' in en_locale
+assert 'Art.ClipHint="Large outer gap/width can exceed the source bounds.' in en_locale
 assert 'Art.Gap="Outer ornament gap from frame (px)"' in en_locale
 assert 'Border.Width="Base neon border width (px)"' in en_locale
 assert 'Preset.TechHUD="Tech HUD Advanced — Cyan + Amber"' in en_locale
@@ -114,6 +115,7 @@ assert 'Rainbow.Spread="Sebaran gradien"' in id_locale
 assert 'Bubble.TLX="Sudut kiri-atas X"' in id_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — sudut potong + bracket"' in id_locale
 assert 'Art.Width="Ketebalan ornamen luar (px)"' in id_locale
+assert 'Art.ClipHint="Gap/ketebalan ornamen luar yang besar dapat melewati batas sumber.' in id_locale
 # A primitive min is an occupancy union, NOT the exposed contour distance:
 # its hidden body bottom/tail base caused a phantom horizontal neon seam.
 assert "float ds=edgeDistanceSquared(p,tlN,trP)" in shader
@@ -138,7 +140,12 @@ assert "if(color_mode == 1)" in shader and "else if(color_mode == 2)" in shader
 assert "contourTurn*rainbow_spread" in shader
 assert "rainbow_hue_offset+rainbow_phase" in shader
 assert "float3 outerColor = neon;" in shader
-assert "float gapGate" in shader and "float hbar" in shader and "float vbar" in shader
+assert "float gapGate" in shader
+assert "float connectedLCornerDistance(" in shader
+assert "float safeLCornerThickness(" in shader
+assert "float2 elbowCenter=outerCorner+" in shader
+assert "float elbow=roundedBoxDistance(p-elbowCenter,float2(h,h),0.0)" in shader
+assert "return min(elbow,min(hBar,vBar))" in shader
 assert "artBarA" in shader and "artBarGlowA" in shader
 assert "NM_ORNAMENT_CYBER" in host and "NM_ORNAMENT_NONE" in host
 assert "NM_ORNAMENT_REACTOR" in host and "NM_ORNAMENT_TECH_HUD" in host and "NM_ORNAMENT_STREAMER" in host
@@ -148,8 +155,8 @@ for mode in (2, 3, 4, 5):
 assert "float segmentDistance(" in shader
 assert "ornament_mode == 5 && shape_id == 14" in shader
 assert "float minorHalf=max(0.25,inner_rail_width*0.5)" in shader
-assert "float hbar=roundedBoxDistance(" in shader
-assert "float vbar=roundedBoxDistance(" in shader
+assert "float2 outerCorner=float2(hx+gap+thickness," in shader
+assert "connectedLCornerDistance(" in shader
 assert "float innerD=abs(d+innerGap)" in shader
 assert "corners*0.99+innerRail*0.58" in shader
 assert "coreA*=0.80" in shader and "outerA*=0.40" in shader
