@@ -45,6 +45,7 @@ assert "Preset.HUDCut" in host and "Preset.Squircle" in host
 assert "nm_geometry_visibility(" in host
 assert "obs_property_set_visible(round,rounded)" in host
 assert "obs_property_set_visible(detail,authored)" in host
+assert "shape_id==NM_SHAPE_GAME_UI ||" not in host.split("const bool authored=",1)[1].split(";",1)[0]
 assert "obs_property_set_visible(sides,shape_id==NM_SHAPE_POLYGON)" in host
 assert "float2 topA=float2(-half_size.x+cut*0.38" in shader
 assert "artBarA=saturate(artBarA+trace*art_intensity*0.88)" in shader
@@ -52,17 +53,17 @@ assert "float2 v10=float2(-b.x,b.y-cut*0.70)" in shader
 assert "float2 v0=float2(-b.x+cut,-b.y)" in shader
 assert "float2 v3=float2( b.x-cut, b.y)" in shader
 assert "ornament_mode == 3 && shape_id == 13" in shader
-assert "float2 trH0=float2(hx-armX,-hy-gap)" in shader
-assert "float2 blC =float2(-hx-gap,hy+gap)" in shader
-assert "float2 tlDiagA=float2(-hx+cut*0.12-diag" in shader
-assert "float majorHalf=max(2.6,border_width*1.28)" in shader
-assert "float minorHalf=max(1.5,border_width*0.70)" in shader
-assert "float glowSpread=max(4.5,glow_radius*0.24)" in shader
-assert "float armX=clamp(hx*0.38,56.0,120.0)" in shader
-assert "float armY=clamp(hy*0.46,48.0,100.0)" in shader
-assert "float shellD=segmentDistance(q,tlTopA,tlTopB)" in shader
-assert "float innerD=min(min(segmentDistance(q,inTopA,inTopB)" in shader
-assert "artBarA=saturate(artBarA+art_intensity*(major*0.99+minor*0.70))" in shader
+assert "bool authoredOverlay = (shape_id == 13 && ornament_mode == 3)" in shader
+assert "float2 trC=float2(hx+gap,-hy-gap)" in shader
+assert "float2 blC=float2(-hx-gap,hy+gap)" in shader
+assert "float2 tlDiag0=float2(-hx+cut*0.10-diag" in shader
+assert "float majorHalf=max(2.4,border_width*1.16)" in shader
+assert "float minorHalf=max(1.35,border_width*0.64)" in shader
+assert "float glowSpread=max(4.0,glow_radius*0.20)" in shader
+assert "float strongD=min(trD,blD)" in shader
+assert "float shellD=min(tlShell,brShell)" in shader
+assert "strong*0.99+shell*0.83" in shader
+assert "float innerD=min(min(segmentDistance(q,inTopA,inTopB)" not in shader
 # The same saved Roundness slider affects both Bubble tail and Angled Card
 # cut-end fillets. Reject the old UI text claiming it is Angled-only.
 en_locale = (ROOT / "data" / "locale" / "en-US.ini").read_text(encoding="utf-8")
@@ -140,7 +141,8 @@ assert "float segmentDistance(" in shader
 assert "ornament_mode == 5 && shape_id == 14" in shader
 assert "float dH=segmentDistance(aq,float2(hx-armX,corner.y),corner)" in shader
 assert "float innerD=abs(d+innerGap)" in shader
-assert "corners*0.99+innerRail*0.62" in shader
+assert "corners*0.99+innerRail*0.78" in shader
+assert "float nodeD=" not in shader
 for key in ("art_intensity", "art_gap"):
     assert f'obs_data_has_user_value(settings, "{key}")' in host
     assert f'obs_data_set_double(settings, "{key}", next.{key})' in host

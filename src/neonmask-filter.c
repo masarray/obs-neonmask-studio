@@ -381,7 +381,6 @@ static void nm_geometry_visibility(obs_properties_t *props, int shape_id)
     const bool authored=shape_id==NM_SHAPE_ANGLED_CARD ||
                         shape_id==NM_SHAPE_HUD_PANEL ||
                         shape_id==NM_SHAPE_TECH_HUD ||
-                        shape_id==NM_SHAPE_GAME_UI ||
                         shape_id==NM_SHAPE_SQUIRCLE;
     if(round) obs_property_set_visible(round,rounded);
     if(detail) obs_property_set_visible(detail,authored);

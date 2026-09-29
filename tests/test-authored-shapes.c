@@ -176,7 +176,7 @@ int main(void)
     /* D4B Tech HUD: TL/BR are real mask chamfers, while TR/BL remain square
      * anchors for the separate external bracket ornament. */
     const int tech=NM_SHAPE_TECH_HUD;
-    const float tech_cut=fminf(fmaxf(2.0f,bx*detail*1.75f),bx*0.42f);
+    const float tech_cut=fminf(fmaxf(2.0f,bx*detail*1.10f),bx*0.20f);
     check("Tech HUD center contains source",D(tech,0,0)<-5.0f);
     check("Tech HUD top-left cut removes source",D(tech,-23,-23)>1.0f);
     check("Tech HUD top-right stays square",D(tech,23,-23)<-0.5f);
@@ -187,23 +187,21 @@ int main(void)
     check("Tech HUD BR diagonal is exact contour",
           fabsf(D(tech,bx-tech_cut*0.5f,by-tech_cut*0.5f))<0.002f);
     check("Tech HUD detail visibly changes chamfer",
-          nm_authored_shape_distance(tech,-20,-20,bx,by,r,0.08f)<0.0f &&
-          nm_authored_shape_distance(tech,-20,-20,bx,by,r,0.35f)>0.0f);
+          nm_authored_shape_distance(tech,-22.5f,-22.5f,bx,by,r,0.08f)<0.0f &&
+          nm_authored_shape_distance(tech,-22.5f,-22.5f,bx,by,r,0.35f)>0.0f);
 
-    /* D4C Game UI: all four source corners use a restrained, symmetric
-     * chamfer; the large L brackets and inner rail remain decoration. */
+    /* D4C.1: clean rectangular source coverage; gaming identity lives in the
+     * outer brackets and one inset rail rather than webcam corner clipping. */
     const int game=NM_SHAPE_GAME_UI;
-    const float game_cut=fminf(fmaxf(2.0f,bx*detail*0.72f),bx*0.18f);
     check("Game UI center contains source",D(game,0,0)<-5.0f);
-    check("Game UI top-left corner clipped",D(game,-23.8f,-23.8f)>0.2f);
-    check("Game UI top-right corner clipped",D(game,23.8f,-23.8f)>0.2f);
-    check("Game UI bottom-right corner clipped",D(game,23.8f,23.8f)>0.2f);
-    check("Game UI bottom-left corner clipped",D(game,-23.8f,23.8f)>0.2f);
-    check("Game UI top-left diagonal exact contour",
-          fabsf(D(game,-bx+game_cut*0.5f,-by+game_cut*0.5f))<0.002f);
-    check("Game UI detail changes all-corner chamfer",
-          nm_authored_shape_distance(game,-22.0f,-22.0f,bx,by,r,0.08f)<0.0f &&
-          nm_authored_shape_distance(game,-22.0f,-22.0f,bx,by,r,0.35f)>0.0f);
+    check("Game UI TL corner is contour",fabsf(D(game,-bx,-by))<0.001f);
+    check("Game UI TR corner is contour",fabsf(D(game,bx,-by))<0.001f);
+    check("Game UI BR corner is contour",fabsf(D(game,bx,by))<0.001f);
+    check("Game UI BL corner is contour",fabsf(D(game,-bx,by))<0.001f);
+    check("Game UI near-corner remains source-filled",D(game,-23.0f,-23.0f)<-0.8f);
+    check("Game UI detail does not distort clean rectangle",
+          fabsf(nm_authored_shape_distance(game,-20.0f,-20.0f,bx,by,r,0.08f)-
+                nm_authored_shape_distance(game,-20.0f,-20.0f,bx,by,r,0.35f))<0.0001f);
 
     /* Smooth superellipse has a continuous, aspect-correct implicit
      * contour; its exponent changes with the existing shape_detail. */

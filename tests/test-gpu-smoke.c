@@ -275,8 +275,8 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *game_corner_tr = mapped + 1u * stride + 62u * 4u;
     const uint8_t *game_corner_br = mapped + 62u * stride + 62u * 4u;
     const uint8_t *game_corner_bl = mapped + 62u * stride + 1u * 4u;
-    const uint8_t *game_mask_tl = mapped + 8u * stride + 8u * 4u;
-    const uint8_t *game_mask_top = mapped + 8u * stride + 14u * 4u;
+    const uint8_t *game_mask_tl = mapped + 10u * stride + 10u * 4u;
+    const uint8_t *game_mask_top = mapped + 10u * stride + 14u * 4u;
     const uint8_t *game_inner_top = mapped + 16u * stride + 32u * 4u;
 
 
@@ -547,8 +547,9 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
 
     else if(variant==43) {
         if(center[0]<240 || center[3]<245 ||
-           game_mask_tl[3]>3 || game_mask_top[0]<220 || game_mask_top[3]<220) {
-            fprintf(stderr,"FAIL: Game UI mask center=%u TL=%u top=%u\n",
+           game_mask_tl[0]<220 || game_mask_tl[3]<220 ||
+           game_mask_top[0]<220 || game_mask_top[3]<220) {
+            fprintf(stderr,"FAIL: clean Game UI rectangle center=%u TL=%u top=%u\n",
                     center[3],game_mask_tl[3],game_mask_top[3]);
             failed=1;
         }
@@ -615,22 +616,22 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     gs_effect_set_float(P("subject_zoom"),1.0f);
     gs_effect_set_float(P("shape_rotation"),0.0f);
     gs_effect_set_int(P("polygon_sides"),8);
-    gs_effect_set_float(P("shape_detail"),0.22f);
+    gs_effect_set_float(P("shape_detail"),0.14f);
     gs_effect_set_vec4(P("bubble_top"),&btop);
     gs_effect_set_vec4(P("bubble_bottom"),&bbottom);
     gs_effect_set_vec4(P("bubble_tail"),&btail);
     gs_effect_set_float(P("corner_radius"),0.0f);
     gs_effect_set_int(P("shape_id"),13);
-    gs_effect_set_float(P("border_width"),3.5f);
+    gs_effect_set_float(P("border_width"),3.2f);
     gs_effect_set_int(P("style_id"),3);
     gs_effect_set_int(P("ornament_mode"),3);
-    gs_effect_set_float(P("art_intensity"),0.91f);
-    gs_effect_set_float(P("art_gap"),2.0f);
+    gs_effect_set_float(P("art_intensity"),0.96f);
+    gs_effect_set_float(P("art_gap"),6.0f);
     gs_effect_set_float(P("feather"),0.5f);
-    gs_effect_set_float(P("glow_radius"),20.0f);
-    gs_effect_set_float(P("glow_strength"),0.70f);
-    gs_effect_set_float(P("mid_glow_strength"),0.78f);
-    gs_effect_set_float(P("bloom_strength"),0.82f);
+    gs_effect_set_float(P("glow_radius"),16.0f);
+    gs_effect_set_float(P("glow_strength"),0.0f);
+    gs_effect_set_float(P("mid_glow_strength"),0.72f);
+    gs_effect_set_float(P("bloom_strength"),0.76f);
     gs_effect_set_float(P("hotspot_strength"),0.0f);
     gs_effect_set_float(P("hotspot_size"),0.09f);
     gs_effect_set_vec4(P("color_a"),&magenta);
@@ -646,7 +647,7 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     gs_effect_set_int(P("animation_id"),0);
     gs_effect_set_int(P("segment_count"),0);
     gs_effect_set_int(P("border_enabled"),1);
-    gs_effect_set_int(P("glow_enabled"),1);
+    gs_effect_set_int(P("glow_enabled"),0);
     gs_effect_set_texture(P("svg_sdf"),NULL);
     gs_effect_set_int(P("svg_ready"),0);
     gs_effect_set_texture(P("image"),input);
@@ -670,26 +671,26 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     uint8_t *mapped=NULL; uint32_t stride=0;
     if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;goto done_hires;}
 
-    /* D4B.2 must read as an assembly, not a tiny tick. Probe both ends of the
-     * long square brackets, both cut-corner shells, and the inner top rail. */
-    const uint8_t *tr_near=mapped+23u*stride+220u*4u;
-    const uint8_t *tr_far =mapped+23u*stride+270u*4u;
-    const uint8_t *tr_thick=mapped+19u*stride+245u*4u;
-    const uint8_t *bl_far =mapped+157u*stride+50u*4u;
-    const uint8_t *tl_shell_top=mapped+23u*stride+78u*4u;
-    const uint8_t *tl_shell_side=mapped+58u*stride+43u*4u;
-    const uint8_t *br_shell_bottom=mapped+157u*stride+242u*4u;
-    const uint8_t *inner_top=mapped+35u*stride+120u*4u;
+    /* D4B.3: four intentional modules must be readable, while the old
+     * floating-inner-rail region stays quiet with glow disabled. */
+    const uint8_t *tr_h=mapped+19u*stride+245u*4u;
+    const uint8_t *tr_v=mapped+48u*stride+281u*4u;
+    const uint8_t *bl_h=mapped+161u*stride+72u*4u;
+    const uint8_t *bl_v=mapped+132u*stride+39u*4u;
+    const uint8_t *tl_top=mapped+19u*stride+72u*4u;
+    const uint8_t *tl_side=mapped+49u*stride+39u*4u;
+    const uint8_t *br_bottom=mapped+161u*stride+248u*4u;
+    const uint8_t *br_side=mapped+131u*stride+281u*4u;
+    const uint8_t *old_inner_noise=mapped+35u*stride+120u*4u;
     const uint8_t *quiet_center=mapped+90u*stride+160u*4u;
-    if(tr_near[3]<150 || tr_far[3]<150 || tr_thick[3]<80 ||
-       bl_far[3]<150 || tl_shell_top[3]<90 || tl_shell_side[3]<90 ||
-       br_shell_bottom[3]<90 || inner_top[3]<55 ||
-       quiet_center[3]>20) {
+    if(tr_h[3]<150 || tr_v[3]<150 || bl_h[3]<150 || bl_v[3]<150 ||
+       tl_top[3]<90 || tl_side[3]<90 ||
+       br_bottom[3]<90 || br_side[3]<90 ||
+       old_inner_noise[3]>12 || quiet_center[3]>3) {
         fprintf(stderr,
-                "FAIL: Tech HUD assembly TR=%u/%u thick=%u BL=%u TL=%u/%u BR=%u inner=%u center=%u\n",
-                tr_near[3],tr_far[3],tr_thick[3],bl_far[3],
-                tl_shell_top[3],tl_shell_side[3],br_shell_bottom[3],
-                inner_top[3],quiet_center[3]);
+                "FAIL: clean Tech HUD TR=%u/%u BL=%u/%u TL=%u/%u BR=%u/%u noise=%u center=%u\n",
+                tr_h[3],tr_v[3],bl_h[3],bl_v[3],tl_top[3],tl_side[3],
+                br_bottom[3],br_side[3],old_inner_noise[3],quiet_center[3]);
         failed=1;
     }
     gs_stagesurface_unmap(stage);
@@ -742,13 +743,13 @@ static int verify_game_ui_preview_scale(gs_effect_t *effect)
     gs_effect_set_vec4(P("bubble_tail"),&btail);
     gs_effect_set_float(P("corner_radius"),0.0f);
     gs_effect_set_int(P("shape_id"),14);
-    gs_effect_set_float(P("border_width"),4.0f);
+    gs_effect_set_float(P("border_width"),2.8f);
     gs_effect_set_int(P("style_id"),0);
     gs_effect_set_int(P("ornament_mode"),5);
-    gs_effect_set_float(P("art_intensity"),0.92f);
-    gs_effect_set_float(P("art_gap"),3.0f);
+    gs_effect_set_float(P("art_intensity"),0.96f);
+    gs_effect_set_float(P("art_gap"),8.0f);
     gs_effect_set_float(P("feather"),0.5f);
-    gs_effect_set_float(P("glow_radius"),18.0f);
+    gs_effect_set_float(P("glow_radius"),14.0f);
     gs_effect_set_float(P("glow_strength"),0.0f);
     gs_effect_set_float(P("mid_glow_strength"),0.8f);
     gs_effect_set_float(P("bloom_strength"),0.84f);
@@ -788,17 +789,28 @@ static int verify_game_ui_preview_scale(gs_effect_t *effect)
     uint8_t *mapped=NULL; uint32_t stride=0;
     if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;goto done_game;}
 
-    const uint8_t *tl=mapped+22u*stride+70u*4u;
-    const uint8_t *tr=mapped+22u*stride+250u*4u;
-    const uint8_t *bl=mapped+158u*stride+70u*4u;
-    const uint8_t *br=mapped+158u*stride+250u*4u;
-    const uint8_t *innerTop=mapped+38u*stride+160u*4u;
-    const uint8_t *innerRight=mapped+90u*stride+262u*4u;
+    const uint8_t *tl_h=mapped+15u*stride+72u*4u;
+    const uint8_t *tl_v=mapped+50u*stride+35u*4u;
+    const uint8_t *tr_h=mapped+15u*stride+248u*4u;
+    const uint8_t *tr_v=mapped+50u*stride+285u*4u;
+    const uint8_t *bl_h=mapped+165u*stride+72u*4u;
+    const uint8_t *bl_v=mapped+130u*stride+35u*4u;
+    const uint8_t *br_h=mapped+165u*stride+248u*4u;
+    const uint8_t *br_v=mapped+130u*stride+285u*4u;
+    const uint8_t *innerTop=mapped+36u*stride+160u*4u;
+    const uint8_t *innerRight=mapped+90u*stride+264u*4u;
+    const uint8_t *innerBottom=mapped+144u*stride+160u*4u;
+    const uint8_t *innerLeft=mapped+90u*stride+56u*4u;
     const uint8_t *center=mapped+90u*stride+160u*4u;
-    if(tl[3]<120||tr[3]<120||bl[3]<120||br[3]<120||
-       innerTop[3]<65||innerRight[3]<65||center[3]>3){
-        fprintf(stderr,"FAIL: Game UI preview TL/TR/BL/BR=%u/%u/%u/%u inner=%u/%u center=%u\n",
-                tl[3],tr[3],bl[3],br[3],innerTop[3],innerRight[3],center[3]);
+    if(tl_h[3]<140||tl_v[3]<140||tr_h[3]<140||tr_v[3]<140||
+       bl_h[3]<140||bl_v[3]<140||br_h[3]<140||br_v[3]<140||
+       innerTop[3]<75||innerRight[3]<75||innerBottom[3]<75||innerLeft[3]<75||
+       center[3]>3){
+        fprintf(stderr,
+                "FAIL: clean Game UI outer=%u/%u/%u/%u/%u/%u/%u/%u inner=%u/%u/%u/%u center=%u\n",
+                tl_h[3],tl_v[3],tr_h[3],tr_v[3],bl_h[3],bl_v[3],
+                br_h[3],br_v[3],innerTop[3],innerRight[3],
+                innerBottom[3],innerLeft[3],center[3]);
         failed=1;
     }
     gs_stagesurface_unmap(stage);

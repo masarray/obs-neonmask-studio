@@ -298,8 +298,8 @@ static float hud_panel(nm_p2 p,nm_p2 b,float detail)
  * external luminous L-brackets in the shader ornament layer. */
 static float tech_hud(nm_p2 p,nm_p2 b,float detail)
 {
-    const float cut=fminf(fmaxf(2.0f,fminf(b.x,b.y)*detail*1.75f),
-                          fminf(b.x,b.y)*0.42f);
+    const float cut=fminf(fmaxf(2.0f,fminf(b.x,b.y)*detail*1.10f),
+                          fminf(b.x,b.y)*0.20f);
     const nm_p2 v[6]={
         {-b.x+cut,-b.y}, {b.x,-b.y}, {b.x,b.y-cut},
         {b.x-cut,b.y}, {-b.x,b.y}, {-b.x,-b.y+cut}
@@ -318,20 +318,8 @@ static float tech_hud(nm_p2 p,nm_p2 b,float detail)
  * panel. Outer L brackets and the inner rail are decoration only. */
 static float game_ui(nm_p2 p,nm_p2 b,float detail)
 {
-    const float cut=fminf(fmaxf(2.0f,fminf(b.x,b.y)*detail*0.72f),
-                          fminf(b.x,b.y)*0.18f);
-    const nm_p2 v[8]={
-        {-b.x+cut,-b.y},{b.x-cut,-b.y},{b.x,-b.y+cut},{b.x,b.y-cut},
-        {b.x-cut,b.y},{-b.x+cut,b.y},{-b.x,b.y-cut},{-b.x,-b.y+cut}
-    };
-    float side=cross(sub(v[1],v[0]),sub(p,v[0]));
-    float ds=edge2(p,v[0],v[1]);
-    for(int i=1;i<8;++i){
-        const nm_p2 a=v[i],n=v[(i+1)%8];
-        side=fminf(side,cross(sub(n,a),sub(p,a)));
-        ds=fminf(ds,edge2(p,a,n));
-    }
-    return sqrtf(ds)*(side>=0.0f?-1.0f:1.0f);
+    (void)detail;
+    return box(p,b,0.0f);
 }
 
 static float squircle(nm_p2 p,nm_p2 b,float detail)

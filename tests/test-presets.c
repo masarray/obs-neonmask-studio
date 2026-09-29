@@ -57,6 +57,8 @@ int main(void)
     nm_get_preset(5, &p);
     check("Tech HUD preset uses dedicated mask + ornament",
           p.shape == NM_SHAPE_TECH_HUD && p.ornament_mode == NM_ORNAMENT_TECH_HUD);
+    check("Tech HUD visual-parity recipe is sparse and separated",
+          p.shape_detail <= 0.15 && p.art_gap >= 5.0 && p.border_width <= 3.5);
     nm_get_preset(6, &p);
     check("Streamer preset becomes true bubble mask", p.shape == NM_SHAPE_CHAT_BUBBLE && p.ornament_mode == NM_ORNAMENT_NONE);
     nm_get_preset(7, &p);
@@ -70,6 +72,8 @@ int main(void)
     check("Game UI preset uses dedicated mask and recipe",
           p.shape == NM_SHAPE_GAME_UI && p.ornament_mode == NM_ORNAMENT_GAME_UI &&
           p.animation == NM_ANIM_STATIC);
+    check("Game UI outer brackets dominate narrow base frame",
+          p.border_width <= 3.0 && p.art_gap >= 7.0 && p.art_intensity >= 0.95);
     if (failures) return 1;
     puts("PASS: nine legacy preset IDs plus appended Game UI preset 10");
     return 0;
