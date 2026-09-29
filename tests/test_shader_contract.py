@@ -215,7 +215,7 @@ assert 'obs_data_set_default_bool(settings, "expand_canvas", cfg.expand_canvas)'
 assert 'obs_properties_add_bool(mask_group,"expand_canvas"' in host
 assert "obs_property_set_modified_callback(expand,nm_context_changed)" in host
 assert 'Mask.ExpandCanvas="Expand output for glow' in en_locale
-assert 'Mask.ExpandCanvas="Perluas output glow' in id_locale
+assert 'Mask.ExpandCanvas="Perluas output untuk glow / ornamen luar' in id_locale
 assert ".get_width = nm_get_width" in host and ".get_height = nm_get_height" in host
 assert "return horizontal ? fit.output_width : fit.output_height;" in host
 assert "vec2_set(&origin, (float)fit.pad_left, (float)fit.pad_top);" in host
