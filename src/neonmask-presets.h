@@ -68,6 +68,11 @@ typedef struct nm_preset {
     double art_intensity;
     double art_gap;
     double shape_detail;
+    /* D4F append-only authored-presence recipe. */
+    double ornament_width;
+    double ornament_length_x;
+    double ornament_length_y;
+    double inner_rail_width;
 } nm_preset;
 
 /* Preset IDs stay stable. Preset 5 keeps the Tech HUD identity but now
