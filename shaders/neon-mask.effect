@@ -81,6 +81,43 @@ float roundedBoxDistance(float2 p, float2 bounds, float radius)
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
 }
 
+/* D4G true connected-L primitive.
+ *
+ * The pre-D4G implementation centered both bars on the same corner centerline.
+ * That leaves only a quarter-thickness overlap at the elbow; large widths
+ * expose the missing outer quadrant as a broken/stair-step corner. Here
+ * outerCorner is the actual OUTERMOST corner. Horizontal/vertical bars both
+ * run inward by one full thickness and an explicit elbow square guarantees a
+ * watertight join on OpenGL and D3D11.
+ */
+float connectedLCornerDistance(float2 p, float2 outerCorner, float2 inward,
+                               float armX, float armY, float thickness)
+{
+    float t=max(1.0,thickness);
+    float h=0.5*t;
+    float2 hCenter=outerCorner+
+        float2(inward.x*armX*0.5,inward.y*h);
+    float2 vCenter=outerCorner+
+        float2(inward.x*h,inward.y*armY*0.5);
+    float2 elbowCenter=outerCorner+
+        float2(inward.x*h,inward.y*h);
+
+    // Crisp square bars are intentional for a futuristic HUD/game-frame join.
+    float hBar=roundedBoxDistance(p-hCenter,float2(armX*0.5,h),0.0);
+    float vBar=roundedBoxDistance(p-vCenter,float2(h,armY*0.5),0.0);
+    float elbow=roundedBoxDistance(p-elbowCenter,float2(h,h),0.0);
+    return min(elbow,min(hBar,vBar));
+}
+
+float safeLCornerThickness(float requested, float armX, float armY)
+{
+    // Preserve at least a 12px visible stub after the square elbow. This only
+    // clamps pathological width/length combinations; normal user values pass
+    // through exactly.
+    float maxT=max(1.0,min(armX,armY)-12.0);
+    return min(max(1.0,requested),maxT);
+}
+
 float ellipseDistance(float2 p, float2 r)
 {
     // A close Euclidean-distance approximation; unlike UV scaling, this keeps
@@ -896,37 +933,30 @@ float4 drawNeonMask(VertData v_in) : TARGET
                             rail * gate * art_intensity * 0.78);
         }
 
-        // D4F Tech HUD: exactly TWO dominant outer L modules (TR + BL).
-        // art_gap is the visible empty distance from frame edge to bar edge.
+        // D4G Tech HUD: exactly TWO dominant true-connected L modules
+        // (TR + BL). Width can grow aggressively without splitting the elbow.
         if (ornament_mode == 3 && shape_id == 13 && art_intensity > 0.0) {
             float2 q=rotatePoint(p,shape_rotation);
             float hx=half_size.x,hy=half_size.y;
             float cut=min(max(2.0,min(hx,hy)*shape_detail*1.10),
                           min(hx,hy)*0.20);
-            float majorHalf=max(0.5,ornament_width*0.5);
             float gap=max(0.0,art_gap);
-            float glowSpread=max(4.0,glow_radius*0.18);
-            float barRadius=max(0.8,majorHalf*0.16);
             float armX=min(max(8.0,ornament_length_x),max(8.0,hx*0.95));
             float armY=min(max(8.0,ornament_length_y),max(8.0,hy*0.95));
+            float thickness=safeLCornerThickness(ornament_width,armX,armY);
+            float glowSpread=max(4.0,glow_radius*0.18);
 
-            float2 trCorner=float2(hx+gap+majorHalf,-hy-gap-majorHalf);
-            float trH=roundedBoxDistance(
-                q-float2(trCorner.x-armX*0.5,trCorner.y),
-                float2(armX*0.5,majorHalf),barRadius);
-            float trV=roundedBoxDistance(
-                q-float2(trCorner.x,trCorner.y+armY*0.5),
-                float2(majorHalf,armY*0.5),barRadius);
-            float trD=min(trH,trV);
+            // outerCorner is the actual outside square corner. Therefore the
+            // bar's inner edge remains exactly 'gap' pixels from the frame.
+            float2 trOuter=float2(hx+gap+thickness,
+                                  -hy-gap-thickness);
+            float trD=connectedLCornerDistance(
+                q,trOuter,float2(-1.0,1.0),armX,armY,thickness);
 
-            float2 blCorner=float2(-hx-gap-majorHalf,hy+gap+majorHalf);
-            float blH=roundedBoxDistance(
-                q-float2(blCorner.x+armX*0.5,blCorner.y),
-                float2(armX*0.5,majorHalf),barRadius);
-            float blV=roundedBoxDistance(
-                q-float2(blCorner.x,blCorner.y-armY*0.5),
-                float2(majorHalf,armY*0.5),barRadius);
-            float blD=min(blH,blV);
+            float2 blOuter=float2(-hx-gap-thickness,
+                                   hy+gap+thickness);
+            float blD=connectedLCornerDistance(
+                q,blOuter,float2(1.0,-1.0),armX,armY,thickness);
 
             // Other corners get only thin diagonal technical accents, never Ls.
             float accentHalf=max(0.35,inner_rail_width*0.5);
@@ -1004,26 +1034,23 @@ float4 drawNeonMask(VertData v_in) : TARGET
                            (1.0-smoothstep(0.0,4.2,traceD)));
         }
 
-        // D4F Game UI: four user-sized solid L bars + one hairline rail.
+        // D4G Game UI: four mirrored TRUE connected L primitives plus
+        // one independent hairline inner rail.
         if (ornament_mode == 5 && shape_id == 14 && art_intensity > 0.0) {
             float2 q=rotatePoint(p,shape_rotation);
             float2 aq=abs(q);
             float hx=half_size.x,hy=half_size.y;
-            float majorHalf=max(0.5,ornament_width*0.5);
-            float minorHalf=max(0.25,inner_rail_width*0.5);
             float gap=max(0.0,art_gap);
             float armX=min(max(8.0,ornament_length_x),max(8.0,hx*0.95));
             float armY=min(max(8.0,ornament_length_y),max(8.0,hy*0.95));
-            float2 corner=float2(hx+gap+majorHalf,hy+gap+majorHalf);
-            float barRadius=max(0.65,majorHalf*0.12);
+            float thickness=safeLCornerThickness(ornament_width,armX,armY);
+            float minorHalf=max(0.25,inner_rail_width*0.5);
 
-            float hbar=roundedBoxDistance(
-                aq-float2(corner.x-armX*0.5,corner.y),
-                float2(armX*0.5,majorHalf),barRadius);
-            float vbar=roundedBoxDistance(
-                aq-float2(corner.x,corner.y-armY*0.5),
-                float2(majorHalf,armY*0.5),barRadius);
-            float cornerD=min(hbar,vbar);
+            float2 outerCorner=float2(hx+gap+thickness,
+                                      hy+gap+thickness);
+            float cornerD=connectedLCornerDistance(
+                aq,outerCorner,float2(-1.0,-1.0),
+                armX,armY,thickness);
             float corners=1.0-smoothstep(-0.70,0.85,cornerD);
 
             float innerGap=max(5.0,border_width*1.45+inner_rail_width);

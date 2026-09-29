@@ -632,3 +632,29 @@ Art gap semantics are corrected: it is the actual empty pixel distance from the 
 Tech HUD's default grammar is strict: only the top-right and bottom-left corners receive dominant outer L bars. Top-left/bottom-right may carry only thin diagonal technical accents. Game UI retains four symmetric outer Ls plus one thin inner rail. Presets 5/10 use 5px base borders for better canvas presence, with Tech HUD 18px outer bars / 24px true gap and Game UI 16px outer bars / 14px gap. D3 safe-fit/expanded-output uses the exact gap + full ornament width + glow support reach.
 
 These controls compensate for OBS scene-transform downscaling without trying to infer scene scale inside a source filter. Visual acceptance still requires real OBS canvas screenshots at the user's intended facecam size.
+
+## D4G — Corner Join Integrity
+
+Real OBS screenshots with Game UI outer width 37.5 px and Tech HUD width
+56.5 px exposed a geometry defect hidden by normal-width tests. D4F built each
+L from two centered bars. At the elbow those bars overlapped by only one
+quarter of the requested thickness, leaving the outer elbow quadrant empty.
+The missing quadrant became an obvious stepped/broken corner as width grew.
+
+D4G replaces that construction with a dedicated `connectedLCornerDistance`
+primitive. Its anchor is the **actual outermost square corner**; horizontal and
+vertical bars each run inward by one full thickness and an explicit full
+thickness elbow square is unioned with both bars. This keeps the joint
+watertight for large widths on both OpenGL and D3D11. Tech HUD continues to
+render dominant Ls only at top-right and bottom-left; Game UI mirrors one
+canonical connected L into all four corners.
+
+A safety clamp preserves at least a 12 px arm stub when a pathological width
+exceeds the available arm length. Normal values are untouched.
+
+There is a separate physical limit: an outer L cannot remain visible after its
+elbow leaves the source render target. The contextual UI now states this
+explicitly, and the D3 checkbox is renamed to "Expand output for glow / outer
+ornaments". Users choosing very large gap+width values should enable expansion
+to avoid source-bound clipping. D3's existing envelope already includes
+`gap + full ornament width + glow support`.

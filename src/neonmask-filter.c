@@ -456,6 +456,8 @@ static void nm_context_visibility(obs_properties_t *props, int shape_id,
         if(p) obs_property_set_visible(p,tech || game);
         p=obs_properties_get(arts,"inner_rail_width");
         if(p) obs_property_set_visible(p,game);
+        p=obs_properties_get(arts,"art_clip_hint");
+        if(p) obs_property_set_visible(p,tech || game);
     }
     obs_property_t *light=obs_properties_get(props,"premium_lighting");
     obs_properties_t *lights=light?obs_property_group_content(light):NULL;
@@ -726,6 +728,8 @@ static obs_properties_t *nm_properties(void *data)
                          obs_module_text("Art.LengthY"), 8.0, 240.0, 1.0));
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "inner_rail_width",
                          obs_module_text("Art.InnerWidth"), 0.5, 12.0, 0.25));
+    obs_properties_add_text(art_group,"art_clip_hint",
+                            obs_module_text("Art.ClipHint"),OBS_TEXT_INFO);
     obs_properties_add_group(props, "signature_art", obs_module_text("Art.Group"),
                              OBS_GROUP_NORMAL, art_group);
     obs_property_t *color_mode=obs_properties_add_list(props,"color_mode",
