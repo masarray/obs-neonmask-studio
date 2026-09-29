@@ -892,70 +892,98 @@ float4 drawNeonMask(VertData v_in) : TARGET
                             rail * gate * art_intensity * 0.78);
         }
 
-        // D4B.3 Tech HUD visual-parity pass. Keep the grammar sparse:
-        // four authored corner modules, no generic double rail, no floating
-        // inner fragments. The mask owns clipping; these modules only add light.
+        // D4E Tech HUD: authored MASS hierarchy. The main border is the
+        // thin inner frame; ornament geometry is built from filled bar SDFs
+        // so corner anchors stay visually heavy after OBS downscaling.
         if (ornament_mode == 3 && shape_id == 13 && art_intensity > 0.0) {
             float2 q=rotatePoint(p,shape_rotation);
-            float hx=half_size.x, hy=half_size.y;
+            float hx=half_size.x,hy=half_size.y;
             float cut=min(max(2.0,min(hx,hy)*shape_detail*1.10),
                           min(hx,hy)*0.20);
-            float majorHalf=max(2.4,border_width*1.16);
-            float minorHalf=max(1.35,border_width*0.64);
-            float gap=art_gap+max(5.0,border_width*1.25);
-            float glowSpread=max(4.0,glow_radius*0.20);
+            float majorHalf=max(5.0,border_width*2.70);
+            float mediumHalf=max(3.2,border_width*1.75);
+            float bladeHalf=max(1.8,border_width*0.95);
+            float gap=art_gap+max(6.0,border_width*1.50);
+            float glowSpread=max(4.0,glow_radius*0.18);
+            float barRadius=max(0.8,majorHalf*0.18);
 
-            // Top-right: one long, strong L anchor.
-            float trHX=clamp(hx*0.34,46.0,104.0);
-            float trVY=clamp(hy*0.31,34.0,76.0);
-            float2 trC=float2(hx+gap,-hy-gap);
-            float trD=min(segmentDistance(q,float2(hx-trHX,trC.y),trC),
-                          segmentDistance(q,trC,float2(trC.x,-hy+trVY)));
+            // Dominant top-left module: a genuinely thick filled L. This is
+            // intentionally the strongest silhouette cue in the Tech HUD.
+            float tlArmX=clamp(hx*0.36,54.0,116.0);
+            float tlArmY=clamp(hy*0.44,42.0,94.0);
+            float2 tlCorner=float2(-hx-gap,-hy-gap);
+            float tlH=roundedBoxDistance(
+                q-float2(tlCorner.x+tlArmX*0.5,tlCorner.y),
+                float2(tlArmX*0.5,majorHalf),barRadius);
+            float tlV=roundedBoxDistance(
+                q-float2(tlCorner.x,tlCorner.y+tlArmY*0.5),
+                float2(majorHalf,tlArmY*0.5),barRadius);
+            float tlD=min(tlH,tlV);
 
-            // Bottom-left: a slightly shorter L keeps the composition asymmetric.
-            float blHX=clamp(hx*0.27,40.0,86.0);
-            float blVY=clamp(hy*0.36,36.0,82.0);
-            float2 blC=float2(-hx-gap,hy+gap);
-            float blD=min(segmentDistance(q,float2(blC.x,hy-blVY),blC),
-                          segmentDistance(q,blC,float2(-hx+blHX,blC.y)));
+            // Top-right and bottom-left use medium-weight L modules. Their
+            // lower mass prevents a generic four-identical-corners look.
+            float trArmX=clamp(hx*0.25,38.0,82.0);
+            float trArmY=clamp(hy*0.30,30.0,66.0);
+            float2 trCorner=float2(hx+gap,-hy-gap);
+            float trH=roundedBoxDistance(
+                q-float2(trCorner.x-trArmX*0.5,trCorner.y),
+                float2(trArmX*0.5,mediumHalf),barRadius*0.75);
+            float trV=roundedBoxDistance(
+                q-float2(trCorner.x,trCorner.y+trArmY*0.5),
+                float2(mediumHalf,trArmY*0.5),barRadius*0.75);
+            float trD=min(trH,trV);
 
-            // Top-left and bottom-right: compact three-segment shells keyed to
-            // the *actual* chamfer. These read as one clean module, not noise.
-            float diag=gap*0.70710678;
-            float capX=clamp(hx*0.22,30.0,64.0);
-            float capY=clamp(hy*0.24,26.0,58.0);
-            float2 tlTop0=float2(-hx+cut*0.72,-hy-gap);
-            float2 tlTop1=float2(min(tlTop0.x+capX,-hx+hx*0.42),tlTop0.y);
-            float2 tlSide0=float2(-hx-gap,-hy+cut*0.72);
-            float2 tlSide1=float2(tlSide0.x,min(tlSide0.y+capY,-hy+hy*0.48));
-            float2 tlDiag0=float2(-hx+cut*0.10-diag,-hy+cut*0.90-diag);
-            float2 tlDiag1=float2(-hx+cut*0.90-diag,-hy+cut*0.10-diag);
-            float tlShell=min(segmentDistance(q,tlTop0,tlTop1),
-                              min(segmentDistance(q,tlSide0,tlSide1),
-                                  segmentDistance(q,tlDiag0,tlDiag1)));
+            float blArmX=clamp(hx*0.27,40.0,86.0);
+            float blArmY=clamp(hy*0.32,32.0,70.0);
+            float2 blCorner=float2(-hx-gap,hy+gap);
+            float blH=roundedBoxDistance(
+                q-float2(blCorner.x+blArmX*0.5,blCorner.y),
+                float2(blArmX*0.5,mediumHalf),barRadius*0.75);
+            float blV=roundedBoxDistance(
+                q-float2(blCorner.x,blCorner.y-blArmY*0.5),
+                float2(mediumHalf,blArmY*0.5),barRadius*0.75);
+            float blD=min(blH,blV);
 
-            float2 brBot0=float2(hx-cut*0.72,hy+gap);
-            float2 brBot1=float2(max(brBot0.x-capX,hx-hx*0.42),brBot0.y);
-            float2 brSide0=float2(hx+gap,hy-cut*0.72);
-            float2 brSide1=float2(brSide0.x,max(brSide0.y-capY,hy-hy*0.48));
-            float2 brDiag0=float2(hx-cut*0.10+diag,hy-cut*0.90+diag);
-            float2 brDiag1=float2(hx-cut*0.90+diag,hy-cut*0.10+diag);
-            float brShell=min(segmentDistance(q,brBot0,brBot1),
-                              min(segmentDistance(q,brSide0,brSide1),
-                                  segmentDistance(q,brDiag0,brDiag1)));
+            // Bottom-right keeps the reference's technical diagonal language:
+            // three short parallel blades instead of another bulky L.
+            float diagGap=gap*0.70710678;
+            float bladeLen=clamp(min(hx,hy)*0.24,22.0,48.0);
+            float2 center0=float2(hx-diagGap-cut*0.34,
+                                  hy+diagGap-cut*0.34);
+            float2 dir=normalize(float2(-1.0,1.0));
+            float2 normal=float2(dir.y,-dir.x);
+            float2 b0a=center0-dir*bladeLen*0.5;
+            float2 b0b=center0+dir*bladeLen*0.5;
+            float2 center1=center0+normal*(bladeHalf*2.5);
+            float2 center2=center0+normal*(bladeHalf*5.0);
+            float bladeD=segmentDistance(q,b0a,b0b);
+            bladeD=min(bladeD,segmentDistance(q,
+                center1-dir*bladeLen*0.42,center1+dir*bladeLen*0.42));
+            bladeD=min(bladeD,segmentDistance(q,
+                center2-dir*bladeLen*0.32,center2+dir*bladeLen*0.32));
 
-            float strongD=min(trD,blD);
-            float shellD=min(tlShell,brShell);
-            float strong=1.0-smoothstep(majorHalf-0.70,majorHalf+0.80,strongD);
-            float shell=1.0-smoothstep(minorHalf-0.55,minorHalf+0.65,shellD);
-            artBarA=saturate(artBarA+art_intensity*(strong*0.99+shell*0.83));
+            float tlA=1.0-smoothstep(-0.70,0.85,tlD);
+            float trA=1.0-smoothstep(-0.60,0.80,trD);
+            float blA=1.0-smoothstep(-0.60,0.80,blD);
+            float bladeA=1.0-smoothstep(bladeHalf-0.55,
+                                        bladeHalf+0.65,bladeD);
+            artBarA=saturate(artBarA+art_intensity*
+                             (tlA*0.99+trA*0.86+blA*0.86+bladeA*0.74));
+
             if(glow_enabled != 0) {
-                float g=min(max(0.0,strongD-majorHalf),
-                            max(0.0,shellD-minorHalf));
+                float g=min(min(max(0.0,tlD),max(0.0,trD)),
+                            min(max(0.0,blD),max(0.0,bladeD-bladeHalf)));
                 artBarGlowA=saturate(artBarGlowA+
-                    art_intensity*glow_strength*0.30*
+                    art_intensity*glow_strength*0.28*
                     (1.0-smoothstep(0.0,glowSpread,g)));
             }
+
+            // Keep the base mask border intentionally subordinate to the
+            // authored bars; it is the thin inner frame, not the focal layer.
+            coreA*=0.68;
+            fineA*=0.72;
+            midA*=0.55;
+            outerA*=0.48;
         }
 
         // HUD Cut Panel: an asymmetrical rail keyed to its actual stepped
@@ -999,39 +1027,56 @@ float4 drawNeonMask(VertData v_in) : TARGET
                            (1.0-smoothstep(0.0,4.2,traceD)));
         }
 
-        // D4C.1 Game UI visual-parity pass: a clean rectangular source,
-        // four dominant OUTER L brackets, and one thin continuous inner rail.
+        // D4E Game UI: strong 3-layer hierarchy. Four FILLED outer L
+        // brackets are the artwork; the mask border and inset rail are thin.
         if (ornament_mode == 5 && shape_id == 14 && art_intensity > 0.0) {
             float2 q=rotatePoint(p,shape_rotation);
             float2 aq=abs(q);
             float hx=half_size.x,hy=half_size.y;
-            float majorHalf=max(3.0,border_width*1.34);
-            float minorHalf=max(1.0,border_width*0.46);
-            float gap=art_gap+max(7.0,border_width*1.35);
-            float armX=clamp(hx*0.30,52.0,112.0);
-            float armY=clamp(hy*0.36,44.0,92.0);
-            float2 corner=float2(hx+gap,hy+gap);
-            float dH=segmentDistance(aq,float2(hx-armX,corner.y),corner);
-            float dV=segmentDistance(aq,float2(corner.x,hy-armY),corner);
-            float cornerD=min(dH,dV);
-            float corners=1.0-smoothstep(majorHalf-0.75,
-                                         majorHalf+0.85,cornerD);
 
-            // A single inner rail, clearly separated from the mask edge.
-            float innerGap=max(6.0,border_width*2.25);
+            // Full outer bar is roughly 9-12px at common presets, while the
+            // inner rail stays ~1.3-1.8px: an intentional >5:1 thickness ratio.
+            float majorHalf=max(4.8,border_width*2.85);
+            float minorHalf=max(0.65,border_width*0.34);
+            float gap=art_gap+max(7.0,border_width*1.55);
+            float armX=clamp(hx*0.34,60.0,124.0);
+            float armY=clamp(hy*0.40,48.0,100.0);
+            float2 corner=float2(hx+gap,hy+gap);
+            float barRadius=max(0.65,majorHalf*0.12);
+
+            // Mirror one filled L into all four quadrants with abs(q).
+            float hbar=roundedBoxDistance(
+                aq-float2(corner.x-armX*0.5,corner.y),
+                float2(armX*0.5,majorHalf),barRadius);
+            float vbar=roundedBoxDistance(
+                aq-float2(corner.x,corner.y-armY*0.5),
+                float2(majorHalf,armY*0.5),barRadius);
+            float cornerD=min(hbar,vbar);
+            float corners=1.0-smoothstep(-0.70,0.85,cornerD);
+
+            // One continuous hairline inset frame. Its low mass intentionally
+            // prevents the result from reading as another ordinary neon box.
+            float innerGap=max(7.0,border_width*2.80);
             float innerD=abs(d+innerGap);
-            float innerRail=1.0-smoothstep(minorHalf-0.45,
-                                           minorHalf+0.55,innerD);
+            float innerRail=1.0-smoothstep(minorHalf-0.40,
+                                           minorHalf+0.48,innerD);
             artBarA=saturate(artBarA+art_intensity*
-                             (corners*0.99+innerRail*0.78));
+                             (corners*0.99+innerRail*0.54));
+
             if(glow_enabled != 0) {
-                float glowSpread=max(4.0,glow_radius*0.18);
-                float g=min(max(0.0,cornerD-majorHalf),
+                float glowSpread=max(3.5,glow_radius*0.16);
+                float g=min(max(0.0,cornerD),
                             max(0.0,innerD-minorHalf));
                 artBarGlowA=saturate(artBarGlowA+
-                    art_intensity*glow_strength*0.24*
+                    art_intensity*glow_strength*0.22*
                     (1.0-smoothstep(0.0,glowSpread,g)));
             }
+
+            // The ordinary mask border is only the secondary frame layer.
+            coreA*=0.62;
+            fineA*=0.68;
+            midA*=0.42;
+            outerA*=0.34;
         }
 
         // Streamer: an intentional two-segment speech-tail line with a
