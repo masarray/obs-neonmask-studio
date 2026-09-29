@@ -20,7 +20,8 @@ static const char *const uniforms[] = {
     "color_mode", "rainbow_phase", "rainbow_saturation", "rainbow_hue_offset",
     "rainbow_spread", "color_phase", "pulse_phase", "flow_phase", "animation_id", "segment_count",
     "border_enabled", "glow_enabled", "style_id", "ornament_mode",
-    "art_intensity", "art_gap", "svg_sdf", "svg_ready", "image", "ViewProj"
+    "art_intensity", "art_gap", "ornament_width", "ornament_length_x",
+    "ornament_length_y", "inner_rail_width", "svg_sdf", "svg_ready", "image", "ViewProj"
 };
 
 
@@ -151,6 +152,10 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "ornament_mode"), art_mode);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "art_intensity"), 0.90f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "art_gap"), 2.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "ornament_width"), 6.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "ornament_length_x"), 20.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "ornament_length_y"), 20.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "inner_rail_width"), 1.0f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "feather"), 0.5f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "glow_radius"),
                         halo_guard ? 8.0f : (glow_case ? 12.0f : 8.0f));
@@ -601,7 +606,7 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     struct vec4 magenta,btop,bbottom,btail;
     vec2_set(&dims,(float)W,(float)H);
     vec2_set(&zero,0.0f,0.0f);
-    vec2_set(&half,110.0f,60.0f);
+    vec2_set(&half,90.0f,45.0f);
     vec4_set(&magenta,1.0f,0.0f,1.0f,1.0f);
     vec4_set(&btop,-1,-1,1,-1);
     vec4_set(&bbottom,1,0.6f,-1,0.6f);
@@ -622,11 +627,15 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     gs_effect_set_vec4(P("bubble_tail"),&btail);
     gs_effect_set_float(P("corner_radius"),0.0f);
     gs_effect_set_int(P("shape_id"),13);
-    gs_effect_set_float(P("border_width"),1.8f);
+    gs_effect_set_float(P("border_width"),5.0f);
     gs_effect_set_int(P("style_id"),3);
     gs_effect_set_int(P("ornament_mode"),3);
     gs_effect_set_float(P("art_intensity"),1.0f);
-    gs_effect_set_float(P("art_gap"),7.0f);
+    gs_effect_set_float(P("art_gap"),24.0f);
+    gs_effect_set_float(P("ornament_width"),18.0f);
+    gs_effect_set_float(P("ornament_length_x"),84.0f);
+    gs_effect_set_float(P("ornament_length_y"),68.0f);
+    gs_effect_set_float(P("inner_rail_width"),1.6f);
     gs_effect_set_float(P("feather"),0.5f);
     gs_effect_set_float(P("glow_radius"),14.0f);
     gs_effect_set_float(P("glow_strength"),0.0f);
@@ -671,29 +680,25 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     uint8_t *mapped=NULL; uint32_t stride=0;
     if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;goto done_hires;}
 
-    /* D4E: thick TL bar must retain mass several pixels from its
-     * centerline; secondary Ls and BR blades remain present, while the old
-     * noisy inner fragment region stays transparent. */
-    const uint8_t *tl_h=mapped+17u*stride+70u*4u;
-    const uint8_t *tl_h_thick=mapped+21u*stride+70u*4u;
-    const uint8_t *tl_v=mapped+45u*stride+37u*4u;
-    const uint8_t *tr_h=mapped+17u*stride+260u*4u;
-    const uint8_t *tr_v=mapped+35u*stride+283u*4u;
-    const uint8_t *bl_h=mapped+163u*stride+60u*4u;
-    const uint8_t *bl_v=mapped+145u*stride+37u*4u;
-    const uint8_t *br_blade=mapped+157u*stride+258u*4u;
-    const uint8_t *base_top=mapped+30u*stride+160u*4u;
-    const uint8_t *old_inner_noise=mapped+35u*stride+120u*4u;
+    /* D4F Tech grammar: only TR + BL are dominant outer Ls. The true
+     * 24px empty gap remains dark between base frame and outer bar. */
+    const uint8_t *tr_h=mapped+12u*stride+250u*4u;
+    const uint8_t *tr_h_thick=mapped+18u*stride+250u*4u;
+    const uint8_t *tr_v=mapped+55u*stride+283u*4u;
+    const uint8_t *bl_h=mapped+168u*stride+70u*4u;
+    const uint8_t *bl_v=mapped+125u*stride+37u*4u;
+    const uint8_t *tl_forbidden=mapped+12u*stride+37u*4u;
+    const uint8_t *br_forbidden=mapped+168u*stride+283u*4u;
+    const uint8_t *true_gap=mapped+32u*stride+250u*4u;
     const uint8_t *quiet_center=mapped+90u*stride+160u*4u;
-    if(tl_h[3]<210 || tl_h_thick[3]<150 || tl_v[3]<210 ||
-       tr_h[3]<150 || tr_v[3]<150 || bl_h[3]<150 || bl_v[3]<150 ||
-       br_blade[3]<100 || old_inner_noise[3]>12 || quiet_center[3]>3 ||
-       tl_h_thick[3] <= base_top[3]+35) {
+    if(tr_h[3]<190 || tr_h_thick[3]<130 || tr_v[3]<190 ||
+       bl_h[3]<190 || bl_v[3]<190 ||
+       tl_forbidden[3]>15 || br_forbidden[3]>15 ||
+       true_gap[3]>15 || quiet_center[3]>3) {
         fprintf(stderr,
-                "FAIL: D4E Tech mass TL=%u/%u/%u TR=%u/%u BL=%u/%u BR=%u base=%u noise=%u center=%u\n",
-                tl_h[3],tl_h_thick[3],tl_v[3],tr_h[3],tr_v[3],
-                bl_h[3],bl_v[3],br_blade[3],base_top[3],
-                old_inner_noise[3],quiet_center[3]);
+                "FAIL: D4F Tech two-corner TR=%u/%u/%u BL=%u/%u forbidden=%u/%u gap=%u center=%u\n",
+                tr_h[3],tr_h_thick[3],tr_v[3],bl_h[3],bl_v[3],
+                tl_forbidden[3],br_forbidden[3],true_gap[3],quiet_center[3]);
         failed=1;
     }
     gs_stagesurface_unmap(stage);
@@ -726,7 +731,7 @@ static int verify_game_ui_preview_scale(gs_effect_t *effect)
     struct vec2 dims,zero,half;
     struct vec4 green,btop,bbottom,btail;
     vec2_set(&dims,(float)W,(float)H); vec2_set(&zero,0,0);
-    vec2_set(&half,110.0f,60.0f);
+    vec2_set(&half,90.0f,45.0f);
     vec4_set(&green,0.2f,1.0f,0.25f,1.0f);
     vec4_set(&btop,-1,-1,1,-1); vec4_set(&bbottom,1,.6f,-1,.6f);
     vec4_set(&btail,.11f,.33f,.14f,.22f);
@@ -746,11 +751,15 @@ static int verify_game_ui_preview_scale(gs_effect_t *effect)
     gs_effect_set_vec4(P("bubble_tail"),&btail);
     gs_effect_set_float(P("corner_radius"),0.0f);
     gs_effect_set_int(P("shape_id"),14);
-    gs_effect_set_float(P("border_width"),1.6f);
+    gs_effect_set_float(P("border_width"),5.0f);
     gs_effect_set_int(P("style_id"),0);
     gs_effect_set_int(P("ornament_mode"),5);
     gs_effect_set_float(P("art_intensity"),1.0f);
-    gs_effect_set_float(P("art_gap"),7.0f);
+    gs_effect_set_float(P("art_gap"),14.0f);
+    gs_effect_set_float(P("ornament_width"),16.0f);
+    gs_effect_set_float(P("ornament_length_x"),76.0f);
+    gs_effect_set_float(P("ornament_length_y"),64.0f);
+    gs_effect_set_float(P("inner_rail_width"),1.4f);
     gs_effect_set_float(P("feather"),0.5f);
     gs_effect_set_float(P("glow_radius"),12.0f);
     gs_effect_set_float(P("glow_strength"),0.0f);
@@ -792,36 +801,31 @@ static int verify_game_ui_preview_scale(gs_effect_t *effect)
     uint8_t *mapped=NULL; uint32_t stride=0;
     if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;goto done_game;}
 
-    /* Outer bar is intentionally massive; inner rail is a hairline.
-     * Probe 4px off the outer centerline (still bright), but 2px off the
-     * inner rail (already quiet) to enforce the hierarchy. */
-    const uint8_t *tl_h=mapped+16u*stride+72u*4u;
-    const uint8_t *tl_h_thick=mapped+20u*stride+72u*4u;
-    const uint8_t *tl_v=mapped+50u*stride+36u*4u;
-    const uint8_t *tr_h=mapped+16u*stride+248u*4u;
-    const uint8_t *tr_v=mapped+50u*stride+284u*4u;
-    const uint8_t *bl_h=mapped+164u*stride+72u*4u;
-    const uint8_t *bl_v=mapped+130u*stride+36u*4u;
-    const uint8_t *br_h=mapped+164u*stride+248u*4u;
-    const uint8_t *br_v=mapped+130u*stride+284u*4u;
-    const uint8_t *innerTop=mapped+37u*stride+160u*4u;
-    const uint8_t *innerTopOff=mapped+39u*stride+160u*4u;
-    const uint8_t *innerRight=mapped+90u*stride+263u*4u;
-    const uint8_t *innerBottom=mapped+143u*stride+160u*4u;
-    const uint8_t *innerLeft=mapped+90u*stride+57u*4u;
+    /* D4F Game UI: all four Ls stay thick while the inset rail stays
+     * hairline. The true 14px empty outer gap is also sampled. */
+    const uint8_t *tl_h=mapped+23u*stride+70u*4u;
+    const uint8_t *tl_h_thick=mapped+29u*stride+70u*4u;
+    const uint8_t *tl_v=mapped+50u*stride+48u*4u;
+    const uint8_t *tr_h=mapped+23u*stride+250u*4u;
+    const uint8_t *tr_v=mapped+50u*stride+272u*4u;
+    const uint8_t *bl_h=mapped+157u*stride+70u*4u;
+    const uint8_t *bl_v=mapped+130u*stride+48u*4u;
+    const uint8_t *br_h=mapped+157u*stride+250u*4u;
+    const uint8_t *br_v=mapped+130u*stride+272u*4u;
+    const uint8_t *innerTop=mapped+54u*stride+160u*4u;
+    const uint8_t *innerTopOff=mapped+57u*stride+160u*4u;
+    const uint8_t *true_gap=mapped+38u*stride+70u*4u;
     const uint8_t *center=mapped+90u*stride+160u*4u;
-    if(tl_h[3]<200||tl_h_thick[3]<120||tl_v[3]<200||
-       tr_h[3]<200||tr_v[3]<200||bl_h[3]<200||bl_v[3]<200||
-       br_h[3]<200||br_v[3]<200||
-       innerTop[3]<70||innerRight[3]<70||innerBottom[3]<70||innerLeft[3]<70||
-       innerTopOff[3]>35||center[3]>3||
-       tl_h_thick[3] <= innerTop[3]+45){
+    if(tl_h[3]<190||tl_h_thick[3]<120||tl_v[3]<190||
+       tr_h[3]<190||tr_v[3]<190||bl_h[3]<190||bl_v[3]<190||
+       br_h[3]<190||br_v[3]<190||
+       innerTop[3]<55||innerTopOff[3]>35||true_gap[3]>15||center[3]>3||
+       tl_h_thick[3] <= innerTop[3]+40){
         fprintf(stderr,
-                "FAIL: D4E Game hierarchy outer=%u/%u/%u/%u/%u/%u/%u/%u/%u inner=%u/%u/%u/%u off=%u center=%u\n",
+                "FAIL: D4F Game outer=%u/%u/%u/%u/%u/%u/%u/%u/%u inner=%u off=%u gap=%u center=%u\n",
                 tl_h[3],tl_h_thick[3],tl_v[3],tr_h[3],tr_v[3],
                 bl_h[3],bl_v[3],br_h[3],br_v[3],innerTop[3],
-                innerRight[3],innerBottom[3],innerLeft[3],
-                innerTopOff[3],center[3]);
+                innerTopOff[3],true_gap[3],center[3]);
         failed=1;
     }
     gs_stagesurface_unmap(stage);
@@ -881,6 +885,10 @@ static int verify_rainbow_preview_scale(gs_effect_t *effect)
     gs_effect_set_int(P("ornament_mode"),0);
     gs_effect_set_float(P("art_intensity"),0.0f);
     gs_effect_set_float(P("art_gap"),2.0f);
+    gs_effect_set_float(P("ornament_width"),10.0f);
+    gs_effect_set_float(P("ornament_length_x"),60.0f);
+    gs_effect_set_float(P("ornament_length_y"),48.0f);
+    gs_effect_set_float(P("inner_rail_width"),1.4f);
     gs_effect_set_float(P("feather"),0.5f);
     gs_effect_set_float(P("glow_radius"),18.0f);
     gs_effect_set_float(P("glow_strength"),0.0f);
