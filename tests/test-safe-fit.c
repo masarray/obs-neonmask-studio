@@ -129,19 +129,19 @@ int main(void)
     nm_config_defaults(&c);
     c.shape_id=NM_SHAPE_TECH_HUD;
     c.ornament_mode=NM_ORNAMENT_TECH_HUD;
-    c.art_intensity=0.96f; c.art_gap=6.0f;
-    c.border_px=3.2f; c.glow_px=16.0f; c.show_glow=false;
+    c.art_intensity=1.0f; c.art_gap=7.0f;
+    c.border_px=1.8f; c.glow_px=14.0f; c.show_glow=false;
     c.expand_canvas=true;
-    check("Tech HUD clean module envelope participates in D3",
+    check("Tech HUD heavy-bar envelope participates in D3",
           nm_safe_fit_calculate(&c,640,360,&f) && f.fits &&
-          f.envelope_px>=16.5f);
+          f.envelope_px>=20.0f);
     nm_config_defaults(&c);
     c.shape_id=NM_SHAPE_GAME_UI;
     c.ornament_mode=NM_ORNAMENT_GAME_UI;
-    c.art_intensity=0.96f; c.art_gap=8.0f;
-    c.border_px=2.8f; c.glow_px=14.0f; c.show_glow=false;
+    c.art_intensity=1.0f; c.art_gap=7.0f;
+    c.border_px=1.6f; c.glow_px=12.0f; c.show_glow=false;
     c.expand_canvas=true;
-    check("Game UI separated outer-corner envelope participates in D3",
+    check("Game UI heavy-L envelope participates in D3",
           nm_safe_fit_calculate(&c,640,360,&f) && f.fits &&
           f.envelope_px>=20.5f);
     /* D3 gate: deterministic coverage of input/output dimensions, asymmetric

@@ -54,15 +54,16 @@ assert "float2 v0=float2(-b.x+cut,-b.y)" in shader
 assert "float2 v3=float2( b.x-cut, b.y)" in shader
 assert "ornament_mode == 3 && shape_id == 13" in shader
 assert "bool authoredOverlay = (shape_id == 13 && ornament_mode == 3)" in shader
-assert "float2 trC=float2(hx+gap,-hy-gap)" in shader
-assert "float2 blC=float2(-hx-gap,hy+gap)" in shader
-assert "float2 tlDiag0=float2(-hx+cut*0.10-diag" in shader
-assert "float majorHalf=max(2.4,border_width*1.16)" in shader
-assert "float minorHalf=max(1.35,border_width*0.64)" in shader
-assert "float glowSpread=max(4.0,glow_radius*0.20)" in shader
-assert "float strongD=min(trD,blD)" in shader
-assert "float shellD=min(tlShell,brShell)" in shader
-assert "strong*0.99+shell*0.83" in shader
+assert "float majorHalf=max(5.0,border_width*2.70)" in shader
+assert "float mediumHalf=max(3.2,border_width*1.75)" in shader
+assert "float bladeHalf=max(1.8,border_width*0.95)" in shader
+assert "float2 tlCorner=float2(-hx-gap,-hy-gap)" in shader
+assert "float tlH=roundedBoxDistance(" in shader
+assert "float tlV=roundedBoxDistance(" in shader
+assert "float trH=roundedBoxDistance(" in shader
+assert "float blH=roundedBoxDistance(" in shader
+assert "three short parallel blades" in shader
+assert "coreA*=0.68" in shader and "outerA*=0.48" in shader
 assert "float innerD=min(min(segmentDistance(q,inTopA,inTopB)" not in shader
 # The same saved Roundness slider affects both Bubble tail and Angled Card
 # cut-end fillets. Reject the old UI text claiming it is Angled-only.
@@ -139,9 +140,13 @@ for mode in (2, 3, 4, 5):
     assert f"ornament_mode == {mode}" in shader
 assert "float segmentDistance(" in shader
 assert "ornament_mode == 5 && shape_id == 14" in shader
-assert "float dH=segmentDistance(aq,float2(hx-armX,corner.y),corner)" in shader
+assert "float majorHalf=max(4.8,border_width*2.85)" in shader
+assert "float minorHalf=max(0.65,border_width*0.34)" in shader
+assert "float hbar=roundedBoxDistance(" in shader
+assert "float vbar=roundedBoxDistance(" in shader
 assert "float innerD=abs(d+innerGap)" in shader
-assert "corners*0.99+innerRail*0.78" in shader
+assert "corners*0.99+innerRail*0.54" in shader
+assert "coreA*=0.62" in shader and "outerA*=0.34" in shader
 assert "float nodeD=" not in shader
 for key in ("art_intensity", "art_gap"):
     assert f'obs_data_has_user_value(settings, "{key}")' in host

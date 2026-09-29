@@ -15,8 +15,8 @@ static const nm_preset builtin[] = {
     /* D4B: dedicated mask silhouette (TL/BR chamfers) plus external HUD
      * brackets. Preset ID 5 is stable; only deliberate re-application uses it. */
     {NM_SHAPE_TECH_HUD, NM_ANIM_FLOW, 0x00F5C62Au, 0x00FF9F00u,
-     0.78, 0.0, 3.2, 0.72, 16.0, 0.64, 0.48, 0, NM_STYLE_HUD,
-     true, true, 0.72, 0.76, 0.72, 0.09, NM_ORNAMENT_TECH_HUD, 0.96, 6.0, 0.14},
+     0.78, 0.0, 1.8, 0.70, 14.0, 0.56, 0.42, 0, NM_STYLE_HUD,
+     true, true, 0.66, 0.70, 0.60, 0.09, NM_ORNAMENT_TECH_HUD, 1.00, 7.0, 0.12},
     /* Reselecting Streamer now gives a real integrated bubble silhouette;
      * old saved scenes keep their stored shape/ornament until changed. */
     {NM_SHAPE_CHAT_BUBBLE, NM_ANIM_FLOW, 0x00DA33FFu, 0x00FFAE42u,
@@ -38,8 +38,8 @@ static const nm_preset builtin[] = {
     /* D4C: four large outer corner brackets plus a complete inner rail.
      * Static default keeps the Game UI identity readable without motion. */
     {NM_SHAPE_GAME_UI, NM_ANIM_STATIC, 0x0055FF55u, 0x0040FF66u,
-     0.80, 0.0, 2.8, 0.70, 14.0, 0.56, 0.0, 0, NM_STYLE_CLASSIC,
-     true, true, 0.68, 0.70, 0.0, 0.10, NM_ORNAMENT_GAME_UI, 0.96, 8.0, 0.14}
+     0.80, 0.0, 1.6, 0.68, 12.0, 0.50, 0.0, 0, NM_STYLE_CLASSIC,
+     true, true, 0.62, 0.66, 0.0, 0.10, NM_ORNAMENT_GAME_UI, 1.00, 7.0, 0.14}
 };
 
 bool nm_get_preset(int id, nm_preset *out)

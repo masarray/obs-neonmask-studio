@@ -538,3 +538,29 @@ noise region must remain transparent with glow disabled; Game UI must illuminate
 both arms of every outer bracket and all four inner-rail sides while the center
 remains clear. These are automated composition invariants; a fresh OBS capture
 is still the human visual acceptance gate.
+
+## D4E — Artistic Thickness Rework
+
+Real OBS review after D4B.3/D4C.1 found the composition cleaner but still too
+line-like: the artistic identity should come from **very thick L modules**,
+while the inner/base frame stays thin. D4E changes the underlying geometry
+rather than merely increasing alpha.
+
+Game UI's four outer corners are now unions of filled horizontal/vertical
+rounded-box bars, not distance-to-line strokes. The default full bar is about
+9–12 source pixels at preview-scale presets, while the continuous inset rail
+is roughly 1.3–1.8 pixels (>5:1 intended mass ratio). The ordinary mask border
+is narrowed and attenuated so it reads as a secondary frame.
+
+Tech HUD gets an asymmetric authored mass hierarchy matching the reference
+language: a dominant filled top-left L, medium filled top-right/bottom-left L
+modules, and three short bottom-right diagonal blades. The mask border is
+again the thin subordinate frame. Preset 5 and preset 10 use narrower base
+borders, separated ornaments and restrained bloom. D3's envelope mirrors the
+new half-thickness/gap formulas.
+
+The 320x180 GPU gates now test *thickness*, not merely presence: outer bars
+must retain substantial alpha four pixels away from their centerline; Game
+UI's inner rail must already be quiet two pixels away; outer mass must exceed
+the inner/base frame by a fixed alpha margin. This prevents a regression back
+to decorative hairlines. Actual OBS screenshots remain the visual sign-off.
