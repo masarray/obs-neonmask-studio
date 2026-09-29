@@ -29,19 +29,15 @@ static float nm_light_envelope(const nm_config *cfg)
             accent = cfg->art_gap + 13.0f;
         if (cfg->ornament_mode == NM_ORNAMENT_TECH_HUD &&
             cfg->shape_id == NM_SHAPE_TECH_HUD) {
-            const float stroke = fmaxf(5.0f,cfg->border_px*2.70f);
-            const float gap = cfg->art_gap + fmaxf(6.0f,cfg->border_px*1.50f);
             const float glow = cfg->show_glow ?
                 fmaxf(4.0f,cfg->glow_px*0.18f) : 0.0f;
-            accent = gap + stroke + glow + 2.0f;
+            accent = cfg->art_gap + cfg->ornament_width_px + glow + 2.0f;
         }
         if (cfg->ornament_mode == NM_ORNAMENT_GAME_UI &&
             cfg->shape_id == NM_SHAPE_GAME_UI) {
-            const float stroke=fmaxf(4.8f,cfg->border_px*2.85f);
-            const float gap=cfg->art_gap+fmaxf(7.0f,cfg->border_px*1.55f);
             const float glow=cfg->show_glow ?
                 fmaxf(3.5f,cfg->glow_px*0.16f) : 0.0f;
-            accent=gap+stroke+glow+2.0f;
+            accent=cfg->art_gap+cfg->ornament_width_px+glow+2.0f;
         }
         if (cfg->ornament_mode != NM_ORNAMENT_NONE)
             margin = fmaxf(margin, accent);
