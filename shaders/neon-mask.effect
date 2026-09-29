@@ -36,6 +36,11 @@ uniform float hotspot_strength;
 uniform float hotspot_size;
 uniform float4 color_a;
 uniform float4 color_b;
+uniform int color_mode;
+uniform float rainbow_phase;
+uniform float rainbow_saturation;
+uniform float rainbow_hue_offset;
+uniform float rainbow_spread;
 uniform float color_phase;
 uniform float pulse_phase;
 uniform float flow_phase;
@@ -619,6 +624,30 @@ float roundedContourTurn(float2 q, float2 bounds, float r)
     return frac(lengthAt / lengthAll + 1.0);
 }
 
+float3 hsvToRgb(float h, float s, float v)
+{
+    float3 k=float3(0.0,0.6666666667,0.3333333333);
+    float3 rgb=saturate(abs(frac(h+k)*6.0-3.0)-1.0);
+    return lerp(float3(v,v,v),rgb*v,saturate(s));
+}
+
+/* D4D color coordinate. Rounded/rectangular masks use actual perimeter
+ * lengths. Circle is exact by angle; ellipse uses normalized parametric angle.
+ * Other authored/polygon shapes use a continuous normalized contour proxy
+ * until D4E visual review justifies shape-specific perimeter routing. */
+float rainbowContourTurn(float2 p)
+{
+    float2 q=rotatePoint(p,shape_rotation);
+    if(shape_id==0)
+        return roundedContourTurn(q,half_size,corner_radius);
+    if(shape_id==5)
+        return roundedContourTurn(q,half_size,0.001);
+    if(shape_id==1)
+        return frac(atan2(q.y,q.x)/6.28318530718+1.0);
+    float2 n=q/max(half_size,float2(1.0,1.0));
+    return frac(atan2(n.y,n.x)/6.28318530718+1.0);
+}
+
 float segmentDistance(float2 p, float2 a, float2 b)
 {
     float2 ab = b - a;
@@ -661,7 +690,18 @@ float4 drawNeonMask(VertData v_in) : TARGET
     if (border_enabled != 0) {
         float angle = atan2(p.y, p.x);
         float mixAmount = saturate(0.5 + 0.5 * sin(angle + TAU * color_phase));
-        float3 neon = lerp(color_a.rgb, color_b.rgb, mixAmount);
+        /* Keep the legacy Dual formula byte-for-byte equivalent. Solid uses
+         * primary only; Rainbow derives one local hue which every light scale
+         * shares, so core/mid/bloom cannot drift into unrelated colors. */
+        float3 neon = color_a.rgb;
+        if(color_mode == 1)
+            neon = lerp(color_a.rgb, color_b.rgb, mixAmount);
+        else if(color_mode == 2) {
+            float contourTurn=rainbowContourTurn(p);
+            float hue=frac(contourTurn*rainbow_spread+
+                           rainbow_hue_offset+rainbow_phase);
+            neon=hsvToRgb(hue,rainbow_saturation,1.0);
+        }
         // Broad light stays chromatic. Whitening belongs near the fine core;
         // otherwise OBS preview downscaling turns low-alpha bloom gray.
         float3 outerColor = neon;
@@ -1090,12 +1130,15 @@ float4 drawNeonMask(VertData v_in) : TARGET
 
         // Premultiplied 'over', from broadest envelope to fine bright line.
         // The final conversion to straight alpha below is required by OBS.
-        float3 rimColor = lerp(color_b.rgb, color_a.rgb, 0.35);
+        float3 rimColor = color_mode == 2 ? neon :
+                          lerp(color_b.rgb, color_a.rgb, 0.35);
         premul = outerColor * outerA + premul * (1.0 - outerA);
         outA = outerA + outA * (1.0 - outerA);
         premul = midColor * midA + premul * (1.0 - midA);
         outA = midA + outA * (1.0 - midA);
-        float3 accentColor = lerp(color_b.rgb, float3(1.0, 1.0, 1.0), 0.32);
+        float3 accentColor = color_mode == 2 ?
+            lerp(neon,float3(1.0,1.0,1.0),0.32) :
+            lerp(color_b.rgb,float3(1.0,1.0,1.0),0.32);
         premul = accentColor * artBarGlowA + premul * (1.0 - artBarGlowA);
         outA = artBarGlowA + outA * (1.0 - artBarGlowA);
         premul = rimColor * rimA + premul * (1.0 - rimA);

@@ -53,6 +53,13 @@ typedef struct nm_config {
     float animation_speed;
     uint32_t primary;
     uint32_t secondary;
+    /* D4D: color rendering is independent of border motion. Old scenes
+     * resolve to Dual, preserving the pre-D4D two-color shader exactly. */
+    int color_mode;
+    float rainbow_speed;
+    float rainbow_saturation;
+    float rainbow_hue_offset;
+    float rainbow_spread;
     int shape_id;
     int animation_id;
     int segment_count;

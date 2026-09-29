@@ -46,6 +46,11 @@ int main(void)
     check("premium defaults active", cfg.mid_glow_strength > 0.0f &&
           cfg.bloom_strength > 0.0f && cfg.hotspot_strength > 0.0f);
     check("premium hotspot range", cfg.hotspot_size >= 0.04f && cfg.hotspot_size <= 0.25f);
+    check("D4D default preserves legacy dual color",cfg.color_mode == NM_COLOR_DUAL);
+    near("D4D rainbow speed default",cfg.rainbow_speed,0.65f);
+    near("D4D rainbow saturation default",cfg.rainbow_saturation,0.92f);
+    near("D4D rainbow hue default",cfg.rainbow_hue_offset,0.0f);
+    near("D4D rainbow spread default",cfg.rainbow_spread,1.0f);
 
     cfg.scale = -FLT_MAX;
     cfg.mask_width = -FLT_MAX;
@@ -71,6 +76,11 @@ int main(void)
     cfg.art_gap = INFINITY;
     cfg.art_intensity = NAN;
     cfg.animation_speed = 99.0f;
+    cfg.color_mode = 99;
+    cfg.rainbow_speed = 99.0f;
+    cfg.rainbow_saturation = INFINITY;
+    cfg.rainbow_hue_offset = -5.0f;
+    cfg.rainbow_spread = 99.0f;
     cfg.shape_id = 999;
     cfg.animation_id = -99;
     cfg.style_id = 99;
@@ -103,6 +113,11 @@ int main(void)
     near("art gap inf fallback", cfg.art_gap, 1.0f);
     near("art intensity nan fallback", cfg.art_intensity, 0.0f);
     near("speed clamp", cfg.animation_speed, 5.0f);
+    check("unknown color mode falls back to Dual",cfg.color_mode == NM_COLOR_DUAL);
+    near("rainbow speed clamp",cfg.rainbow_speed,5.0f);
+    near("rainbow saturation invalid fallback",cfg.rainbow_saturation,0.0f);
+    near("rainbow hue clamp",cfg.rainbow_hue_offset,0.0f);
+    near("rainbow spread clamp",cfg.rainbow_spread,3.0f);
     check("shape fallback", cfg.shape_id == NM_SHAPE_ROUNDED);
     cfg.shape_id = NM_SHAPE_POLYGON;
     cfg.polygon_sides = 5;
@@ -149,6 +164,11 @@ int main(void)
     cfg.art_intensity = 1.0f;
     cfg.art_gap = 16.0f;
     cfg.ornament_mode = NM_ORNAMENT_CYBER;
+    cfg.color_mode = NM_COLOR_RAINBOW;
+    cfg.rainbow_speed = 4.0f;
+    cfg.rainbow_saturation = 0.25f;
+    cfg.rainbow_hue_offset = 0.75f;
+    cfg.rainbow_spread = 2.5f;
     cfg.show_border = false;
     cfg.show_glow = false;
     check("apply preset", nm_config_apply_preset(&cfg, 2));
@@ -165,6 +185,11 @@ int main(void)
     near("Reactor art intensity complete", cfg.art_intensity, 0.88f);
     near("Reactor art gap complete", cfg.art_gap, 2.0f);
     near("preset shape detail complete", cfg.shape_detail, 0.22f);
+    check("named preset restores Dual color",cfg.color_mode == NM_COLOR_DUAL);
+    near("named preset restores rainbow speed default",cfg.rainbow_speed,0.65f);
+    near("named preset restores rainbow saturation default",cfg.rainbow_saturation,0.92f);
+    near("named preset restores rainbow hue default",cfg.rainbow_hue_offset,0.0f);
+    near("named preset restores rainbow spread default",cfg.rainbow_spread,1.0f);
     check("Cyber preset applies authored ornament", nm_config_apply_preset(&cfg, 1) && cfg.ornament_mode == NM_ORNAMENT_CYBER && cfg.art_intensity > 0.8f);
     check("preset restores border", cfg.show_border);
     check("preset restores glow", cfg.show_glow);

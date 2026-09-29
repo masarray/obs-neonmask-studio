@@ -527,3 +527,43 @@ Game UI preset is static neon green so its identity is visible without motion.
 The D3 envelope accounts for its bracket stroke/gap/glow. CPU geometry,
 config/preset/art contracts and 320x180 OpenGL/D3D11 visual-scale fixtures are
 required before merge; actual OBS screenshot remains the human visual gate.
+
+## D4D — Animated Rainbow Gradient
+
+D4D adds color mode as a rendering concern independent from shape, ornament
+and border motion. Persisted values are append-only: Solid=0, Dual=1 and
+Rainbow=2. Existing scenes resolve to **Dual**, so their pre-D4D two-color
+formula remains the compatibility path; applying any existing named preset
+also deliberately restores Dual rather than carrying a previous Rainbow
+customization into another design. No shape or preset ID is renumbered and
+the additive settings do not require a scene-schema bump.
+
+Rainbow is generated analytically on the GPU from a bounded hue phase; there
+is no texture animation, CPU video processing or GPU readback in production.
+The controls are Rainbow Speed (0..5), Saturation (0..1), Hue Offset
+(0..1 turn) and Gradient Spread (0.25..3 spectrum cycles). The existing
+Overall Glow Intensity remains the glow control rather than introducing a
+duplicate slider. Core, fine line, mid glow and outer bloom derive from the
+same local rainbow hue. Rainbow speed has its own bounded double-precision
+host accumulator so changing Flow/Pulse speed does not unexpectedly change
+the spectrum drift.
+
+Static remains deterministic: Rainbow + Static freezes the hue phase, and
+speed zero also freezes it. Rounded rectangle/rectangle use actual perimeter
+length through `roundedContourTurn`; circle uses its exact angular perimeter
+parameter and ellipse uses normalized parametric angle. Other authored and
+polygon masks receive a continuous normalized contour proxy in this D4D slice
+rather than duplicating every shape's geometry in a second color-only path.
+D4E actual-OBS visual review decides which of those shapes need dedicated
+perimeter-length routing.
+
+The OBS property surface is contextual: Primary/Secondary stay visible for
+Solid/Dual as applicable, while the Rainbow group appears only in Rainbow
+mode and hides Rainbow Speed in Static. Hidden values are preserved. Pure-C
+config/motion tests cover default compatibility, validation, preset reset,
+static/zero-speed behavior and simulated eight-hour phase continuity. The
+real libobs OpenGL/D3D11 shader fixture additionally renders a 320x180
+four-region rainbow frame so a shader that collapses back to one hue cannot
+pass CI. This is still partial G4; D4E requires actual OBS dark/light captures,
+motion clips and preset-by-preset aesthetic polish before visual completion.
+

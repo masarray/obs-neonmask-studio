@@ -143,7 +143,7 @@ filter pixel controls are source-relative, not screen/canvas coordinates.
 | Streamer | Rounded rim with small corner/status dots | New ornament recipe in M3 |
 | Chat Bubble | Rounded body with tail and small dots | New M3; declare tail as silhouette or decoration |
 | Tech HUD / Game UI | Corner brackets, gaps, secondary tracks | Basic angular HUD exists; contour-aware layout in M3 |
-| Dual Color / Gradient Rainbow | Two colors or bounded color stops along contour | Two-color exists; rainbow optional M3 |
+| Dual Color / Gradient Rainbow | Two colors or bounded color stops along contour | Two-color exists; D4D adds GPU Rainbow mode with bounded hue phase and contextual controls; actual OBS/D4E visual acceptance pending |
 | Multiple Layers | Main core plus one or two secondary offset rims | Double rim exists; explicit capped layer model in M3 |
 | Dashed Segments | Even visible segments and consistent gaps | Angular segmentation exists; arc-length placement in M2 |
 | Glow / Speed / Thickness | Independent controls with safe envelopes | Controls exist; validated fit and continuous motion in M2 |

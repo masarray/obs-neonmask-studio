@@ -28,6 +28,14 @@ enum nm_animation {
     NM_ANIM_FLOW = 2
 };
 
+/* D4D color pipeline is orthogonal to shape and motion. Numeric values are
+ * persisted settings, so append-only compatibility applies here too. */
+enum nm_color_mode {
+    NM_COLOR_SOLID = 0,
+    NM_COLOR_DUAL = 1,
+    NM_COLOR_RAINBOW = 2
+};
+
 enum nm_border_style {
     NM_STYLE_CLASSIC = 0,
     NM_STYLE_DOUBLE = 1,

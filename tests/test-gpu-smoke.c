@@ -17,7 +17,8 @@ static const char *const uniforms[] = {
     "shape_rotation", "polygon_sides", "shape_detail", "bubble_top", "bubble_bottom", "bubble_tail", "corner_radius", "shape_id", "border_width",
     "feather", "glow_radius", "glow_strength", "mid_glow_strength",
     "bloom_strength", "hotspot_strength", "hotspot_size", "color_a", "color_b",
-    "color_phase", "pulse_phase", "flow_phase", "animation_id", "segment_count",
+    "color_mode", "rainbow_phase", "rainbow_saturation", "rainbow_hue_offset",
+    "rainbow_spread", "color_phase", "pulse_phase", "flow_phase", "animation_id", "segment_count",
     "border_enabled", "glow_enabled", "style_id", "ornament_mode",
     "art_intensity", "art_gap", "svg_sdf", "svg_ready", "image", "ViewProj"
 };
@@ -161,6 +162,11 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "hotspot_size"), 0.10f);
     gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "color_a"), &magenta);
     gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "color_b"), &magenta);
+    gs_effect_set_int(gs_effect_get_param_by_name(effect, "color_mode"), 1);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "rainbow_phase"), 0.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "rainbow_saturation"), 0.92f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "rainbow_hue_offset"), 0.0f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "rainbow_spread"), 1.0f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "color_phase"), 0.0f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "pulse_phase"),
                         variant == 9 ? 0.25f : variant == 10 ? 0.75f : 0.0f);
@@ -629,6 +635,11 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     gs_effect_set_float(P("hotspot_size"),0.09f);
     gs_effect_set_vec4(P("color_a"),&magenta);
     gs_effect_set_vec4(P("color_b"),&magenta);
+    gs_effect_set_int(P("color_mode"),1);
+    gs_effect_set_float(P("rainbow_phase"),0.0f);
+    gs_effect_set_float(P("rainbow_saturation"),0.92f);
+    gs_effect_set_float(P("rainbow_hue_offset"),0.0f);
+    gs_effect_set_float(P("rainbow_spread"),1.0f);
     gs_effect_set_float(P("color_phase"),0.0f);
     gs_effect_set_float(P("pulse_phase"),0.0f);
     gs_effect_set_float(P("flow_phase"),0.0f);
@@ -745,6 +756,11 @@ static int verify_game_ui_preview_scale(gs_effect_t *effect)
     gs_effect_set_float(P("hotspot_size"),0.1f);
     gs_effect_set_vec4(P("color_a"),&green);
     gs_effect_set_vec4(P("color_b"),&green);
+    gs_effect_set_int(P("color_mode"),1);
+    gs_effect_set_float(P("rainbow_phase"),0.0f);
+    gs_effect_set_float(P("rainbow_saturation"),0.92f);
+    gs_effect_set_float(P("rainbow_hue_offset"),0.0f);
+    gs_effect_set_float(P("rainbow_spread"),1.0f);
     gs_effect_set_float(P("color_phase"),0);
     gs_effect_set_float(P("pulse_phase"),0);
     gs_effect_set_float(P("flow_phase"),0);
@@ -787,6 +803,125 @@ static int verify_game_ui_preview_scale(gs_effect_t *effect)
     }
     gs_stagesurface_unmap(stage);
 done_game:
+    gs_stagesurface_destroy(stage); gs_texrender_destroy(target);
+    gs_texture_destroy(input);
+    return failed;
+}
+
+
+/* D4D preview-scale GPU gate: one full spectrum is distributed continuously
+ * around the rounded perimeter. The frame itself does not rotate and the
+ * transparent portrait center remains untouched. */
+static int verify_rainbow_preview_scale(gs_effect_t *effect)
+{
+    enum { W=320,H=180 };
+    uint8_t *pixels=bzalloc((size_t)W*H*4u);
+    if(!pixels) return 1;
+    const uint8_t *layers[]={pixels};
+    gs_texture_t *input=gs_texture_create(W,H,GS_RGBA,1,layers,0);
+    bfree(pixels);
+    gs_texrender_t *target=gs_texrender_create(GS_RGBA,GS_ZS_NONE);
+    gs_stagesurf_t *stage=gs_stagesurface_create(W,H,GS_RGBA);
+    if(!input||!target||!stage){
+        if(stage)gs_stagesurface_destroy(stage);
+        if(target)gs_texrender_destroy(target);
+        if(input)gs_texture_destroy(input);
+        fprintf(stderr,"FAIL: Rainbow 320x180 resources\n");
+        return 1;
+    }
+
+    struct vec2 dims,zero,half;
+    struct vec4 white,btop,bbottom,btail;
+    vec2_set(&dims,(float)W,(float)H); vec2_set(&zero,0,0);
+    vec2_set(&half,110.0f,60.0f);
+    vec4_set(&white,1,1,1,1);
+    vec4_set(&btop,-1,-1,1,-1); vec4_set(&bbottom,1,.6f,-1,.6f);
+    vec4_set(&btail,.11f,.33f,.14f,.22f);
+#define P(name) gs_effect_get_param_by_name(effect,name)
+    gs_effect_set_vec2(P("uv_size"),&dims);
+    gs_effect_set_vec2(P("output_size"),&dims);
+    gs_effect_set_vec2(P("input_origin"),&zero);
+    gs_effect_set_vec2(P("half_size"),&half);
+    gs_effect_set_vec2(P("mask_offset"),&zero);
+    gs_effect_set_vec2(P("subject_pan"),&zero);
+    gs_effect_set_float(P("subject_zoom"),1.0f);
+    gs_effect_set_float(P("shape_rotation"),0.0f);
+    gs_effect_set_int(P("polygon_sides"),8);
+    gs_effect_set_float(P("shape_detail"),0.22f);
+    gs_effect_set_vec4(P("bubble_top"),&btop);
+    gs_effect_set_vec4(P("bubble_bottom"),&bbottom);
+    gs_effect_set_vec4(P("bubble_tail"),&btail);
+    gs_effect_set_float(P("corner_radius"),18.0f);
+    gs_effect_set_int(P("shape_id"),0);
+    gs_effect_set_float(P("border_width"),4.0f);
+    gs_effect_set_int(P("style_id"),0);
+    gs_effect_set_int(P("ornament_mode"),0);
+    gs_effect_set_float(P("art_intensity"),0.0f);
+    gs_effect_set_float(P("art_gap"),2.0f);
+    gs_effect_set_float(P("feather"),0.5f);
+    gs_effect_set_float(P("glow_radius"),18.0f);
+    gs_effect_set_float(P("glow_strength"),0.0f);
+    gs_effect_set_float(P("mid_glow_strength"),0.75f);
+    gs_effect_set_float(P("bloom_strength"),0.92f);
+    gs_effect_set_float(P("hotspot_strength"),0.0f);
+    gs_effect_set_float(P("hotspot_size"),0.10f);
+    gs_effect_set_vec4(P("color_a"),&white);
+    gs_effect_set_vec4(P("color_b"),&white);
+    gs_effect_set_int(P("color_mode"),2);
+    gs_effect_set_float(P("rainbow_phase"),0.0f);
+    gs_effect_set_float(P("rainbow_saturation"),1.0f);
+    gs_effect_set_float(P("rainbow_hue_offset"),0.0f);
+    gs_effect_set_float(P("rainbow_spread"),1.0f);
+    gs_effect_set_float(P("color_phase"),0.0f);
+    gs_effect_set_float(P("pulse_phase"),0.0f);
+    gs_effect_set_float(P("flow_phase"),0.0f);
+    gs_effect_set_int(P("animation_id"),0);
+    gs_effect_set_int(P("segment_count"),0);
+    gs_effect_set_int(P("border_enabled"),1);
+    gs_effect_set_int(P("glow_enabled"),0);
+    gs_effect_set_texture(P("svg_sdf"),NULL);
+    gs_effect_set_int(P("svg_ready"),0);
+    gs_effect_set_texture(P("image"),input);
+#undef P
+
+    int failed=0;
+    if(!gs_texrender_begin(target,W,H)){failed=1;goto done_rainbow;}
+    const bool srgb=gs_framebuffer_srgb_enabled();
+    gs_enable_framebuffer_srgb(false); gs_blend_state_push(); gs_enable_blending(false);
+    struct vec4 clear; vec4_zero(&clear); gs_clear(GS_CLEAR_COLOR,&clear,0,0);
+    gs_ortho(0,(float)W,0,(float)H,-100,100);
+    gs_matrix_push(); gs_matrix_identity();
+    const enum gs_cull_mode cull=gs_get_cull_mode(); gs_set_cull_mode(GS_NEITHER);
+    while(gs_effect_loop(effect,"Draw")) gs_draw_sprite(input,0,W,H);
+    gs_set_cull_mode(cull); gs_matrix_pop(); gs_blend_state_pop();
+    gs_enable_framebuffer_srgb(srgb); gs_texrender_end(target);
+    gs_stage_texture(stage,gs_texrender_get_texture(target));
+    uint8_t *mapped=NULL; uint32_t stride=0;
+    if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;goto done_rainbow;}
+
+    const uint8_t *top=mapped+30u*stride+160u*4u;
+    const uint8_t *right=mapped+90u*stride+270u*4u;
+    const uint8_t *bottom=mapped+150u*stride+160u*4u;
+    const uint8_t *left=mapped+90u*stride+50u*4u;
+    const uint8_t *center=mapped+90u*stride+160u*4u;
+    const int tr=abs((int)top[0]-(int)right[0])+
+                 abs((int)top[1]-(int)right[1])+
+                 abs((int)top[2]-(int)right[2]);
+    const int rb=abs((int)right[0]-(int)bottom[0])+
+                 abs((int)right[1]-(int)bottom[1])+
+                 abs((int)right[2]-(int)bottom[2]);
+    const int bl=abs((int)bottom[0]-(int)left[0])+
+                 abs((int)bottom[1]-(int)left[1])+
+                 abs((int)bottom[2]-(int)left[2]);
+    if(top[3]<180||right[3]<180||bottom[3]<180||left[3]<180||
+       tr<100||rb<100||bl<100||center[3]>3){
+        fprintf(stderr,
+                "FAIL: Rainbow preview A=%u/%u/%u/%u delta=%d/%d/%d center=%u\n",
+                top[3],right[3],bottom[3],left[3],tr,rb,bl,center[3]);
+        failed=1;
+    }
+    gs_stagesurface_unmap(stage);
+done_rainbow:
     gs_stagesurface_destroy(stage); gs_texrender_destroy(target);
     gs_texture_destroy(input);
     return failed;
@@ -887,6 +1022,7 @@ int main(int argc, char **argv)
                 missing += verify_pixel_fixture(effect, variant);
             missing += verify_tech_hud_preview_scale(effect);
             missing += verify_game_ui_preview_scale(effect);
+            missing += verify_rainbow_preview_scale(effect);
         }
         gs_effect_destroy(effect);
     }
@@ -894,6 +1030,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: libobs alpha/framing/light + SVG + D3 + freeform Bubble + Tech HUD + Game UI GPU fixtures (partial G4)");
+    puts("PASS: libobs alpha/framing/light + SVG + D3 + freeform Bubble + Tech HUD + Game UI + Rainbow GPU fixtures (partial G4)");
     return 0;
 }
