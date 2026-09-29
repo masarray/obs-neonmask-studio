@@ -276,13 +276,13 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *tech_tr_bracket = mapped + 3u * stride + 61u * 4u;
     const uint8_t *tech_bl_bracket = mapped + 61u * stride + 3u * 4u;
     const uint8_t *tech_diag_overlay = mapped + 9u * stride + 9u * 4u;
-    const uint8_t *game_corner_tl = mapped + 1u * stride + 1u * 4u;
-    const uint8_t *game_corner_tr = mapped + 1u * stride + 62u * 4u;
-    const uint8_t *game_corner_br = mapped + 62u * stride + 62u * 4u;
-    const uint8_t *game_corner_bl = mapped + 62u * stride + 1u * 4u;
+    const uint8_t *game_corner_tl = mapped + 3u * stride + 3u * 4u;
+    const uint8_t *game_corner_tr = mapped + 3u * stride + 61u * 4u;
+    const uint8_t *game_corner_br = mapped + 61u * stride + 61u * 4u;
+    const uint8_t *game_corner_bl = mapped + 61u * stride + 3u * 4u;
     const uint8_t *game_mask_tl = mapped + 10u * stride + 10u * 4u;
     const uint8_t *game_mask_top = mapped + 10u * stride + 14u * 4u;
-    const uint8_t *game_inner_top = mapped + 19u * stride + 32u * 4u;
+    const uint8_t *game_inner_top = mapped + 15u * stride + 32u * 4u;
 
 
     /* The black/transparent corner proves the mask is not an opaque box.
@@ -561,7 +561,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     }
 
     else if(variant==44) {
-        if(center[3]>3 || game_inner_top[3]<80 ||
+        if(center[3]>3 || game_inner_top[3]<40 ||
            game_corner_tl[3]<80 || game_corner_tr[3]<80 ||
            game_corner_br[3]<80 || game_corner_bl[3]<80) {
             fprintf(stderr,"FAIL: Game UI ornament center=%u inner=%u corners=%u/%u/%u/%u\n",
@@ -684,9 +684,9 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
      * 24px empty gap remains dark between base frame and outer bar. */
     const uint8_t *tr_h=mapped+12u*stride+250u*4u;
     const uint8_t *tr_h_thick=mapped+18u*stride+250u*4u;
-    const uint8_t *tr_v=mapped+55u*stride+283u*4u;
+    const uint8_t *tr_v=mapped+40u*stride+283u*4u;
     const uint8_t *bl_h=mapped+168u*stride+70u*4u;
-    const uint8_t *bl_v=mapped+125u*stride+37u*4u;
+    const uint8_t *bl_v=mapped+140u*stride+37u*4u;
     const uint8_t *tl_forbidden=mapped+12u*stride+37u*4u;
     const uint8_t *br_forbidden=mapped+168u*stride+283u*4u;
     const uint8_t *true_gap=mapped+32u*stride+250u*4u;
@@ -819,7 +819,7 @@ static int verify_game_ui_preview_scale(gs_effect_t *effect)
     if(tl_h[3]<190||tl_h_thick[3]<120||tl_v[3]<190||
        tr_h[3]<190||tr_v[3]<190||bl_h[3]<190||bl_v[3]<190||
        br_h[3]<190||br_v[3]<190||
-       innerTop[3]<55||innerTopOff[3]>35||true_gap[3]>15||center[3]>3||
+       innerTop[3]<40||innerTopOff[3]>35||true_gap[3]>15||center[3]>3||
        tl_h_thick[3] <= innerTop[3]+40){
         fprintf(stderr,
                 "FAIL: D4F Game outer=%u/%u/%u/%u/%u/%u/%u/%u/%u inner=%u off=%u gap=%u center=%u\n",
