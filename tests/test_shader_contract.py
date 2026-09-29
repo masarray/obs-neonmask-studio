@@ -7,9 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
-assert len(names) == len(set(names)) == 43, f"Expected 43 unique bindings: {names!r}"
+assert len(names) == len(set(names)) == 47, f"Expected 47 unique bindings: {names!r}"
 uniforms = {name: kind for kind, name in re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader)}
-assert len(uniforms) == 45, f"Unexpected number of shader uniforms: {uniforms}"
+assert len(uniforms) == 49, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
     "Host/shader uniform drift: " + str(set(names) ^ (set(uniforms) - {"ViewProj", "image"}))
 )
@@ -54,16 +54,16 @@ assert "float2 v0=float2(-b.x+cut,-b.y)" in shader
 assert "float2 v3=float2( b.x-cut, b.y)" in shader
 assert "ornament_mode == 3 && shape_id == 13" in shader
 assert "bool authoredOverlay = (shape_id == 13 && ornament_mode == 3)" in shader
-assert "float majorHalf=max(5.0,border_width*2.70)" in shader
-assert "float mediumHalf=max(3.2,border_width*1.75)" in shader
-assert "float bladeHalf=max(1.8,border_width*0.95)" in shader
-assert "float2 tlCorner=float2(-hx-gap,-hy-gap)" in shader
-assert "float tlH=roundedBoxDistance(" in shader
-assert "float tlV=roundedBoxDistance(" in shader
+assert "float majorHalf=max(0.5,ornament_width*0.5)" in shader
+assert "float2 trCorner=float2(hx+gap+majorHalf,-hy-gap-majorHalf)" in shader
+assert "float2 blCorner=float2(-hx-gap-majorHalf,hy+gap+majorHalf)" in shader
 assert "float trH=roundedBoxDistance(" in shader
+assert "float trV=roundedBoxDistance(" in shader
 assert "float blH=roundedBoxDistance(" in shader
-assert "three short parallel blades" in shader
-assert "coreA*=0.68" in shader and "outerA*=0.48" in shader
+assert "float blV=roundedBoxDistance(" in shader
+assert "Other corners get only thin diagonal technical accents, never Ls." in shader
+assert "float2 tlCorner=" not in shader
+assert "coreA*=0.84" in shader and "outerA*=0.52" in shader
 assert "float innerD=min(min(segmentDistance(q,inTopA,inTopB)" not in shader
 # The same saved Roundness slider affects both Bubble tail and Angled Card
 # cut-end fillets. Reject the old UI text claiming it is Angled-only.
@@ -101,6 +101,9 @@ assert "NM_SHOW(\"speed\",border && animation!=NM_ANIM_STATIC)" in host
 assert "NM_SHOW(\"glow_radius\",border && glow)" in host
 assert 'Bubble.TLX="Top-left X"' in en_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — cut corners + brackets"' in en_locale
+assert 'Art.Width="Outer ornament width (px)"' in en_locale
+assert 'Art.Gap="Outer ornament gap from frame (px)"' in en_locale
+assert 'Border.Width="Base neon border width (px)"' in en_locale
 assert 'Preset.TechHUD="Tech HUD Advanced — Cyan + Amber"' in en_locale
 assert 'Shape.GameUI="Game UI — corner brackets + inner rail"' in en_locale
 assert 'Preset.GameUI="Game UI — Neon Green"' in en_locale
@@ -110,6 +113,7 @@ assert 'Color.Mode.Rainbow="Gradien pelangi"' in id_locale
 assert 'Rainbow.Spread="Sebaran gradien"' in id_locale
 assert 'Bubble.TLX="Sudut kiri-atas X"' in id_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — sudut potong + bracket"' in id_locale
+assert 'Art.Width="Ketebalan ornamen luar (px)"' in id_locale
 # A primitive min is an occupancy union, NOT the exposed contour distance:
 # its hidden body bottom/tail base caused a phantom horizontal neon seam.
 assert "float ds=edgeDistanceSquared(p,tlN,trP)" in shader
@@ -125,6 +129,9 @@ assert 'obs_data_has_user_value(settings, "shape_detail")' in host
 assert 'gs_effect_set_float(f->shape_detail, f->config.shape_detail)' in host
 assert uniforms["style_id"] == uniforms["ornament_mode"] == "int"
 assert uniforms["art_intensity"] == uniforms["art_gap"] == "float"
+for key in ("ornament_width","ornament_length_x","ornament_length_y","inner_rail_width"):
+    assert uniforms[key] == "float"
+    assert f'NM_PARAM({key}, "{key}")' in host
 assert "roundedContourTurn" in shader
 assert "float3 hsvToRgb(" in shader and "float rainbowContourTurn(" in shader
 assert "if(color_mode == 1)" in shader and "else if(color_mode == 2)" in shader
@@ -140,17 +147,19 @@ for mode in (2, 3, 4, 5):
     assert f"ornament_mode == {mode}" in shader
 assert "float segmentDistance(" in shader
 assert "ornament_mode == 5 && shape_id == 14" in shader
-assert "float majorHalf=max(4.8,border_width*2.85)" in shader
-assert "float minorHalf=max(0.65,border_width*0.34)" in shader
+assert "float minorHalf=max(0.25,inner_rail_width*0.5)" in shader
 assert "float hbar=roundedBoxDistance(" in shader
 assert "float vbar=roundedBoxDistance(" in shader
 assert "float innerD=abs(d+innerGap)" in shader
-assert "corners*0.99+innerRail*0.54" in shader
-assert "coreA*=0.62" in shader and "outerA*=0.34" in shader
+assert "corners*0.99+innerRail*0.58" in shader
+assert "coreA*=0.80" in shader and "outerA*=0.40" in shader
 assert "float nodeD=" not in shader
 for key in ("art_intensity", "art_gap"):
     assert f'obs_data_has_user_value(settings, "{key}")' in host
     assert f'obs_data_set_double(settings, "{key}", next.{key})' in host
+for key in ("ornament_width","ornament_length_x","ornament_length_y","inner_rail_width"):
+    assert f'obs_data_set_default_double(settings, "{key}"' in host
+assert 'obs_data_has_user_value(settings,d4f_keys[i])' in host
 assert 'obs_data_has_user_value(settings, "ornament_mode")' in host
 assert 'obs_data_set_int(settings, "ornament_mode", next.ornament_mode)' in host
 for key in ("mid_glow_strength", "bloom_strength", "hotspot_strength", "hotspot_size"):

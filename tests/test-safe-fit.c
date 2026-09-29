@@ -129,21 +129,23 @@ int main(void)
     nm_config_defaults(&c);
     c.shape_id=NM_SHAPE_TECH_HUD;
     c.ornament_mode=NM_ORNAMENT_TECH_HUD;
-    c.art_intensity=1.0f; c.art_gap=7.0f;
-    c.border_px=1.8f; c.glow_px=14.0f; c.show_glow=false;
+    c.art_intensity=1.0f; c.art_gap=24.0f;
+    c.ornament_width_px=18.0f;
+    c.border_px=5.0f; c.glow_px=14.0f; c.show_glow=false;
     c.expand_canvas=true;
-    check("Tech HUD heavy-bar envelope participates in D3",
+    check("Tech HUD D4F true-gap envelope participates in D3",
           nm_safe_fit_calculate(&c,640,360,&f) && f.fits &&
-          f.envelope_px>=20.0f);
+          f.envelope_px>=44.0f);
     nm_config_defaults(&c);
     c.shape_id=NM_SHAPE_GAME_UI;
     c.ornament_mode=NM_ORNAMENT_GAME_UI;
-    c.art_intensity=1.0f; c.art_gap=7.0f;
-    c.border_px=1.6f; c.glow_px=12.0f; c.show_glow=false;
+    c.art_intensity=1.0f; c.art_gap=14.0f;
+    c.ornament_width_px=16.0f;
+    c.border_px=5.0f; c.glow_px=12.0f; c.show_glow=false;
     c.expand_canvas=true;
-    check("Game UI heavy-L envelope participates in D3",
+    check("Game UI D4F true-gap envelope participates in D3",
           nm_safe_fit_calculate(&c,640,360,&f) && f.fits &&
-          f.envelope_px>=20.5f);
+          f.envelope_px>=32.0f);
     /* D3 gate: deterministic coverage of input/output dimensions, asymmetric
      * offsets and rotated AABBs over landscape, square and portrait captures.
      * This tests geometry, not OBS scene-item transform semantics. */

@@ -51,6 +51,10 @@ int main(void)
     near("D4D rainbow saturation default",cfg.rainbow_saturation,0.92f);
     near("D4D rainbow hue default",cfg.rainbow_hue_offset,0.0f);
     near("D4D rainbow spread default",cfg.rainbow_spread,1.0f);
+    near("D4F legacy-compatible ornament width default",cfg.ornament_width_px,10.0f);
+    near("D4F ornament X length default",cfg.ornament_length_x_px,60.0f);
+    near("D4F ornament Y length default",cfg.ornament_length_y_px,48.0f);
+    near("D4F inner rail width default",cfg.inner_rail_width_px,1.4f);
 
     cfg.scale = -FLT_MAX;
     cfg.mask_width = -FLT_MAX;
@@ -75,6 +79,10 @@ int main(void)
     cfg.ornament_mode = 999;
     cfg.art_gap = INFINITY;
     cfg.art_intensity = NAN;
+    cfg.ornament_width_px = INFINITY;
+    cfg.ornament_length_x_px = NAN;
+    cfg.ornament_length_y_px = 9999.0f;
+    cfg.inner_rail_width_px = -20.0f;
     cfg.animation_speed = 99.0f;
     cfg.color_mode = 99;
     cfg.rainbow_speed = 99.0f;
@@ -110,8 +118,12 @@ int main(void)
     near("hotspot strength clamp", cfg.hotspot_strength, 0.0f);
     near("hotspot size clamp", cfg.hotspot_size, 0.25f);
     check("unknown art rejected", cfg.ornament_mode == NM_ORNAMENT_NONE);
-    near("art gap inf fallback", cfg.art_gap, 1.0f);
+    near("art gap inf fallback", cfg.art_gap, 0.0f);
     near("art intensity nan fallback", cfg.art_intensity, 0.0f);
+    near("D4F ornament width inf fallback",cfg.ornament_width_px,1.0f);
+    near("D4F ornament X nan fallback",cfg.ornament_length_x_px,8.0f);
+    near("D4F ornament Y max clamp",cfg.ornament_length_y_px,240.0f);
+    near("D4F inner rail min clamp",cfg.inner_rail_width_px,0.5f);
     near("speed clamp", cfg.animation_speed, 5.0f);
     check("unknown color mode falls back to Dual",cfg.color_mode == NM_COLOR_DUAL);
     near("rainbow speed clamp",cfg.rainbow_speed,5.0f);
@@ -162,7 +174,11 @@ int main(void)
     cfg.hotspot_strength = 0.0f;
     cfg.hotspot_size = 0.25f;
     cfg.art_intensity = 1.0f;
-    cfg.art_gap = 16.0f;
+    cfg.art_gap = 96.0f;
+    cfg.ornament_width_px = 64.0f;
+    cfg.ornament_length_x_px = 240.0f;
+    cfg.ornament_length_y_px = 240.0f;
+    cfg.inner_rail_width_px = 12.0f;
     cfg.ornament_mode = NM_ORNAMENT_CYBER;
     cfg.color_mode = NM_COLOR_RAINBOW;
     cfg.rainbow_speed = 4.0f;
@@ -184,6 +200,10 @@ int main(void)
     check("Reactor has authored ring", cfg.ornament_mode == NM_ORNAMENT_REACTOR);
     near("Reactor art intensity complete", cfg.art_intensity, 0.88f);
     near("Reactor art gap complete", cfg.art_gap, 2.0f);
+    near("preset D4F ornament width complete",cfg.ornament_width_px,10.0f);
+    near("preset D4F ornament X complete",cfg.ornament_length_x_px,60.0f);
+    near("preset D4F ornament Y complete",cfg.ornament_length_y_px,48.0f);
+    near("preset D4F inner rail complete",cfg.inner_rail_width_px,1.4f);
     near("preset shape detail complete", cfg.shape_detail, 0.22f);
     check("named preset restores Dual color",cfg.color_mode == NM_COLOR_DUAL);
     near("named preset restores rainbow speed default",cfg.rainbow_speed,0.65f);
@@ -202,6 +222,19 @@ int main(void)
 
     check("HUD preset chooses new shape", nm_config_apply_preset(&cfg, 8) && cfg.shape_id == NM_SHAPE_HUD_PANEL);
     check("Squircle preset chooses new shape", nm_config_apply_preset(&cfg, 9) && cfg.shape_id == NM_SHAPE_SQUIRCLE);
+    check("D4F Tech preset exposes bold independent presence controls",
+          nm_config_apply_preset(&cfg,5) &&
+          fabsf(cfg.border_px-5.0f)<0.0001f &&
+          fabsf(cfg.art_gap-24.0f)<0.0001f &&
+          fabsf(cfg.ornament_width_px-18.0f)<0.0001f &&
+          fabsf(cfg.ornament_length_x_px-84.0f)<0.0001f &&
+          fabsf(cfg.ornament_length_y_px-68.0f)<0.0001f);
+    check("D4F Game preset exposes bold independent presence controls",
+          nm_config_apply_preset(&cfg,10) &&
+          fabsf(cfg.border_px-5.0f)<0.0001f &&
+          fabsf(cfg.art_gap-14.0f)<0.0001f &&
+          fabsf(cfg.ornament_width_px-16.0f)<0.0001f &&
+          fabsf(cfg.inner_rail_width_px-1.4f)<0.0001f);
     check("legacy schema supported", nm_config_schema_supported(0));
     check("current schema supported", nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION));
     check("legacy v1 schema supported", nm_config_schema_supported(1));

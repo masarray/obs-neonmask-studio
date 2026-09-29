@@ -620,3 +620,15 @@ must retain substantial alpha four pixels away from their centerline; Game
 UI's inner rail must already be quiet two pixels away; outer mass must exceed
 the inner/base frame by a fixed alpha margin. This prevents a regression back
 to decorative hairlines. Actual OBS screenshots remain the visual sign-off.
+
+## D4F — Ornament & Border Presence Controls
+
+Real OBS canvas testing after D4E showed a remaining product-level issue: scene-item downscaling makes even correct source-space neon look weak. D4F therefore stops deriving authored ornament mass from the base border and makes the three visual layers independently controllable.
+
+The OBS UI now exposes a base-border range of 0.5..64 px. For Tech HUD and Game UI only, contextual controls expose outer ornament width (1..64 px), horizontal/vertical L-arm lengths (8..240 px), and the existing ornament gap now spans 0..96 px. Game UI additionally exposes inner-rail width (0.5..12 px). Hidden controls retain their values.
+
+Art gap semantics are corrected: it is the actual empty pixel distance from the base frame edge to the OUTER bar's inner edge. Bar center is placed at half-size + gap + width/2, so changing gap from 16 to 32 really moves the ornament outward by 16 source pixels instead of being partly cancelled by stroke math.
+
+Tech HUD's default grammar is strict: only the top-right and bottom-left corners receive dominant outer L bars. Top-left/bottom-right may carry only thin diagonal technical accents. Game UI retains four symmetric outer Ls plus one thin inner rail. Presets 5/10 use 5px base borders for better canvas presence, with Tech HUD 18px outer bars / 24px true gap and Game UI 16px outer bars / 14px gap. D3 safe-fit/expanded-output uses the exact gap + full ornament width + glow support reach.
+
+These controls compensate for OBS scene-transform downscaling without trying to infer scene scale inside a source filter. Visual acceptance still requires real OBS canvas screenshots at the user's intended facecam size.

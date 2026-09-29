@@ -47,6 +47,10 @@ void nm_config_defaults(nm_config *cfg)
         .hotspot_size = 0.10f,
         .art_intensity = 0.0f,
         .art_gap = 2.0f,
+        .ornament_width_px = 10.0f,
+        .ornament_length_x_px = 60.0f,
+        .ornament_length_y_px = 48.0f,
+        .inner_rail_width_px = 1.4f,
         .ornament_mode = NM_ORNAMENT_NONE,
         .animation_speed = 0.65f,
         .primary = 0xFFDD31FFu,
@@ -113,7 +117,7 @@ void nm_config_validate(nm_config *cfg)
                                     cfg->bubble_tail_start + 0.06f, 0.98f);
     cfg->bubble_tail_tip_pos = nm_clamp(cfg->bubble_tail_tip_pos, 0.0f, 1.0f);
     cfg->bubble_tail_depth = nm_clamp(cfg->bubble_tail_depth, 0.08f, 0.35f);
-    cfg->border_px = nm_clamp(cfg->border_px, 0.5f, 32.0f);
+    cfg->border_px = nm_clamp(cfg->border_px, 0.5f, 64.0f);
     cfg->feather_px = nm_clamp(cfg->feather_px, 0.5f, 30.0f);
     cfg->glow_px = nm_clamp(cfg->glow_px, 1.0f, 80.0f);
     cfg->glow_amount = nm_clamp(cfg->glow_amount, 0.0f, 1.0f);
@@ -121,8 +125,12 @@ void nm_config_validate(nm_config *cfg)
     cfg->bloom_strength = nm_clamp(cfg->bloom_strength, 0.0f, 1.0f);
     cfg->hotspot_strength = nm_clamp(cfg->hotspot_strength, 0.0f, 1.0f);
     cfg->hotspot_size = nm_clamp(cfg->hotspot_size, 0.04f, 0.25f);
-    cfg->art_gap = nm_clamp(cfg->art_gap, 1.0f, 16.0f);
+    cfg->art_gap = nm_clamp(cfg->art_gap, 0.0f, 96.0f);
     cfg->art_intensity = nm_clamp(cfg->art_intensity, 0.0f, 1.0f);
+    cfg->ornament_width_px = nm_clamp(cfg->ornament_width_px, 1.0f, 64.0f);
+    cfg->ornament_length_x_px = nm_clamp(cfg->ornament_length_x_px, 8.0f, 240.0f);
+    cfg->ornament_length_y_px = nm_clamp(cfg->ornament_length_y_px, 8.0f, 240.0f);
+    cfg->inner_rail_width_px = nm_clamp(cfg->inner_rail_width_px, 0.5f, 12.0f);
     if (cfg->ornament_mode < NM_ORNAMENT_NONE || cfg->ornament_mode > NM_ORNAMENT_GAME_UI)
         cfg->ornament_mode = NM_ORNAMENT_NONE;
     cfg->animation_speed = nm_clamp(cfg->animation_speed, 0.0f, 5.0f);
@@ -195,6 +203,10 @@ bool nm_config_apply_preset(nm_config *cfg, int preset_id)
     cfg->ornament_mode = preset.ornament_mode;
     cfg->art_intensity = (float)preset.art_intensity;
     cfg->art_gap = (float)preset.art_gap;
+    cfg->ornament_width_px = (float)preset.ornament_width;
+    cfg->ornament_length_x_px = (float)preset.ornament_length_x;
+    cfg->ornament_length_y_px = (float)preset.ornament_length_y;
+    cfg->inner_rail_width_px = (float)preset.inner_rail_width;
     cfg->animation_speed = (float)preset.speed;
     cfg->segment_count = preset.segments;
     cfg->style_id = preset.style;

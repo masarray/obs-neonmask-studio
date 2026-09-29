@@ -26,7 +26,11 @@ int main(void)
         check("scale range", p.scale >= 0.10 && p.scale <= 0.98);
         check("roundness range", p.roundness >= 0.0 && p.roundness <= 1.0);
         check("shape detail range", p.shape_detail >= 0.08 && p.shape_detail <= 0.35);
-        check("width range", p.border_width >= 0.5 && p.border_width <= 32.0);
+        check("width range", p.border_width >= 0.5 && p.border_width <= 64.0);
+        check("D4F ornament width range",p.ornament_width >= 1.0 && p.ornament_width <= 64.0);
+        check("D4F ornament X range",p.ornament_length_x >= 8.0 && p.ornament_length_x <= 240.0);
+        check("D4F ornament Y range",p.ornament_length_y >= 8.0 && p.ornament_length_y <= 240.0);
+        check("D4F inner rail range",p.inner_rail_width >= 0.5 && p.inner_rail_width <= 12.0);
         check("feather range", p.feather >= 0.5 && p.feather <= 30.0);
         check("glow radius range", p.glow_radius >= 1.0 && p.glow_radius <= 80.0);
         check("glow range", p.glow_strength >= 0.0 && p.glow_strength <= 1.0);
@@ -57,9 +61,11 @@ int main(void)
     nm_get_preset(5, &p);
     check("Tech HUD preset uses dedicated mask + ornament",
           p.shape == NM_SHAPE_TECH_HUD && p.ornament_mode == NM_ORNAMENT_TECH_HUD);
-    check("Tech HUD D4E uses thin base and separated heavy anchors",
-          p.shape_detail <= 0.13 && p.art_gap >= 7.0 &&
-          p.border_width <= 2.0 && p.art_intensity >= 0.99);
+    check("Tech HUD D4F is canvas-visible and strongly separated",
+          p.shape_detail <= 0.13 && p.art_gap >= 20.0 &&
+          p.border_width >= 4.0 && p.ornament_width >= 16.0 &&
+          p.ornament_length_x >= 80.0 && p.ornament_length_y >= 64.0 &&
+          p.art_intensity >= 0.99);
     nm_get_preset(6, &p);
     check("Streamer preset becomes true bubble mask", p.shape == NM_SHAPE_CHAT_BUBBLE && p.ornament_mode == NM_ORNAMENT_NONE);
     nm_get_preset(7, &p);
@@ -73,8 +79,10 @@ int main(void)
     check("Game UI preset uses dedicated mask and recipe",
           p.shape == NM_SHAPE_GAME_UI && p.ornament_mode == NM_ORNAMENT_GAME_UI &&
           p.animation == NM_ANIM_STATIC);
-    check("Game UI D4E outer brackets dominate hairline base frame",
-          p.border_width <= 1.8 && p.art_gap >= 7.0 && p.art_intensity >= 0.99);
+    check("Game UI D4F outer brackets dominate a visible base frame",
+          p.border_width >= 4.0 && p.art_gap >= 12.0 &&
+          p.ornament_width >= 14.0 && p.inner_rail_width <= 2.0 &&
+          p.art_intensity >= 0.99);
     if (failures) return 1;
     puts("PASS: nine legacy preset IDs plus appended Game UI preset 10");
     return 0;

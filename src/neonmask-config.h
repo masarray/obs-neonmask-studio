@@ -48,7 +48,12 @@ typedef struct nm_config {
     float hotspot_strength;
     float hotspot_size;
     float art_intensity;
-    float art_gap;
+    /* D4F: authored ornament presence is independent of the base border. */
+    float art_gap;               /* visible empty gap from frame, px */
+    float ornament_width_px;     /* full outer-bar thickness */
+    float ornament_length_x_px;  /* horizontal L arm */
+    float ornament_length_y_px;  /* vertical L arm */
+    float inner_rail_width_px;   /* Game UI inset rail */
     int ornament_mode;
     float animation_speed;
     uint32_t primary;
