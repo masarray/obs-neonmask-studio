@@ -567,3 +567,30 @@ four-region rainbow frame so a shader that collapses back to one hue cannot
 pass CI. This is still partial G4; D4E requires actual OBS dark/light captures,
 motion clips and preset-by-preset aesthetic polish before visual completion.
 
+
+## D4B.3 / D4C.1 — visual-parity cleanup after real OBS audit
+
+Actual OBS screenshots on 2026-09-29 rejected D4B.2 and D4C as visually
+complete. Tech HUD was noisy: an oversized chamfer, the generic HUD rail,
+floating inner fragments and a support trace competed with each other. Game UI
+still read as a full neon box with tiny corner accents rather than the supplied
+four-bracket gaming frame.
+
+D4B.3 keeps IDs stable, reduces the Tech HUD TL/BR cut to 1.10x detail with a
+20% cap, suppresses the generic Double/HUD rail for authored overlays, and
+renders only four coherent modules: strong TR/BL L anchors plus compact
+three-piece shells on the real TL/BR cuts. Floating inner rails and the broken
+support contour are removed. Preset 5 uses smaller cuts, wider separation and
+restrained bloom.
+
+D4C.1 makes shape 14 source coverage a clean rectangle and hides Shape Detail
+for Game UI. Its identity now comes from four large outer L brackets, separated
+from the image, plus one thin continuous inner rail. Corner nodes are removed.
+Preset 10 narrows the base border, increases bracket separation and reduces
+bloom so the outer modules dominate.
+
+The 320x180 GPU gates add negative composition checks: the former Tech inner-
+noise region must remain transparent with glow disabled; Game UI must illuminate
+both arms of every outer bracket and all four inner-rail sides while the center
+remains clear. These are automated composition invariants; a fresh OBS capture
+is still the human visual acceptance gate.
