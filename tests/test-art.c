@@ -38,7 +38,9 @@ int main(void)
     test("reject mode",!nm_art_recipe_valid(9,3.0f,1.0f));
     test("reject nan",!nm_art_recipe_valid(1,NAN,.7f));
     test("reject inf",!nm_art_recipe_valid(1,3.0f,INFINITY));
-    test("reject bad gap",!nm_art_recipe_valid(1,20.0f,.5f));
+    test("D4F large gap allowed",nm_art_recipe_valid(3,64.0f,.5f));
+    test("D4F zero gap allowed",nm_art_recipe_valid(5,0.0f,.5f));
+    test("reject bad gap",!nm_art_recipe_valid(1,97.0f,.5f));
     if(failed)return 1;
     puts("PASS: rounded contour arc-length reference and bounded art recipe");
     return 0;
