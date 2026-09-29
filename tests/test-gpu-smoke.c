@@ -277,7 +277,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *game_corner_bl = mapped + 62u * stride + 1u * 4u;
     const uint8_t *game_mask_tl = mapped + 10u * stride + 10u * 4u;
     const uint8_t *game_mask_top = mapped + 10u * stride + 14u * 4u;
-    const uint8_t *game_inner_top = mapped + 16u * stride + 32u * 4u;
+    const uint8_t *game_inner_top = mapped + 19u * stride + 32u * 4u;
 
 
     /* The black/transparent corner proves the mask is not an opaque box.
