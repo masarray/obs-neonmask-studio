@@ -1187,9 +1187,12 @@ float4 drawNeonMask(VertData v_in) : TARGET
         outA = outerA + outA * (1.0 - outerA);
         premul = midColor * midA + premul * (1.0 - midA);
         outA = midA + outA * (1.0 - midA);
-        float3 accentColor = color_mode == 2 ?
-            lerp(neon,float3(1.0,1.0,1.0),0.32) :
-            lerp(color_b.rgb,float3(1.0,1.0,1.0),0.32);
+        float3 accentColor =
+            (ornament_mode == 6 && shape_id == 1) ?
+                lerp(neon,float3(1.0,1.0,1.0),0.16) :
+            color_mode == 2 ?
+                lerp(neon,float3(1.0,1.0,1.0),0.32) :
+                lerp(color_b.rgb,float3(1.0,1.0,1.0),0.32);
         premul = accentColor * artBarGlowA + premul * (1.0 - artBarGlowA);
         outA = artBarGlowA + outA * (1.0 - artBarGlowA);
         premul = rimColor * rimA + premul * (1.0 - rimA);
