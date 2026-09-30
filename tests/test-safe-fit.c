@@ -217,28 +217,46 @@ int main(void)
           (float)f.output_height + 0.01f &&
           f.pad_top>=176u && f.pad_right>=96u);
 
-    /* P6B: the outer 2/3 ring is genuine geometry beyond the circular mask.
-     * Existing/custom scenes get the same automatic clipping protection as
-     * authored outer Ls; expansion must preserve the authored radius. */
+    /* P6E: Dual Ring centerline position is independent from thickness.
+     * The legacy art_gap no longer affects ring radius. Width contributes only
+     * half its value beyond the fixed outer centerline. */
     nm_config_defaults(&c);
     c.safe_fit=false;
     c.mask_width=0.96f; c.mask_height=0.96f;
     c.shape_id=NM_SHAPE_CIRCLE;
     c.ornament_mode=NM_ORNAMENT_DUAL_RING;
-    c.art_intensity=1.0f; c.art_gap=8.0f;
-    c.ornament_width_px=13.0f; c.inner_rail_width_px=10.0f;
-    c.border_px=0.9f; c.show_glow=false;
-    check("P6D dual ring auto-fits full external orbit stack",
+    c.art_intensity=1.0f;
+    c.ring_inner_offset_px=18.0f;
+    c.ring_spacing_px=30.0f;
+    c.ornament_width_px=20.0f;
+    c.inner_rail_width_px=15.0f;
+    c.border_px=0.8f; c.show_glow=false;
+    check("P6E dual ring auto-fits fixed external centerlines",
           nm_safe_fit_calculate(&c,320,320,&f) && f.fits &&
           f.scale<1.0f && f.scale>0.0f &&
           f.half_width+f.envelope_px<=160.001f &&
-          f.half_height+f.envelope_px<=160.001f);
+          f.half_height+f.envelope_px<=160.001f &&
+          f.envelope_px>=60.3f && f.envelope_px<=60.6f);
+    const float envelope_default=f.envelope_px;
+
+    c.art_gap=96.0f;
+    check("P6E legacy art gap cannot move Dual Ring centerlines",
+          nm_safe_fit_calculate(&c,320,320,&f) && f.fits &&
+          near(f.envelope_px,envelope_default));
+
+    c.ornament_width_px=26.0f;
+    check("P6E outer width changes reach by half thickness only",
+          nm_safe_fit_calculate(&c,320,320,&f) && f.fits &&
+          near(f.envelope_px-envelope_default,3.0f));
+
+    c.ornament_width_px=20.0f;
+    c.art_gap=8.0f;
     c.expand_canvas=true;
-    check("P6D dual ring expansion preserves authored external orbits",
+    check("P6E dual ring expansion preserves decoupled authored orbits",
           nm_safe_fit_calculate(&c,320,320,&f) && f.fits &&
           near(f.scale,1.0f) && f.pad_left>0 && f.pad_top>0 &&
           f.pad_right>0 && f.pad_bottom>0 &&
-          f.envelope_px>=37.0f);
+          f.envelope_px>=60.3f);
     /* D3 gate: deterministic coverage of input/output dimensions, asymmetric
      * offsets and rotated AABBs over landscape, square and portrait captures.
      * This tests geometry, not OBS scene-item transform semantics. */
