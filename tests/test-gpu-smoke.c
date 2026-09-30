@@ -1421,6 +1421,12 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
+            /* P6E adds two shader uniforms used only by Dual Ring. D3D11
+             * requires every declared effect parameter to be initialized even
+             * when a fixture exercises an unrelated ornament/shape. Seed sane
+             * defaults once; the Dual Ring fixture overrides them explicitly. */
+            gs_effect_set_float(gs_effect_get_param_by_name(effect,"ring_inner_offset"),18.0f);
+            gs_effect_set_float(gs_effect_get_param_by_name(effect,"ring_spacing"),30.0f);
             for (int variant = 0; variant < 47; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
             missing += verify_tech_hud_preview_scale(effect);
