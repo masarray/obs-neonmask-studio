@@ -166,6 +166,8 @@ assert "connectedLCornerDistance(" in shader
 assert "float innerD=abs(d+innerGap)" in shader
 assert "corners*0.99+innerRail*0.58" in shader
 assert "ornament_mode == 6 && shape_id == 1" in shader
+assert "ringAnglePoint=float2(1.0,0.0)" in shader
+assert "dot(ringAnglePoint,ringAnglePoint)<0.0001" in shader
 assert "outerRel=frac(t-phase+1.0)" in shader
 assert "innerRel=frac(t+phase-0.50+2.0)" in shader
 assert "const float span=0.6666666667" in shader
