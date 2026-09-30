@@ -172,14 +172,25 @@ assert "outerRel=frac(t-phase+1.0)" in shader
 assert "float innerStart=frac(0.50-phase+1.0)" in shader
 assert "float innerRel=frac(t-innerStart+1.0)" in shader
 assert "const float span=0.6666666667" in shader
-assert "outerOffset=halfCore+max(0.0,art_gap)+outerHalf" in shader
+assert "const float tipFade=0.055" in shader
+assert "float locatorGap=max(5.0,art_gap*0.65)" in shader
+assert "float orbitGap=max(7.0,art_gap*0.90)" in shader
+assert "float innerOffset=halfCore+locatorGap+innerHalf" in shader
+assert "float outerOffset=innerOffset+innerHalf+orbitGap+outerHalf" in shader
+assert "float outerD=abs(d-outerOffset)" in shader
+assert "float innerD=abs(d-innerOffset)" in shader
+assert "outerHalf*lerp(0.18,1.0,outerTaper)" in shader
+assert "innerHalf*lerp(0.18,1.0,innerTaper)" in shader
 assert "float dualOuterA = 0.0" in shader
 assert "float dualInnerA = 0.0" in shader
-assert "dualOuterColor=lerp(color_a.rgb,color_b.rgb,outerMix*0.78)" in shader
-assert "dualInnerColor=lerp(color_b.rgb,color_a.rgb,innerMix*0.78)" in shader
-assert "float2 outerStartP=" in shader and "float2 innerStartP=" in shader
-assert "dualOuterHotA" in shader and "dualInnerHotA" in shader
-assert "coreA*=0.42" in shader and "outerA*=0.18" in shader
+assert "float dualOuterCoreA = 0.0" in shader
+assert "float dualInnerCoreA = 0.0" in shader
+assert "dualOuterColor=lerp(color_a.rgb,color_b.rgb,outerMix*0.80)" in shader
+assert "dualInnerColor=lerp(color_b.rgb,color_a.rgb,innerMix*0.80)" in shader
+assert "dualOuterHotA" not in shader and "dualInnerHotA" not in shader
+assert "outerStartCap" not in shader and "innerStartCap" not in shader
+assert "outerEndCap" not in shader and "innerEndCap" not in shader
+assert "coreA*=0.22" in shader and "outerA*=0.08" in shader
 assert "coreA*=0.80" in shader and "outerA*=0.40" in shader
 assert "float nodeD=" not in shader
 for key in ("art_intensity", "art_gap"):

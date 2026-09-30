@@ -53,14 +53,14 @@ static const nm_preset builtin[] = {
      0.82, 0.19, 5.0, 0.75, 20.0, 0.70, 0.70, 0, NM_STYLE_CLASSIC,
      true, true, 0.78, 0.84, 0.0, 0.10, NM_ORNAMENT_NONE, 0.0, 2.0, 0.22,
      10.0, 60.0, 48.0, 1.4, NM_COLOR_RAINBOW, 0.78, 0.96, 0.0, 1.0},
-    /* P6C: two clearly separated luminous 2/3-circle rails. Outer remains
-     * CW and inner CCW from one bounded host clock, but the visual recipe is
-     * deliberately more heroic: thicker rails, wider radial separation,
-     * stronger controlled bloom, and a quieter 360-degree base circle. */
+    /* P6D: both 2/3-circle rails live OUTSIDE the portrait. The inner
+     * orbit is no longer drawn over source pixels; a faint locator edge,
+     * dark radial gaps, thick luminous rails and tapered fading tips form the
+     * premium hierarchy. Outer remains CW and inner CCW from one bounded clock. */
     {NM_SHAPE_CIRCLE, NM_ANIM_FLOW, 0x00FFEA28u, 0x00F52CFFu,
-     0.72, 0.0, 1.6, 0.70, 20.0, 0.86, 0.68, 0, NM_STYLE_MINIMAL,
-     true, true, 0.82, 0.86, 0.0, 0.08, NM_ORNAMENT_DUAL_RING, 1.0, 11.0, 0.22,
-     10.0, 60.0, 48.0, 7.0, NM_COLOR_DUAL, 0.65, 0.92, 0.0, 1.0}
+     0.72, 0.0, 0.9, 0.70, 22.0, 0.90, 0.60, 0, NM_STYLE_MINIMAL,
+     true, true, 0.86, 0.88, 0.0, 0.08, NM_ORNAMENT_DUAL_RING, 1.0, 8.0, 0.22,
+     13.0, 60.0, 48.0, 10.0, NM_COLOR_DUAL, 0.65, 0.92, 0.0, 1.0}
 };
 
 bool nm_get_preset(int id, nm_preset *out)

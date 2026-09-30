@@ -102,16 +102,17 @@ int main(void)
           p.shape == NM_SHAPE_CIRCLE &&
           p.ornament_mode == NM_ORNAMENT_DUAL_RING &&
           p.animation == NM_ANIM_FLOW);
-    check("P6C Rotating Ring authors hero-scale separated rail widths",
-          p.art_gap >= 10.0 &&
-          p.ornament_width >= 9.0 &&
-          p.inner_rail_width >= 6.0 &&
+    check("P6D Rotating Ring authors thick external rail hierarchy",
+          p.art_gap >= 7.0 &&
+          p.ornament_width >= 12.0 &&
+          p.inner_rail_width >= 9.0 &&
           p.ornament_width > p.inner_rail_width &&
-          p.border_width <= 2.0);
-    check("P6C Rotating Ring uses stronger controlled light hierarchy",
+          p.border_width <= 1.0);
+    check("P6D Rotating Ring uses premium controlled light hierarchy",
           p.color_mode == NM_COLOR_DUAL && p.primary != p.secondary &&
-          p.glow_strength >= 0.82 && p.glow_radius >= 18.0 &&
-          p.mid_glow >= 0.78 && p.bloom_strength >= 0.82);
+          p.glow_strength >= 0.88 && p.glow_radius >= 21.0 &&
+          p.mid_glow >= 0.84 && p.bloom_strength >= 0.86 &&
+          p.speed <= 0.62);
     if (failures) return 1;
     puts("PASS: stable preset IDs through P6B Rotating Ring preset 12");
     return 0;

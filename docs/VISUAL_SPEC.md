@@ -137,7 +137,7 @@ filter pixel controls are source-relative, not screen/canvas coordinates.
 | Hexagon / diamond | Crisp sci-fi silhouette with stable corner joins | Exists approximately; validate corners in M2 |
 | Triangle / polygon | Parameterized sides with optional rounded joins | Triangle + regular polygon (5–12 sides) implemented in Phase A; rounded joins/visual parity still pending |
 | Neon Flow | Bright traveling accent over dim continuous rim | Angular preview exists; perimeter travel in M2 |
-| Rotating Ring | Thick, radially separated inner/outer 2/3-circle rails counter-rotate around a quiet circular locator | P6C hierarchy + GPU thickness/separation/direction gates; actual OBS aesthetic acceptance pending |
+| Rotating Ring | Two thick external 2/3-circle orbits counter-rotate outside a faint locator, with dark radial gaps and tapered fading endpoints | P6D external-orbit + GPU thickness/separation/taper/direction gates; actual OBS aesthetic acceptance pending |
 | Pulse Glow | Slow breathing halo with visible stable core | Pulse exists; restrained amplitude and long-session checks in M2 |
 | Electric | Sparse bounded arcs just outside the frame | New, opt-in M3; no full-screen flash |
 | Streamer | Rounded rim with small corner/status dots | New ornament recipe in M3 |
@@ -338,4 +338,37 @@ requires dark radial separation bands around the base circle, requires the base
 circle to remain visible but subordinate, and still proves outer CW / inner CCW
 motion over two deterministic frames. Glow is disabled for the thickness/gap
 proof so bloom cannot fake the pass.
+
+## P6D — Premium External Dual Orbit
+
+Actual OBS review of P6C confirmed that the thicker counter-rotating rails were
+more visible, but the composition still read too much like one circular border:
+the inner rail remained inside the portrait, the 360-degree locator visually
+glued the system together, and the rounded geometric caps read as endpoint
+dots rather than luxury fading terminals.
+
+P6D makes the dual-orbit hierarchy structural:
+- both 2/3-circle rails live outside the portrait silhouette;
+- the locator is reduced to a faint sub-pixel/one-pixel-class guide;
+- a dark locator-to-inner gap and a second dark inter-orbit gap are explicit
+  parts of the visual grammar;
+- the inner orbit is 10 px and the outer orbit 13 px in the authored preset;
+- each thick chromatic rail carries a much narrower bright luminous core;
+- endpoint cap primitives are removed entirely;
+- endpoint alpha and rail half-width taper together over a short angular run,
+  producing a narrow fading point with no circular bead/dot;
+- outer remains CW and inner CCW from the same bounded Flow phase.
+
+The safe-fit envelope now covers the entire external radial stack:
+locator core + locator gap + full inner width + inter-orbit gap + full outer
+width + finite glow support. The direct libobs GPU fixture checks that both
+rail centerlines are outside the portrait, both rail edges remain thick,
+both radial negative-space bands remain dark, the locator stays subordinate,
+counter-rotation remains correct, and endpoint alpha rises monotonically from
+empty -> faint tip -> shoulder -> full body. Glow is disabled for those
+geometry/taper probes so bloom cannot fake a passing result.
+
+This is implementation plus deterministic shader-level evidence. Actual OBS
+motion/aesthetic acceptance remains a human G4-V gate and should use the exact
+preview artifact produced from this commit.
 
