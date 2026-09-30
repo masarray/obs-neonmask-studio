@@ -875,3 +875,33 @@ This is implementation plus deterministic shader-level evidence. Actual OBS
 motion/aesthetic acceptance remains a human G4-V gate and should use the exact
 preview artifact produced from this commit.
 
+## P6E — Decoupled Orbit Geometry
+
+Actual OBS review exposed a control-model defect rather than a simple tuning
+problem: P6D used rail half-widths and one shared art gap while constructing
+orbit centerlines. Increasing width therefore also pushed the ring radius
+outward, and the same gap control altered two radial relationships at once.
+Extreme slider values produced a detached oversized halo instead of a thicker
+version of the same composition.
+
+P6E separates those responsibilities:
+- `ring_inner_offset` moves the inner orbit centerline relative to the frame;
+- `ring_spacing` moves the outer centerline relative to the inner centerline;
+- outer/inner width change thickness around those fixed centerlines only;
+- legacy `art_gap` is hidden and ignored for Dual Ring but remains unchanged
+  for Tech HUD/Game UI and other ornament recipes;
+- Dual Ring width sliders use an artistic envelope (outer 8–26 px, inner
+  6–20 px) rather than the generic 64 px range;
+- centerline controls are likewise bounded (inner offset 10–30 px, spacing
+  26–44 px), preventing the detached-halo state seen in manual max testing.
+
+The revised default uses 20 px outer / 15 px inner rails, an 18 px inner
+centerline offset and 30 px centerline spacing. Safe-fit uses those centerlines
+plus only HALF the outer thickness for radial reach, proving that widening a
+ring no longer doubles as a radius control.
+
+Regression coverage explicitly checks that changing legacy art_gap does not
+move Dual Ring bounds, widening the outer rail changes safe-fit reach by only
+half the thickness delta, GPU pixels remain on the authored fixed radii, and
+the existing tapered-end / counter-rotation invariants continue to hold.
+
