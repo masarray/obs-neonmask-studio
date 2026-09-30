@@ -405,7 +405,15 @@ static void nm_geometry_visibility(obs_properties_t *props, int shape_id)
                         shape_id==NM_SHAPE_TECH_HUD ||
                         shape_id==NM_SHAPE_SQUIRCLE;
     if(round) obs_property_set_visible(round,rounded);
-    if(detail) obs_property_set_visible(detail,authored);
+    if(detail) {
+        obs_property_set_visible(detail,authored);
+        /* D4K: Tech HUD gets a deliberately wider authoring range. The
+         * shared persisted value may exceed 0.35, but every legacy authored
+         * shape keeps its previous effective cap in geometry code. */
+        obs_property_float_set_limits(detail,0.08,
+                                      shape_id==NM_SHAPE_TECH_HUD ? 0.70 : 0.35,
+                                      0.01);
+    }
     if(sides) obs_property_set_visible(sides,shape_id==NM_SHAPE_POLYGON);
     if(svg) obs_property_set_visible(svg,shape_id==NM_SHAPE_SVG_PATH);
     if(reload) obs_property_set_visible(reload,shape_id==NM_SHAPE_SVG_PATH);
@@ -660,7 +668,7 @@ static obs_properties_t *nm_properties(void *data)
     NM_CUSTOM(obs_properties_add_bool(mask_group, "safe_fit", obs_module_text("Mask.SafeFit")));
     obs_property_t *expand=obs_properties_add_bool(mask_group,"expand_canvas",obs_module_text("Mask.ExpandCanvas"));
     obs_property_set_modified_callback(expand,nm_context_changed);
-    NM_CUSTOM(obs_properties_add_float_slider(mask_group, "shape_detail", obs_module_text("Mask.Detail"), 0.08, 0.35, 0.01));
+    NM_CUSTOM(obs_properties_add_float_slider(mask_group, "shape_detail", obs_module_text("Mask.Detail"), 0.08, 0.70, 0.01));
     obs_properties_t *bubble_body_props=obs_properties_create();
     NM_CUSTOM(obs_properties_add_float_slider(bubble_body_props,"bubble_tl_x",obs_module_text("Bubble.TLX"),-1.0,-0.35,0.01));
     NM_CUSTOM(obs_properties_add_float_slider(bubble_body_props,"bubble_tl_y",obs_module_text("Bubble.TLY"),-1.0,-0.35,0.01));
