@@ -640,6 +640,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(preset, obs_module_text("Preset.HUDCut"), 8);
     obs_property_list_add_int(preset, obs_module_text("Preset.Squircle"), 9);
     obs_property_list_add_int(preset, obs_module_text("Preset.GameUI"), 10);
+    obs_property_list_add_int(preset, obs_module_text("Preset.GradientRainbow"), 11);
     obs_property_set_modified_callback(preset, nm_preset_changed);
 
     obs_property_t *shape = obs_properties_add_list(props, "shape", obs_module_text("Shape"),
