@@ -39,6 +39,12 @@ static float nm_light_envelope(const nm_config *cfg)
                 fmaxf(3.5f,cfg->glow_px*0.16f) : 0.0f;
             accent=cfg->art_gap+cfg->ornament_width_px+glow+2.0f;
         }
+        if (cfg->ornament_mode == NM_ORNAMENT_DUAL_RING &&
+            cfg->shape_id == NM_SHAPE_CIRCLE) {
+            const float glow=cfg->show_glow ?
+                fmaxf(4.0f,cfg->glow_px*0.20f) : 0.0f;
+            accent=half_core+cfg->art_gap+cfg->ornament_width_px+glow+2.0f;
+        }
         if (cfg->ornament_mode != NM_ORNAMENT_NONE)
             margin = fmaxf(margin, accent);
     }
@@ -108,16 +114,17 @@ bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
     out->output_width = width;
     out->output_height = height;
 
-    /* D4I: dedicated Tech HUD / Game UI outer-L recipes are intrinsically
-     * outside the mask silhouette. If expansion is off, clipping protection
-     * is a runtime invariant even for old/custom scenes that never re-applied
-     * a preset after D4H. Other shapes keep the legacy safe_fit opt-in. */
+    /* D4I/P6B: dedicated authored geometry outside the mask silhouette
+     * (Tech/Game outer Ls and the outer rotating ring) gets automatic clipping
+     * protection when expansion is off. Other shapes keep legacy safe_fit. */
     const bool outer_authored =
         cfg->art_intensity > 0.0f &&
         ((cfg->shape_id == NM_SHAPE_TECH_HUD &&
           cfg->ornament_mode == NM_ORNAMENT_TECH_HUD) ||
          (cfg->shape_id == NM_SHAPE_GAME_UI &&
-          cfg->ornament_mode == NM_ORNAMENT_GAME_UI));
+          cfg->ornament_mode == NM_ORNAMENT_GAME_UI) ||
+         (cfg->shape_id == NM_SHAPE_CIRCLE &&
+          cfg->ornament_mode == NM_ORNAMENT_DUAL_RING));
     const bool fit_inside_source = cfg->safe_fit || outer_authored;
     if (!fit_inside_source && !cfg->expand_canvas)
         return true; /* Legacy/non-authored scenes retain exact dimensions. */

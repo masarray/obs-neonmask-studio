@@ -137,7 +137,7 @@ filter pixel controls are source-relative, not screen/canvas coordinates.
 | Hexagon / diamond | Crisp sci-fi silhouette with stable corner joins | Exists approximately; validate corners in M2 |
 | Triangle / polygon | Parameterized sides with optional rounded joins | Triangle + regular polygon (5–12 sides) implemented in Phase A; rounded joins/visual parity still pending |
 | Neon Flow | Bright traveling accent over dim continuous rim | Angular preview exists; perimeter travel in M2 |
-| Rotating Ring | Circular segmented track with coherent rotation | Formal preset and seam validation in M3 |
+| Rotating Ring | Inner/outer 2/3-circle rails counter-rotate around a clean circular mask | P6B implementation + GPU direction gate; actual OBS motion acceptance pending |
 | Pulse Glow | Slow breathing halo with visible stable core | Pulse exists; restrained amplitude and long-session checks in M2 |
 | Electric | Sparse bounded arcs just outside the frame | New, opt-in M3; no full-screen flash |
 | Streamer | Rounded rim with small corner/status dots | New ornament recipe in M3 |
@@ -283,4 +283,32 @@ bounded eight-hour rainbow phase tests with new preset/config invariants.
 Actual OBS review still decides final art tuning (speed, bloom and perceived
 smoothness at the intended facecam size) before the preset is called visually
 final.
+
+## P6B — Counter-Rotating Dual Ring hero preset
+
+Rotating Ring is appended as preset ID 12 without changing Reactor Ring or any
+existing preset ID. It selects Circle plus a new append-only Dual Ring ornament
+recipe. The source mask remains one clean circle; the ring system is cosmetic
+and never changes webcam alpha coverage.
+
+The visual grammar is intentionally simple and legible at facecam scale:
+- one outer luminous rail spans exactly 2/3 of a circle;
+- one inner luminous rail also spans exactly 2/3 of a circle;
+- the remaining 1/3 sectors are deliberate negative space;
+- outer rail advances clockwise while inner rail advances counter-clockwise;
+- both directions derive from the same bounded Flow phase with opposite signs,
+  so there is no second timer, drift or long-session desynchronization;
+- the stable base circle is attenuated so the two moving rails remain the hero.
+
+Outer-ring reach participates in the same automatic clipping invariant as the
+authored Tech HUD/Game UI ornaments. With expanded output disabled, the mask
+may shrink just enough to keep the outer orbit inside the source. With expansion
+enabled, authored circle size is preserved and real output padding is added.
+
+The direct libobs GPU regression renders phase 0 and phase 0.25, sampling four
+known rail locations. It requires an outer sample to leave while another outer
+sample arrives clockwise, and simultaneously requires the inner rail to retain
+and acquire samples consistent with counter-clockwise motion. Glow is disabled
+in that fixture so base-border spill cannot fake a pass. Actual OBS capture and
+motion review still decide final speed, spacing and perceived smoothness.
 
