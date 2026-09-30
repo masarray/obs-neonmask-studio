@@ -98,6 +98,11 @@ assert 'obs_property_set_visible(tail,shape_id==NM_SHAPE_CHAT_BUBBLE)' in host
 assert "nm_context_visibility(" in host
 assert 'obs_properties_add_text(art_group,"art_clip_hint"' in host
 assert 'obs_property_set_visible(p,tech || game || ring)' in host
+assert 'obs_property_set_visible(p,ornament!=NM_ORNAMENT_NONE && !ring)' in host
+assert 'obs_properties_get(arts,"ring_inner_offset")' in host
+assert 'obs_properties_get(arts,"ring_spacing")' in host
+assert 'ring ? 26.0 : 64.0' in host
+assert 'ring ? 20.0 : 12.0' in host
 assert "NM_SHOW(\"speed\",border && animation!=NM_ANIM_STATIC)" in host
 assert "NM_SHOW(\"glow_radius\",border && glow)" in host
 assert 'Bubble.TLX="Top-left X"' in en_locale
@@ -106,6 +111,9 @@ assert 'Art.Width="Outer ornament width (px)"' in en_locale
 assert 'Art.ClipHint="Outer ornaments are auto-fitted inside the source when expansion is off' in en_locale
 assert 'may shrink the mask' in en_locale
 assert 'Art.Gap="Outer ornament gap from frame (px)"' in en_locale
+assert 'Art.RingInnerOffset="Inner orbit center distance from frame (px)"' in en_locale
+assert 'Art.RingSpacing="Inner ↔ outer orbit center spacing (px)"' in en_locale
+assert 'Art.RingGeometryHint="Dual Ring geometry is decoupled:' in en_locale
 assert 'Border.Width="Base neon border width (px)"' in en_locale
 assert 'Preset.TechHUD="Tech HUD Advanced — Cyan + Amber"' in en_locale
 assert 'Shape.GameUI="Game UI — corner brackets + inner rail"' in en_locale
@@ -137,7 +145,8 @@ assert 'obs_data_has_user_value(settings, "shape_detail")' in host
 assert 'gs_effect_set_float(f->shape_detail, f->config.shape_detail)' in host
 assert uniforms["style_id"] == uniforms["ornament_mode"] == "int"
 assert uniforms["art_intensity"] == uniforms["art_gap"] == "float"
-for key in ("ornament_width","ornament_length_x","ornament_length_y","inner_rail_width"):
+for key in ("ornament_width","ornament_length_x","ornament_length_y",
+            "inner_rail_width","ring_inner_offset","ring_spacing"):
     assert uniforms[key] == "float"
     assert f'NM_PARAM({key}, "{key}")' in host
 assert "roundedContourTurn" in shader
@@ -173,10 +182,11 @@ assert "float innerStart=frac(0.50-phase+1.0)" in shader
 assert "float innerRel=frac(t-innerStart+1.0)" in shader
 assert "const float span=0.6666666667" in shader
 assert "const float tipFade=0.055" in shader
-assert "float locatorGap=max(5.0,art_gap*0.65)" in shader
-assert "float orbitGap=max(7.0,art_gap*0.90)" in shader
-assert "float innerOffset=halfCore+locatorGap+innerHalf" in shader
-assert "float outerOffset=innerOffset+innerHalf+orbitGap+outerHalf" in shader
+assert "float innerOffset=halfCore+ring_inner_offset" in shader
+assert "float outerOffset=innerOffset+ring_spacing" in shader
+assert "float locatorGap=max(5.0,art_gap*0.65)" not in shader
+assert "float orbitGap=max(7.0,art_gap*0.90)" not in shader
+assert "innerOffset+innerHalf+orbitGap+outerHalf" not in shader
 assert "float outerD=abs(d-outerOffset)" in shader
 assert "float innerD=abs(d-innerOffset)" in shader
 assert "outerHalf*lerp(0.18,1.0,outerTaper)" in shader
@@ -196,9 +206,12 @@ assert "float nodeD=" not in shader
 for key in ("art_intensity", "art_gap"):
     assert f'obs_data_has_user_value(settings, "{key}")' in host
     assert f'obs_data_set_double(settings, "{key}", next.{key})' in host
-for key in ("ornament_width","ornament_length_x","ornament_length_y","inner_rail_width"):
+for key in ("ornament_width","ornament_length_x","ornament_length_y",
+            "inner_rail_width","ring_inner_offset","ring_spacing"):
     assert f'obs_data_set_default_double(settings, "{key}"' in host
 assert 'obs_data_has_user_value(settings,d4f_keys[i])' in host
+assert 'obs_data_has_user_value(settings, "ring_inner_offset")' in host
+assert 'obs_data_has_user_value(settings, "ring_spacing")' in host
 assert 'obs_data_has_user_value(settings, "ornament_mode")' in host
 assert 'obs_data_set_int(settings, "ornament_mode", next.ornament_mode)' in host
 for key in ("mid_glow_strength", "bloom_strength", "hotspot_strength", "hotspot_size"):
