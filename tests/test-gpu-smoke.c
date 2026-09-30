@@ -1094,6 +1094,10 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
         gs_stagesurf_t *stage=stages[frame];
         gs_effect_set_float(gs_effect_get_param_by_name(effect,"flow_phase"),
                             frame==0 ? 0.0f : 0.25f);
+        /* Standalone gs_effect_loop does not model the filter's per-frame
+         * source binding for us. Re-bind the transparent source on every
+         * deterministic snapshot just as production nm_render does. */
+        gs_effect_set_texture(gs_effect_get_param_by_name(effect,"image"),input);
         /* Each deterministic snapshot owns its render/readback target. This
          * avoids backend-dependent staging history from masquerading as
          * animation state in a two-frame regression. */
