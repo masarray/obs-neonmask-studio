@@ -170,6 +170,7 @@ assert "outerRel=frac(t-phase+1.0)" in shader
 assert "innerRel=frac(t+phase-0.50+2.0)" in shader
 assert "const float span=0.6666666667" in shader
 assert "outerOffset=halfCore+max(0.0,art_gap)+outerHalf" in shader
+assert "lerp(neon,float3(1.0,1.0,1.0),0.16)" in shader
 assert "coreA*=0.80" in shader and "outerA*=0.40" in shader
 assert "float nodeD=" not in shader
 for key in ("art_intensity", "art_gap"):
