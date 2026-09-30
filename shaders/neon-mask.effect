@@ -31,6 +31,8 @@ uniform float ornament_width;
 uniform float ornament_length_x;
 uniform float ornament_length_y;
 uniform float inner_rail_width;
+uniform float ring_inner_offset;
+uniform float ring_spacing;
 uniform float feather;
 uniform float glow_radius;
 uniform float glow_strength;
@@ -926,7 +928,7 @@ float4 drawNeonMask(VertData v_in) : TARGET
                 artBarGlowA = artBarA * glow_strength * 0.22;
         }
 
-        // P6D Premium External Dual Orbit.
+        // P6E Decoupled Premium External Dual Orbit.
         //
         // BOTH 240-degree rails are outside the portrait silhouette. The mask
         // edge is only a faint locator, followed by a dark breathing gap,
@@ -960,13 +962,11 @@ float4 drawNeonMask(VertData v_in) : TARGET
             float outerHalf=max(1.25,ornament_width*0.50);
             float innerHalf=max(1.00,inner_rail_width*0.50);
 
-            // art_gap owns the breathing room from locator -> inner orbit.
-            // A second derived gap keeps the two external rails visually
-            // independent without adding another persisted control.
-            float locatorGap=max(5.0,art_gap*0.65);
-            float orbitGap=max(7.0,art_gap*0.90);
-            float innerOffset=halfCore+locatorGap+innerHalf;
-            float outerOffset=innerOffset+innerHalf+orbitGap+outerHalf;
+            // P6E centerline geometry is decoupled from thickness.
+            // Changing rail width expands around a fixed radius instead of
+            // silently pushing the entire orbit farther from the portrait.
+            float innerOffset=halfCore+ring_inner_offset;
+            float outerOffset=innerOffset+ring_spacing;
 
             float outerD=abs(d-outerOffset);
             float innerD=abs(d-innerOffset);
