@@ -45,6 +45,48 @@ static float nm_light_envelope(const nm_config *cfg)
     return margin;
 }
 
+/* D4J: the connected outer-L is authored in the shape's LOCAL axes, then
+ * the entire shape is rotated by shape_rotation. A scalar envelope applied
+ * after rotating only the mask underestimates the L reach by up to sqrt(2)
+ * near 45 degrees. Keep the legacy scalar envelope for every other recipe,
+ * but rotate the authored local gap+thickness vector before sizing/fitting.
+ *
+ * The requested ornament width is intentionally conservative here: the shader
+ * may clamp pathological width/arm combinations down, never up. */
+static void nm_rotated_authored_support(const nm_config *cfg, float c, float s,
+                                        float envelope, float *support_x,
+                                        float *support_y)
+{
+    *support_x = envelope;
+    *support_y = envelope;
+    if (!cfg->show_border || cfg->art_intensity <= 0.0f)
+        return;
+
+    float local_outset = 0.0f;
+    float isotropic = 0.0f;
+    if (cfg->shape_id == NM_SHAPE_TECH_HUD &&
+        cfg->ornament_mode == NM_ORNAMENT_TECH_HUD) {
+        const float glow = cfg->show_glow ?
+            fmaxf(4.0f, cfg->glow_px * 0.18f) : 0.0f;
+        local_outset = fmaxf(0.0f, cfg->art_gap) +
+                       fmaxf(1.0f, cfg->ornament_width_px);
+        isotropic = glow + 2.0f;
+    } else if (cfg->shape_id == NM_SHAPE_GAME_UI &&
+               cfg->ornament_mode == NM_ORNAMENT_GAME_UI) {
+        const float glow = cfg->show_glow ?
+            fmaxf(3.5f, cfg->glow_px * 0.16f) : 0.0f;
+        local_outset = fmaxf(0.0f, cfg->art_gap) +
+                       fmaxf(1.0f, cfg->ornament_width_px);
+        isotropic = glow + 2.0f;
+    } else {
+        return;
+    }
+
+    const float rotated = (c + s) * local_outset + isotropic;
+    *support_x = fmaxf(*support_x, rotated);
+    *support_y = fmaxf(*support_y, rotated);
+}
+
 /* Bounded relative to the CAPTURED target. This prevents an extreme mask X/Y
  * from requesting an unbounded render target through get_width/get_height. */
 enum { NM_MAX_PAD_SIDE = 512u, NM_MAX_OUTPUT_SIDE = 8192u };
@@ -84,11 +126,14 @@ bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
     out->envelope_px = envelope;
     if (!isfinite(envelope)) return false;
     /* Conservative shape AABB: covers the tail and every rotated silhouette.
-     * No change to authored X/Y, image pan/zoom or source dimensions. */
+     * Authored outer-L support is rotated in local space as well; treating its
+     * reach as a post-rotation scalar is insufficient at diagonal angles. */
     const float angle = cfg->shape_rotation_deg * 0.01745329251994329577f;
     const float c = fabsf(cosf(angle)), s = fabsf(sinf(angle));
     const float box_x = c * hx + s * hy;
     const float box_y = s * hx + c * hy;
+    float support_x = envelope, support_y = envelope;
+    nm_rotated_authored_support(cfg, c, s, envelope, &support_x, &support_y);
 
     if (cfg->expand_canvas) {
         /* The OBS filter callback exposes a new top-left-anchored width/height;
@@ -97,10 +142,10 @@ bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
          * item content moves by that amount unless manually compensated. */
         const float center_x = 0.5f * (float)width + cfg->mask_x_px;
         const float center_y = 0.5f * (float)height + cfg->mask_y_px;
-        const float left = ceilf(fmaxf(0.0f, box_x + envelope - center_x));
-        const float top = ceilf(fmaxf(0.0f, box_y + envelope - center_y));
-        const float right = ceilf(fmaxf(0.0f, center_x + box_x + envelope - (float)width));
-        const float bottom = ceilf(fmaxf(0.0f, center_y + box_y + envelope - (float)height));
+        const float left = ceilf(fmaxf(0.0f, box_x + support_x - center_x));
+        const float top = ceilf(fmaxf(0.0f, box_y + support_y - center_y));
+        const float right = ceilf(fmaxf(0.0f, center_x + box_x + support_x - (float)width));
+        const float bottom = ceilf(fmaxf(0.0f, center_y + box_y + support_y - (float)height));
         if (!isfinite(left) || !isfinite(top) || !isfinite(right) || !isfinite(bottom) ||
             left > NM_MAX_PAD_SIDE || top > NM_MAX_PAD_SIDE ||
             right > NM_MAX_PAD_SIDE || bottom > NM_MAX_PAD_SIDE) {
@@ -124,9 +169,9 @@ bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
 
     /* D3a safe-fit: shrink the mask uniformly within the existing canvas. */
     const float available_x = 0.5f * (float)width -
-                              fabsf(cfg->mask_x_px) - envelope;
+                              fabsf(cfg->mask_x_px) - support_x;
     const float available_y = 0.5f * (float)height -
-                              fabsf(cfg->mask_y_px) - envelope;
+                              fabsf(cfg->mask_y_px) - support_y;
     if (!isfinite(available_x) || !isfinite(available_y) ||
         available_x <= 0.0f || available_y <= 0.0f) {
         out->fits = false;
