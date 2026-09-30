@@ -811,6 +811,17 @@ float4 drawNeonMask(VertData v_in) : TARGET
         float glintA = 0.0;
         float artBarA = 0.0;
         float artBarGlowA = 0.0;
+        /* P6C keeps the two rotating rails as independent light layers.
+         * Combining them into artBarA made them visually collapse into one
+         * thin accent and prevented per-orbit color hierarchy. */
+        float dualOuterA = 0.0;
+        float dualInnerA = 0.0;
+        float dualOuterGlowA = 0.0;
+        float dualInnerGlowA = 0.0;
+        float dualOuterHotA = 0.0;
+        float dualInnerHotA = 0.0;
+        float3 dualOuterColor = color_a.rgb;
+        float3 dualInnerColor = color_b.rgb;
         bool authoredOverlay = (shape_id == 13 && ornament_mode == 3) ||
                                (shape_id == 14 && ornament_mode == 5) ||
                                (shape_id == 1 && ornament_mode == 6);
@@ -915,66 +926,127 @@ float4 drawNeonMask(VertData v_in) : TARGET
                 artBarGlowA = artBarA * glow_strength * 0.22;
         }
 
-        // P6B Counter-Rotating Dual Ring: two independent 240-degree rails
-        // derive equal/opposite angular motion from ONE bounded flow phase.
-        // Positive screen-space angle is clockwise (Y grows downward), so
-        // outer start=+phase is CW and inner start=0.5-phase is CCW.
-        // The missing 120-degree sectors are intentionally broad negative
-        // space; a short angular fade gives premium luminous arc ends.
+        // P6C Counter-Rotating Dual Ring visual hierarchy.
+        //
+        // The mask edge is only a quiet locator. Two genuinely separated
+        // 240-degree rails carry the motion: a wider OUTER orbit moves CW,
+        // a slightly slimmer INNER orbit moves CCW. Both derive from one
+        // bounded host phase, so their relative motion can never drift.
+        //
+        // Each arc gets a rounded geometric end-cap, independent chromatic
+        // progression, and restrained local glow. This preserves negative
+        // space between the base circle and both rails at preview scale.
         if (ornament_mode == 6 && shape_id == 1 && art_intensity > 0.0) {
-            // atan2(0,0) is backend-undefined. A ring gate must never allow
-            // that NaN to become opaque at the exact mask center.
             float2 ringAnglePoint=p;
             if(dot(ringAnglePoint,ringAnglePoint)<0.0001)
                 ringAnglePoint=float2(1.0,0.0);
             float t=frac(atan2(ringAnglePoint.y,ringAnglePoint.x)/TAU+1.0);
             float phase=animation_id == 2 ? flow_phase : 0.0;
             const float span=0.6666666667;
-            const float edge=0.018;
+            const float edge=0.012;
 
             float outerRel=frac(t-phase+1.0);
-            float innerRel=frac(t+phase-0.50+2.0);
+            float innerStart=frac(0.50-phase+1.0);
+            float innerRel=frac(t-innerStart+1.0);
             float outerGate=smoothstep(0.0,edge,outerRel) *
                             (1.0-smoothstep(span-edge,span,outerRel));
             float innerGate=smoothstep(0.0,edge,innerRel) *
                             (1.0-smoothstep(span-edge,span,innerRel));
 
-            float outerHalf=max(0.50,ornament_width*0.50);
-            float innerHalf=max(0.35,inner_rail_width*0.50);
+            float outerHalf=max(1.0,ornament_width*0.50);
+            float innerHalf=max(0.75,inner_rail_width*0.50);
             float outerOffset=halfCore+max(0.0,art_gap)+outerHalf;
-            // Keep the inner rail visibly separate without consuming the
-            // portrait center; art_gap still remains the user-facing spacing.
-            float innerGap=max(2.0,art_gap*0.65);
+            float innerGap=max(3.0,art_gap*0.65);
             float innerOffset=halfCore+innerGap+innerHalf;
 
             float outerD=abs(d-outerOffset);
             float innerD=abs(d+innerOffset);
-            float outerArc=(1.0-smoothstep(max(0.0,outerHalf-0.60),
-                                           outerHalf+0.65,outerD))*outerGate;
-            float innerArc=(1.0-smoothstep(max(0.0,innerHalf-0.55),
-                                           innerHalf+0.60,innerD))*innerGate;
-            artBarA=saturate(art_intensity*
-                             (outerArc*0.99+innerArc*0.91));
+            float outerRadial=1.0-smoothstep(max(0.0,outerHalf-0.75),
+                                             outerHalf+0.80,outerD);
+            float innerRadial=1.0-smoothstep(max(0.0,innerHalf-0.65),
+                                             innerHalf+0.72,innerD);
+
+            // True rounded end caps. The previous pure angular fade looked
+            // like a hairline disappearing into the circle instead of a
+            // deliberate luminous 2/3 orbit.
+            float baseRadius=min(half_size.x,half_size.y);
+            float outerRadius=baseRadius+outerOffset;
+            float innerRadius=max(1.0,baseRadius-innerOffset);
+            float outerStartA=TAU*phase;
+            float outerEndA=TAU*frac(phase+span);
+            float innerStartA=TAU*innerStart;
+            float innerEndA=TAU*frac(innerStart+span);
+            float2 outerStartP=float2(cos(outerStartA),sin(outerStartA))*outerRadius;
+            float2 outerEndP=float2(cos(outerEndA),sin(outerEndA))*outerRadius;
+            float2 innerStartP=float2(cos(innerStartA),sin(innerStartA))*innerRadius;
+            float2 innerEndP=float2(cos(innerEndA),sin(innerEndA))*innerRadius;
+
+            float outerStartCap=1.0-smoothstep(max(0.0,outerHalf-0.70),
+                                               outerHalf+0.75,
+                                               length(p-outerStartP));
+            float outerEndCap=1.0-smoothstep(max(0.0,outerHalf-0.70),
+                                             outerHalf+0.75,
+                                             length(p-outerEndP));
+            float innerStartCap=1.0-smoothstep(max(0.0,innerHalf-0.60),
+                                               innerHalf+0.68,
+                                               length(p-innerStartP));
+            float innerEndCap=1.0-smoothstep(max(0.0,innerHalf-0.60),
+                                             innerHalf+0.68,
+                                             length(p-innerEndP));
+
+            float outerBody=outerRadial*outerGate;
+            float innerBody=innerRadial*innerGate;
+            dualOuterA=saturate(art_intensity*
+                                max(outerBody,max(outerStartCap,outerEndCap)));
+            dualInnerA=saturate(art_intensity*0.94*
+                                max(innerBody,max(innerStartCap,innerEndCap)));
+
+            // Opposed cyan/magenta progression keeps the two rings readable
+            // even where both active sectors overlap angularly.
+            float outerProgress=saturate(outerRel/span);
+            float innerProgress=saturate(innerRel/span);
+            float outerMix=smoothstep(0.06,0.94,outerProgress);
+            float innerMix=smoothstep(0.06,0.94,innerProgress);
+            dualOuterColor=lerp(color_a.rgb,color_b.rgb,outerMix*0.78);
+            dualInnerColor=lerp(color_b.rgb,color_a.rgb,innerMix*0.78);
+
+            // Slightly hotter rounded ends make the rotation direction read
+            // without introducing a separate moving comet.
+            dualOuterHotA=saturate(art_intensity*0.34*
+                              max(outerStartCap,outerEndCap));
+            dualInnerHotA=saturate(art_intensity*0.30*
+                              max(innerStartCap,innerEndCap));
 
             if(glow_enabled != 0) {
-                float glowSpread=max(4.0,glow_radius*0.20);
-                float outerGlow=(1.0-smoothstep(0.0,glowSpread,
+                float glowSpread=max(4.5,glow_radius*0.24);
+                float outerRadialGlow=(1.0-smoothstep(0.0,glowSpread,
                     max(0.0,outerD-outerHalf)))*outerGate;
-                float innerGlow=(1.0-smoothstep(0.0,glowSpread*0.82,
+                float innerRadialGlow=(1.0-smoothstep(0.0,glowSpread*0.82,
                     max(0.0,innerD-innerHalf)))*innerGate;
-                artBarGlowA=saturate(art_intensity*glow_strength*
-                                     (outerGlow*0.30+innerGlow*0.23));
+                float outerCapGlow=max(
+                    1.0-smoothstep(outerHalf,outerHalf+glowSpread,
+                                   length(p-outerStartP)),
+                    1.0-smoothstep(outerHalf,outerHalf+glowSpread,
+                                   length(p-outerEndP)));
+                float innerCapGlow=max(
+                    1.0-smoothstep(innerHalf,innerHalf+glowSpread*0.82,
+                                   length(p-innerStartP)),
+                    1.0-smoothstep(innerHalf,innerHalf+glowSpread*0.82,
+                                   length(p-innerEndP)));
+                dualOuterGlowA=saturate(art_intensity*glow_strength*0.44*
+                                        max(outerRadialGlow,outerCapGlow));
+                dualInnerGlowA=saturate(art_intensity*glow_strength*0.34*
+                                        max(innerRadialGlow,innerCapGlow));
             }
 
-            // The circle mask keeps a restrained stable neon edge; rotating
-            // rails are the hero motion rather than competing with a bright
-            // full 360-degree base ring.
-            coreA*=0.62;
-            fineA*=0.58;
-            midA*=0.42;
-            outerA*=0.36;
-            rimA*=0.30;
-            glintA*=0.30;
+            // Quiet locator only: orbit separation must remain obvious even
+            // in the small OBS filter preview.
+            coreA*=0.42;
+            fineA*=0.38;
+            midA*=0.24;
+            outerA*=0.18;
+            rimA*=0.14;
+            glintA*=0.18;
         }
 
         // Tech HUD: rigid orthogonal brackets, sparse track cuts and strong
@@ -1192,20 +1264,44 @@ float4 drawNeonMask(VertData v_in) : TARGET
         outA = outerA + outA * (1.0 - outerA);
         premul = midColor * midA + premul * (1.0 - midA);
         outA = midA + outA * (1.0 - midA);
-        float3 accentColor =
-            (ornament_mode == 6 && shape_id == 1) ?
-                lerp(neon,float3(1.0,1.0,1.0),0.16) :
-            color_mode == 2 ?
-                lerp(neon,float3(1.0,1.0,1.0),0.32) :
-                lerp(color_b.rgb,float3(1.0,1.0,1.0),0.32);
+        float3 accentColor = color_mode == 2 ?
+            lerp(neon,float3(1.0,1.0,1.0),0.32) :
+            lerp(color_b.rgb,float3(1.0,1.0,1.0),0.32);
         premul = accentColor * artBarGlowA + premul * (1.0 - artBarGlowA);
         outA = artBarGlowA + outA * (1.0 - artBarGlowA);
+
+        // P6C independent orbit glow/body layers. Keeping them separate from
+        // artBarA is what makes two rings remain visibly two rings.
+        float3 dualOuterGlowColor=lerp(dualOuterColor,float3(1.0,1.0,1.0),0.12);
+        float3 dualInnerGlowColor=lerp(dualInnerColor,float3(1.0,1.0,1.0),0.10);
+        premul = dualOuterGlowColor * dualOuterGlowA +
+                 premul * (1.0 - dualOuterGlowA);
+        outA = dualOuterGlowA + outA * (1.0 - dualOuterGlowA);
+        premul = dualInnerGlowColor * dualInnerGlowA +
+                 premul * (1.0 - dualInnerGlowA);
+        outA = dualInnerGlowA + outA * (1.0 - dualInnerGlowA);
+
         premul = rimColor * rimA + premul * (1.0 - rimA);
         outA = rimA + outA * (1.0 - rimA);
         premul = fineColor * glintA + premul * (1.0 - glintA);
         outA = glintA + outA * (1.0 - glintA);
         premul = accentColor * artBarA + premul * (1.0 - artBarA);
         outA = artBarA + outA * (1.0 - artBarA);
+
+        premul = dualOuterColor * dualOuterA +
+                 premul * (1.0 - dualOuterA);
+        outA = dualOuterA + outA * (1.0 - dualOuterA);
+        premul = dualInnerColor * dualInnerA +
+                 premul * (1.0 - dualInnerA);
+        outA = dualInnerA + outA * (1.0 - dualInnerA);
+        float3 dualOuterHotColor=lerp(dualOuterColor,float3(1.0,1.0,1.0),0.72);
+        float3 dualInnerHotColor=lerp(dualInnerColor,float3(1.0,1.0,1.0),0.66);
+        premul = dualOuterHotColor * dualOuterHotA +
+                 premul * (1.0 - dualOuterHotA);
+        outA = dualOuterHotA + outA * (1.0 - dualOuterHotA);
+        premul = dualInnerHotColor * dualInnerHotA +
+                 premul * (1.0 - dualInnerHotA);
+        outA = dualInnerHotA + outA * (1.0 - dualInnerHotA);
         premul = neon * coreA + premul * (1.0 - coreA);
         outA = coreA + outA * (1.0 - coreA);
         premul = fineColor * fineA + premul * (1.0 - fineA);

@@ -225,20 +225,20 @@ int main(void)
     c.mask_width=0.96f; c.mask_height=0.96f;
     c.shape_id=NM_SHAPE_CIRCLE;
     c.ornament_mode=NM_ORNAMENT_DUAL_RING;
-    c.art_intensity=1.0f; c.art_gap=5.0f;
-    c.ornament_width_px=6.0f; c.inner_rail_width_px=4.0f;
-    c.border_px=2.5f; c.show_glow=false;
-    check("P6B dual ring auto-fits outer orbit without manual safe-fit",
+    c.art_intensity=1.0f; c.art_gap=11.0f;
+    c.ornament_width_px=10.0f; c.inner_rail_width_px=7.0f;
+    c.border_px=1.6f; c.show_glow=false;
+    check("P6C dual ring auto-fits wider separated outer orbit",
           nm_safe_fit_calculate(&c,320,320,&f) && f.fits &&
           f.scale<1.0f && f.scale>0.0f &&
           f.half_width+f.envelope_px<=160.001f &&
           f.half_height+f.envelope_px<=160.001f);
     c.expand_canvas=true;
-    check("P6B dual ring expansion preserves authored circular radius",
+    check("P6C dual ring expansion preserves polished circular radius",
           nm_safe_fit_calculate(&c,320,320,&f) && f.fits &&
           near(f.scale,1.0f) && f.pad_left>0 && f.pad_top>0 &&
           f.pad_right>0 && f.pad_bottom>0 &&
-          f.envelope_px>=14.0f);
+          f.envelope_px>=22.0f);
     /* D3 gate: deterministic coverage of input/output dimensions, asymmetric
      * offsets and rotated AABBs over landscape, square and portrait captures.
      * This tests geometry, not OBS scene-item transform semantics. */

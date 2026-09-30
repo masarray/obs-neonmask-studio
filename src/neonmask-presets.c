@@ -53,13 +53,14 @@ static const nm_preset builtin[] = {
      0.82, 0.19, 5.0, 0.75, 20.0, 0.70, 0.70, 0, NM_STYLE_CLASSIC,
      true, true, 0.78, 0.84, 0.0, 0.10, NM_ORNAMENT_NONE, 0.0, 2.0, 0.22,
      10.0, 60.0, 48.0, 1.4, NM_COLOR_RAINBOW, 0.78, 0.96, 0.0, 1.0},
-    /* P6B: two luminous 2/3-circle rails. The outer arc follows +flow phase
-     * (screen-space CW) while the inner arc derives -phase (CCW) in shader.
-     * One bounded host clock therefore guarantees equal/opposite motion. */
-    {NM_SHAPE_CIRCLE, NM_ANIM_FLOW, 0x00FFDC00u, 0x00DC28FFu,
-     0.72, 0.0, 2.5, 0.70, 16.0, 0.72, 0.62, 0, NM_STYLE_MINIMAL,
-     true, true, 0.74, 0.76, 0.0, 0.08, NM_ORNAMENT_DUAL_RING, 1.0, 5.0, 0.22,
-     6.0, 60.0, 48.0, 4.0, NM_COLOR_DUAL, 0.65, 0.92, 0.0, 1.0}
+    /* P6C: two clearly separated luminous 2/3-circle rails. Outer remains
+     * CW and inner CCW from one bounded host clock, but the visual recipe is
+     * deliberately more heroic: thicker rails, wider radial separation,
+     * stronger controlled bloom, and a quieter 360-degree base circle. */
+    {NM_SHAPE_CIRCLE, NM_ANIM_FLOW, 0x00FFEA28u, 0x00F52CFFu,
+     0.72, 0.0, 1.6, 0.70, 20.0, 0.86, 0.68, 0, NM_STYLE_MINIMAL,
+     true, true, 0.82, 0.86, 0.0, 0.08, NM_ORNAMENT_DUAL_RING, 1.0, 11.0, 0.22,
+     10.0, 60.0, 48.0, 7.0, NM_COLOR_DUAL, 0.65, 0.92, 0.0, 1.0}
 };
 
 bool nm_get_preset(int id, nm_preset *out)
