@@ -103,7 +103,7 @@ assert "NM_SHOW(\"glow_radius\",border && glow)" in host
 assert 'Bubble.TLX="Top-left X"' in en_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — cut corners + brackets"' in en_locale
 assert 'Art.Width="Outer ornament width (px)"' in en_locale
-assert 'Art.ClipHint="Large outer gap/width can exceed the source bounds.' in en_locale
+assert 'Art.ClipHint="Outer L ornaments are auto-fitted inside the source when expansion is off' in en_locale
 assert 'to auto-shrink the mask' in en_locale
 assert 'Art.Gap="Outer ornament gap from frame (px)"' in en_locale
 assert 'Border.Width="Base neon border width (px)"' in en_locale
@@ -117,7 +117,7 @@ assert 'Rainbow.Spread="Sebaran gradien"' in id_locale
 assert 'Bubble.TLX="Sudut kiri-atas X"' in id_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — sudut potong + bracket"' in id_locale
 assert 'Art.Width="Ketebalan ornamen luar (px)"' in id_locale
-assert 'Art.ClipHint="Gap/ketebalan ornamen luar yang besar dapat melewati batas sumber.' in id_locale
+assert 'Art.ClipHint="Ornamen L luar otomatis disesuaikan agar tetap masuk batas sumber saat ekspansi mati' in id_locale
 assert 'mask mengecil otomatis' in id_locale
 # A primitive min is an occupancy union, NOT the exposed contour distance:
 # its hidden body bottom/tail base caused a phantom horizontal neon seam.
