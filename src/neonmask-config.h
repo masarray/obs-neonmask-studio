@@ -53,7 +53,11 @@ typedef struct nm_config {
     float ornament_width_px;     /* full outer-bar thickness */
     float ornament_length_x_px;  /* horizontal L arm */
     float ornament_length_y_px;  /* vertical L arm */
-    float inner_rail_width_px;   /* Game UI inset rail */
+    float inner_rail_width_px;   /* Game UI inset rail / Dual Ring inner width */
+    /* P6E: Dual Ring centerline geometry is independent from rail thickness.
+     * These fields are ignored by every other ornament recipe. */
+    float ring_inner_offset_px;  /* frame edge -> inner orbit centerline */
+    float ring_spacing_px;       /* inner centerline -> outer centerline */
     int ornament_mode;
     float animation_speed;
     uint32_t primary;

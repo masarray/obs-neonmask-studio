@@ -137,7 +137,7 @@ filter pixel controls are source-relative, not screen/canvas coordinates.
 | Hexagon / diamond | Crisp sci-fi silhouette with stable corner joins | Exists approximately; validate corners in M2 |
 | Triangle / polygon | Parameterized sides with optional rounded joins | Triangle + regular polygon (5–12 sides) implemented in Phase A; rounded joins/visual parity still pending |
 | Neon Flow | Bright traveling accent over dim continuous rim | Angular preview exists; perimeter travel in M2 |
-| Rotating Ring | Two thick external 2/3-circle orbits counter-rotate outside a faint locator, with dark radial gaps and tapered fading endpoints | P6D external-orbit + GPU thickness/separation/taper/direction gates; actual OBS aesthetic acceptance pending |
+| Rotating Ring | Two thick external 2/3-circle orbits use independent centerline offsets, fixed spacing, premium thickness and tapered fading endpoints | P6E decoupled geometry + GPU radius/thickness/separation/taper/direction gates; actual OBS aesthetic acceptance pending |
 | Pulse Glow | Slow breathing halo with visible stable core | Pulse exists; restrained amplitude and long-session checks in M2 |
 | Electric | Sparse bounded arcs just outside the frame | New, opt-in M3; no full-screen flash |
 | Streamer | Rounded rim with small corner/status dots | New ornament recipe in M3 |
@@ -371,4 +371,34 @@ geometry/taper probes so bloom cannot fake a passing result.
 This is implementation plus deterministic shader-level evidence. Actual OBS
 motion/aesthetic acceptance remains a human G4-V gate and should use the exact
 preview artifact produced from this commit.
+
+## P6E — Decoupled Orbit Geometry
+
+Actual OBS review exposed a control-model defect rather than a simple tuning
+problem: P6D used rail half-widths and one shared art gap while constructing
+orbit centerlines. Increasing width therefore also pushed the ring radius
+outward, and the same gap control altered two radial relationships at once.
+Extreme slider values produced a detached oversized halo instead of a thicker
+version of the same composition.
+
+P6E separates those responsibilities:
+- `ring_inner_offset` moves the inner orbit centerline relative to the frame;
+- `ring_spacing` moves the outer centerline relative to the inner centerline;
+- outer/inner width change thickness around those fixed centerlines only;
+- legacy `art_gap` is hidden and ignored for Dual Ring but remains unchanged
+  for Tech HUD/Game UI and other ornament recipes;
+- Dual Ring width sliders use an artistic envelope (outer 8–26 px, inner
+  6–20 px) rather than the generic 64 px range;
+- centerline controls are likewise bounded (inner offset 10–30 px, spacing
+  26–44 px), preventing the detached-halo state seen in manual max testing.
+
+The revised default uses 20 px outer / 15 px inner rails, an 18 px inner
+centerline offset and 30 px centerline spacing. Safe-fit uses those centerlines
+plus only HALF the outer thickness for radial reach, proving that widening a
+ring no longer doubles as a radius control.
+
+Regression coverage explicitly checks that changing legacy art_gap does not
+move Dual Ring bounds, widening the outer rail changes safe-fit reach by only
+half the thickness delta, GPU pixels remain on the authored fixed radii, and
+the existing tapered-end / counter-rotation invariants continue to hold.
 

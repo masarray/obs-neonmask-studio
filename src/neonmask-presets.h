@@ -81,6 +81,10 @@ typedef struct nm_preset {
     double rainbow_saturation;
     double rainbow_hue_offset;
     double rainbow_spread;
+    /* P6E append-only Dual Ring centerline recipe. Zero means "leave the
+     * current/default hidden ring geometry unchanged" for legacy presets. */
+    double ring_inner_offset;
+    double ring_spacing;
 } nm_preset;
 
 /* Preset IDs stay stable. Preset 5 keeps the Tech HUD identity but now

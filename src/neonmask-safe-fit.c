@@ -43,14 +43,12 @@ static float nm_light_envelope(const nm_config *cfg)
             cfg->shape_id == NM_SHAPE_CIRCLE) {
             const float glow=cfg->show_glow ?
                 fmaxf(5.0f,cfg->glow_px*0.24f) : 0.0f;
-            /* P6D both rails are external. Bound the real radial stack:
-             * locator core -> locator gap -> full inner rail -> orbit gap ->
-             * full outer rail -> finite glow support. */
-            const float locator_gap=fmaxf(5.0f,cfg->art_gap*0.65f);
-            const float orbit_gap=fmaxf(7.0f,cfg->art_gap*0.90f);
-            accent=half_core+locator_gap+
-                   fmaxf(1.0f,cfg->inner_rail_width_px)+orbit_gap+
-                   fmaxf(1.0f,cfg->ornament_width_px)+glow+2.0f;
+            /* P6E centerline positions are first-class and thickness-neutral.
+             * Only HALF the outer width extends beyond its fixed centerline. */
+            accent=half_core+
+                   fmaxf(10.0f,cfg->ring_inner_offset_px)+
+                   fmaxf(26.0f,cfg->ring_spacing_px)+
+                   0.5f*fmaxf(8.0f,cfg->ornament_width_px)+glow+2.0f;
         }
         if (cfg->ornament_mode != NM_ORNAMENT_NONE)
             margin = fmaxf(margin, accent);
@@ -121,7 +119,7 @@ bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
     out->output_width = width;
     out->output_height = height;
 
-    /* D4I/P6D: dedicated authored geometry outside the mask silhouette
+    /* D4I/P6E: dedicated authored geometry outside the mask silhouette
      * (Tech/Game outer Ls and both external rotating rings) gets automatic
      * clipping protection when expansion is off. Other shapes keep legacy
      * safe_fit. */

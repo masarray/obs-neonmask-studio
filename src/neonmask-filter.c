@@ -39,6 +39,8 @@ struct nm_filter {
     gs_eparam_t *ornament_length_x;
     gs_eparam_t *ornament_length_y;
     gs_eparam_t *inner_rail_width;
+    gs_eparam_t *ring_inner_offset;
+    gs_eparam_t *ring_spacing;
     gs_eparam_t *feather;
     gs_eparam_t *glow_radius;
     gs_eparam_t *glow_strength;
@@ -186,6 +188,8 @@ static void nm_update(void *data, obs_data_t *settings)
         .ornament_length_x_px = (float)obs_data_get_double(settings, "ornament_length_x"),
         .ornament_length_y_px = (float)obs_data_get_double(settings, "ornament_length_y"),
         .inner_rail_width_px = (float)obs_data_get_double(settings, "inner_rail_width"),
+        .ring_inner_offset_px = (float)obs_data_get_double(settings, "ring_inner_offset"),
+        .ring_spacing_px = (float)obs_data_get_double(settings, "ring_spacing"),
         .show_border = obs_data_get_bool(settings, "border_enabled"),
         .show_glow = obs_data_get_bool(settings, "glow_enabled"),
     };
@@ -289,6 +293,13 @@ static void nm_update(void *data, obs_data_t *settings)
         if (!obs_data_has_user_value(settings,d4f_keys[i]))
             obs_data_set_double(settings,d4f_keys[i],d4f_values[i]);
 
+    /* P6E additive Dual Ring geometry: old scenes receive sane independent
+     * centerline defaults once; legacy ornaments ignore these hidden fields. */
+    if (!obs_data_has_user_value(settings, "ring_inner_offset"))
+        obs_data_set_double(settings, "ring_inner_offset", next.ring_inner_offset_px);
+    if (!obs_data_has_user_value(settings, "ring_spacing"))
+        obs_data_set_double(settings, "ring_spacing", next.ring_spacing_px);
+
     /* v0/v1 used one uniform scale. Migrate once to independent dimensions
      * while keeping all old keys and enum values intact. */
     if (legacy_framing) {
@@ -378,6 +389,8 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_double(settings, "ornament_length_x", cfg.ornament_length_x_px);
     obs_data_set_default_double(settings, "ornament_length_y", cfg.ornament_length_y_px);
     obs_data_set_default_double(settings, "inner_rail_width", cfg.inner_rail_width_px);
+    obs_data_set_default_double(settings, "ring_inner_offset", cfg.ring_inner_offset_px);
+    obs_data_set_default_double(settings, "ring_spacing", cfg.ring_spacing_px);
     obs_data_set_default_bool(settings, "border_enabled", cfg.show_border);
     obs_data_set_default_bool(settings, "glow_enabled", cfg.show_glow);
 }
@@ -450,22 +463,37 @@ static void nm_context_visibility(obs_properties_t *props, int shape_id,
     if(arts) {
         p=obs_properties_get(arts,"art_intensity");
         if(p) obs_property_set_visible(p,ornament!=NM_ORNAMENT_NONE);
-        p=obs_properties_get(arts,"art_gap");
-        if(p) obs_property_set_visible(p,ornament!=NM_ORNAMENT_NONE);
         const bool tech = shape_id==NM_SHAPE_TECH_HUD &&
                           ornament==NM_ORNAMENT_TECH_HUD;
         const bool game = shape_id==NM_SHAPE_GAME_UI &&
                           ornament==NM_ORNAMENT_GAME_UI;
         const bool ring = shape_id==NM_SHAPE_CIRCLE &&
                           ornament==NM_ORNAMENT_DUAL_RING;
+        p=obs_properties_get(arts,"art_gap");
+        if(p) obs_property_set_visible(p,ornament!=NM_ORNAMENT_NONE && !ring);
+        p=obs_properties_get(arts,"ring_inner_offset");
+        if(p) obs_property_set_visible(p,ring);
+        p=obs_properties_get(arts,"ring_spacing");
+        if(p) obs_property_set_visible(p,ring);
         p=obs_properties_get(arts,"ornament_width");
-        if(p) obs_property_set_visible(p,tech || game || ring);
+        if(p) {
+            obs_property_set_visible(p,tech || game || ring);
+            obs_property_float_set_limits(p,ring ? 8.0 : 1.0,
+                                           ring ? 26.0 : 64.0,0.5);
+        }
         p=obs_properties_get(arts,"ornament_length_x");
         if(p) obs_property_set_visible(p,tech || game);
         p=obs_properties_get(arts,"ornament_length_y");
         if(p) obs_property_set_visible(p,tech || game);
         p=obs_properties_get(arts,"inner_rail_width");
-        if(p) obs_property_set_visible(p,game || ring);
+        if(p) {
+            obs_property_set_visible(p,game || ring);
+            obs_property_float_set_limits(p,ring ? 6.0 : 0.5,
+                                           ring ? 20.0 : 12.0,
+                                           ring ? 0.5 : 0.25);
+        }
+        p=obs_properties_get(arts,"ring_geometry_hint");
+        if(p) obs_property_set_visible(p,ring);
         p=obs_properties_get(arts,"art_clip_hint");
         if(p) obs_property_set_visible(p,tech || game || ring);
     }
@@ -557,6 +585,8 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_double(settings, "ornament_length_x", cfg.ornament_length_x_px);
     obs_data_set_double(settings, "ornament_length_y", cfg.ornament_length_y_px);
     obs_data_set_double(settings, "inner_rail_width", cfg.inner_rail_width_px);
+    obs_data_set_double(settings, "ring_inner_offset", cfg.ring_inner_offset_px);
+    obs_data_set_double(settings, "ring_spacing", cfg.ring_spacing_px);
     obs_data_set_bool(settings, "border_enabled", cfg.show_border);
     obs_data_set_bool(settings, "glow_enabled", cfg.show_glow);
 
@@ -738,6 +768,10 @@ static obs_properties_t *nm_properties(void *data)
                          obs_module_text("Art.Intensity"), 0.0, 1.0, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "art_gap",
                          obs_module_text("Art.Gap"), 0.0, 96.0, 1.0));
+    NM_CUSTOM(obs_properties_add_float_slider(art_group, "ring_inner_offset",
+                         obs_module_text("Art.RingInnerOffset"), 10.0, 30.0, 0.5));
+    NM_CUSTOM(obs_properties_add_float_slider(art_group, "ring_spacing",
+                         obs_module_text("Art.RingSpacing"), 26.0, 44.0, 0.5));
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "ornament_width",
                          obs_module_text("Art.Width"), 1.0, 64.0, 0.5));
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "ornament_length_x",
@@ -745,7 +779,9 @@ static obs_properties_t *nm_properties(void *data)
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "ornament_length_y",
                          obs_module_text("Art.LengthY"), 8.0, 240.0, 1.0));
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "inner_rail_width",
-                         obs_module_text("Art.InnerWidth"), 0.5, 12.0, 0.25));
+                         obs_module_text("Art.InnerWidth"), 0.5, 20.0, 0.25));
+    obs_properties_add_text(art_group,"ring_geometry_hint",
+                            obs_module_text("Art.RingGeometryHint"),OBS_TEXT_INFO);
     obs_properties_add_text(art_group,"art_clip_hint",
                             obs_module_text("Art.ClipHint"),OBS_TEXT_INFO);
     obs_properties_add_group(props, "signature_art", obs_module_text("Art.Group"),
@@ -842,6 +878,8 @@ static void *nm_create(obs_data_t *settings, obs_source_t *context)
         NM_PARAM(ornament_length_x, "ornament_length_x");
         NM_PARAM(ornament_length_y, "ornament_length_y");
         NM_PARAM(inner_rail_width, "inner_rail_width");
+        NM_PARAM(ring_inner_offset, "ring_inner_offset");
+        NM_PARAM(ring_spacing, "ring_spacing");
         NM_PARAM(feather, "feather");
         NM_PARAM(glow_radius, "glow_radius");
         NM_PARAM(glow_strength, "glow_strength");
@@ -1059,6 +1097,8 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_float(f->ornament_length_x, f->config.ornament_length_x_px);
     gs_effect_set_float(f->ornament_length_y, f->config.ornament_length_y_px);
     gs_effect_set_float(f->inner_rail_width, f->config.inner_rail_width_px);
+    gs_effect_set_float(f->ring_inner_offset, f->config.ring_inner_offset_px);
+    gs_effect_set_float(f->ring_spacing, f->config.ring_spacing_px);
     gs_effect_set_float(f->feather, f->config.feather_px);
     gs_effect_set_float(f->glow_radius, f->config.glow_px);
     gs_effect_set_float(f->glow_strength, f->config.glow_amount);

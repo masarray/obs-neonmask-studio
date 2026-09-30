@@ -255,18 +255,31 @@ int main(void)
           cfg.color_mode==NM_COLOR_DUAL &&
           fabsf(cfg.rainbow_speed-0.65f)<0.0001f &&
           fabsf(cfg.rainbow_saturation-0.92f)<0.0001f);
-    check("P6D Rotating Ring preset selects external premium orbit state",
+    check("P6E Rotating Ring preset selects decoupled premium orbit state",
           nm_config_apply_preset(&cfg,12) &&
           cfg.shape_id==NM_SHAPE_CIRCLE &&
           cfg.ornament_mode==NM_ORNAMENT_DUAL_RING &&
           cfg.animation_id==NM_ANIM_FLOW &&
-          fabsf(cfg.border_px-0.9f)<0.0001f &&
-          fabsf(cfg.art_gap-8.0f)<0.0001f &&
-          fabsf(cfg.ornament_width_px-13.0f)<0.0001f &&
-          fabsf(cfg.inner_rail_width_px-10.0f)<0.0001f &&
+          fabsf(cfg.border_px-0.8f)<0.0001f &&
+          fabsf(cfg.ornament_width_px-20.0f)<0.0001f &&
+          fabsf(cfg.inner_rail_width_px-15.0f)<0.0001f &&
+          fabsf(cfg.ring_inner_offset_px-18.0f)<0.0001f &&
+          fabsf(cfg.ring_spacing_px-30.0f)<0.0001f &&
           fabsf(cfg.glow_px-22.0f)<0.0001f &&
           fabsf(cfg.glow_amount-0.90f)<0.0001f &&
-          fabsf(cfg.animation_speed-0.60f)<0.0001f);
+          fabsf(cfg.animation_speed-0.58f)<0.0001f);
+    cfg.shape_id=NM_SHAPE_CIRCLE;
+    cfg.ornament_mode=NM_ORNAMENT_DUAL_RING;
+    cfg.ornament_width_px=64.0f;
+    cfg.inner_rail_width_px=64.0f;
+    cfg.ring_inner_offset_px=999.0f;
+    cfg.ring_spacing_px=999.0f;
+    nm_config_validate(&cfg);
+    check("P6E Dual Ring pathological controls clamp to artistic envelope",
+          fabsf(cfg.ornament_width_px-26.0f)<0.0001f &&
+          fabsf(cfg.inner_rail_width_px-20.0f)<0.0001f &&
+          fabsf(cfg.ring_inner_offset_px-30.0f)<0.0001f &&
+          fabsf(cfg.ring_spacing_px-44.0f)<0.0001f);
     check("legacy schema supported", nm_config_schema_supported(0));
     check("current schema supported", nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION));
     check("legacy v1 schema supported", nm_config_schema_supported(1));

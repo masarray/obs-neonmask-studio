@@ -30,7 +30,10 @@ int main(void)
         check("D4F ornament width range",p.ornament_width >= 1.0 && p.ornament_width <= 64.0);
         check("D4F ornament X range",p.ornament_length_x >= 8.0 && p.ornament_length_x <= 240.0);
         check("D4F ornament Y range",p.ornament_length_y >= 8.0 && p.ornament_length_y <= 240.0);
-        check("D4F inner rail range",p.inner_rail_width >= 0.5 && p.inner_rail_width <= 12.0);
+        check("D4F/P6E inner rail range",
+              p.inner_rail_width >= 0.5 &&
+              p.inner_rail_width <=
+                  (p.ornament_mode == NM_ORNAMENT_DUAL_RING ? 20.0 : 12.0));
         check("feather range", p.feather >= 0.5 && p.feather <= 30.0);
         check("glow radius range", p.glow_radius >= 1.0 && p.glow_radius <= 80.0);
         check("glow range", p.glow_strength >= 0.0 && p.glow_strength <= 1.0);
@@ -102,17 +105,21 @@ int main(void)
           p.shape == NM_SHAPE_CIRCLE &&
           p.ornament_mode == NM_ORNAMENT_DUAL_RING &&
           p.animation == NM_ANIM_FLOW);
-    check("P6D Rotating Ring authors thick external rail hierarchy",
-          p.art_gap >= 7.0 &&
-          p.ornament_width >= 12.0 &&
-          p.inner_rail_width >= 9.0 &&
+    check("P6E Rotating Ring authors substantial independent rail widths",
+          p.ornament_width >= 19.0 &&
+          p.inner_rail_width >= 14.0 &&
           p.ornament_width > p.inner_rail_width &&
           p.border_width <= 1.0);
-    check("P6D Rotating Ring uses premium controlled light hierarchy",
+    check("P6E Rotating Ring owns independent centerline geometry",
+          p.ring_inner_offset >= 16.0 &&
+          p.ring_inner_offset <= 22.0 &&
+          p.ring_spacing >= 28.0 &&
+          p.ring_spacing <= 34.0);
+    check("P6E Rotating Ring uses premium controlled light hierarchy",
           p.color_mode == NM_COLOR_DUAL && p.primary != p.secondary &&
           p.glow_strength >= 0.88 && p.glow_radius >= 21.0 &&
           p.mid_glow >= 0.84 && p.bloom_strength >= 0.86 &&
-          p.speed <= 0.62);
+          p.speed <= 0.60);
     if (failures) return 1;
     puts("PASS: stable preset IDs through P6B Rotating Ring preset 12");
     return 0;

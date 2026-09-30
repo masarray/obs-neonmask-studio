@@ -51,6 +51,8 @@ void nm_config_defaults(nm_config *cfg)
         .ornament_length_x_px = 60.0f,
         .ornament_length_y_px = 48.0f,
         .inner_rail_width_px = 1.4f,
+        .ring_inner_offset_px = 18.0f,
+        .ring_spacing_px = 30.0f,
         .ornament_mode = NM_ORNAMENT_NONE,
         .animation_speed = 0.65f,
         .primary = 0xFFDD31FFu,
@@ -130,9 +132,19 @@ void nm_config_validate(nm_config *cfg)
     cfg->ornament_width_px = nm_clamp(cfg->ornament_width_px, 1.0f, 64.0f);
     cfg->ornament_length_x_px = nm_clamp(cfg->ornament_length_x_px, 8.0f, 240.0f);
     cfg->ornament_length_y_px = nm_clamp(cfg->ornament_length_y_px, 8.0f, 240.0f);
-    cfg->inner_rail_width_px = nm_clamp(cfg->inner_rail_width_px, 0.5f, 12.0f);
+    cfg->inner_rail_width_px = nm_clamp(cfg->inner_rail_width_px, 0.5f, 20.0f);
+    cfg->ring_inner_offset_px = nm_clamp(cfg->ring_inner_offset_px, 10.0f, 30.0f);
+    cfg->ring_spacing_px = nm_clamp(cfg->ring_spacing_px, 26.0f, 44.0f);
     if (cfg->ornament_mode < NM_ORNAMENT_NONE || cfg->ornament_mode > NM_ORNAMENT_DUAL_RING)
         cfg->ornament_mode = NM_ORNAMENT_NONE;
+    /* P6E: Dual Ring gets an intentionally narrow artistic envelope. Width
+     * controls thickness only; centerline geometry lives in the dedicated
+     * offset/spacing fields and can no longer explode with 64px/96px values. */
+    if (cfg->ornament_mode == NM_ORNAMENT_DUAL_RING &&
+        cfg->shape_id == NM_SHAPE_CIRCLE) {
+        cfg->ornament_width_px = nm_clamp(cfg->ornament_width_px, 8.0f, 26.0f);
+        cfg->inner_rail_width_px = nm_clamp(cfg->inner_rail_width_px, 6.0f, 20.0f);
+    }
     cfg->animation_speed = nm_clamp(cfg->animation_speed, 0.0f, 5.0f);
     if (cfg->color_mode < NM_COLOR_SOLID || cfg->color_mode > NM_COLOR_RAINBOW)
         cfg->color_mode = NM_COLOR_DUAL;
@@ -208,6 +220,10 @@ bool nm_config_apply_preset(nm_config *cfg, int preset_id)
     cfg->ornament_length_x_px = (float)preset.ornament_length_x;
     cfg->ornament_length_y_px = (float)preset.ornament_length_y;
     cfg->inner_rail_width_px = (float)preset.inner_rail_width;
+    if (preset.ring_inner_offset > 0.0)
+        cfg->ring_inner_offset_px = (float)preset.ring_inner_offset;
+    if (preset.ring_spacing > 0.0)
+        cfg->ring_spacing_px = (float)preset.ring_spacing;
     cfg->animation_speed = (float)preset.speed;
     cfg->segment_count = preset.segments;
     cfg->style_id = preset.style;
