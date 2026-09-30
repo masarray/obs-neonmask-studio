@@ -265,7 +265,7 @@ int main(void)
           fabsf(cfg.ornament_width_px-10.0f)<0.0001f &&
           fabsf(cfg.inner_rail_width_px-7.0f)<0.0001f &&
           fabsf(cfg.glow_px-20.0f)<0.0001f &&
-          fabsf(cfg.glow_strength-0.86f)<0.0001f);
+          fabsf(cfg.glow_amount-0.86f)<0.0001f);
     check("legacy schema supported", nm_config_schema_supported(0));
     check("current schema supported", nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION));
     check("legacy v1 schema supported", nm_config_schema_supported(1));
