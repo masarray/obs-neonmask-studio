@@ -26,7 +26,7 @@ typedef struct nm_config {
     float shape_rotation_deg;
     int polygon_sides;
     float roundness;
-    /* D1: proportional tail height / diagonal cut, range 0.08..0.35. */
+    /* Shared persisted detail. Tech HUD extends to 0.70; legacy authored shapes\n     * keep an effective 0.35 cap in their geometry paths. */
     float shape_detail;
     /* D4A v1 fields are retained only for schema-2 migration. */
     float bubble_left_inset, bubble_right_inset;
