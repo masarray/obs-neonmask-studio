@@ -735,3 +735,33 @@ the true gap and portrait center remain transparent. This closes the prior
 numbers-only coverage gap, but actual OBS source/filter-chain and scene
 composition acceptance remains a G4-V/G5 runtime gate.
 
+## D4K — extended Tech HUD cut authoring range
+
+Maintainer OBS review after D4J accepted the current Tech HUD composition and
+clipping behavior, but the Shape Detail control still stopped at 0.35. Simply
+raising the UI limit would not have changed Tech HUD: the D4B geometry had
+already saturated its chamfer at 20% of the smaller mask half-extent.
+
+D4K preserves every Tech HUD result at detail <=0.35 exactly, then resumes the
+chamfer continuously from the legacy 20% plateau to a bounded 45% cut at
+detail 0.70. Only Tech HUD exposes the 0.70 UI limit. Angled Card, HUD Cut
+Panel and Squircle retain their previous effective 0.35 cap even though the
+shared persisted field can store the Tech HUD value, so switching shapes cannot
+silently distort those older geometries.
+
+CPU contour tests require the 0.35 Tech HUD probe to remain filled while the
+same probe is clipped at 0.70. OpenGL/D3D11 pixel fixtures assert the same pair
+through the real shader. Existing presets are unchanged; this is additional
+manual authoring headroom, not a preset redesign.
+
+### Next phase after D4 visual polish
+
+Do not add another decorative family immediately. The next vertical phase is
+runtime/release hardening: close the remaining G4-V/G5/G6 evidence on actual
+OBS composition, filter order, restart/resize and scene transitions; record
+GPU/CPU/render-lag and memory data on named Windows hardware; then perform the
+eight-hour animated soak and G7 packaging/install/rollback evidence. Once that
+procedural core is release-grade, M4 broader mask providers (image/gradient,
+then the already-started SVG path/provider work) can continue without putting
+visual/reliability debt underneath more features.
+
