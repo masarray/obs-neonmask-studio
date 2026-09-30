@@ -15,7 +15,9 @@ typedef struct nm_fit_result {
 } nm_fit_result;
 
 /* Returns false for invalid inputs; fits=false for impossible placement.
- * Expand mode takes precedence over safe_fit; legacy output is unchanged.
- * It never changes cfg, mask center, subject pan/zoom or input UV. */
+ * Expand mode takes precedence. Dedicated Tech HUD / Game UI outer ornaments
+ * auto-fit inside the source when expansion is off; other/legacy shapes keep
+ * the explicit safe_fit opt-in behavior. It never changes cfg, mask center,
+ * subject pan/zoom or input UV. */
 bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
                            uint32_t height, nm_fit_result *out);

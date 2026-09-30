@@ -5,6 +5,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
+safe_fit = (ROOT / "src" / "neonmask-safe-fit.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
 assert len(names) == len(set(names)) == 47, f"Expected 47 unique bindings: {names!r}"
@@ -102,8 +103,8 @@ assert "NM_SHOW(\"glow_radius\",border && glow)" in host
 assert 'Bubble.TLX="Top-left X"' in en_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — cut corners + brackets"' in en_locale
 assert 'Art.Width="Outer ornament width (px)"' in en_locale
-assert 'Art.ClipHint="Large outer gap/width can exceed the source bounds.' in en_locale
-assert 'to auto-shrink the mask' in en_locale
+assert 'Art.ClipHint="Outer L ornaments are auto-fitted inside the source when expansion is off' in en_locale
+assert 'may shrink the mask' in en_locale
 assert 'Art.Gap="Outer ornament gap from frame (px)"' in en_locale
 assert 'Border.Width="Base neon border width (px)"' in en_locale
 assert 'Preset.TechHUD="Tech HUD Advanced — Cyan + Amber"' in en_locale
@@ -116,8 +117,8 @@ assert 'Rainbow.Spread="Sebaran gradien"' in id_locale
 assert 'Bubble.TLX="Sudut kiri-atas X"' in id_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — sudut potong + bracket"' in id_locale
 assert 'Art.Width="Ketebalan ornamen luar (px)"' in id_locale
-assert 'Art.ClipHint="Gap/ketebalan ornamen luar yang besar dapat melewati batas sumber.' in id_locale
-assert 'mask mengecil otomatis' in id_locale
+assert 'Art.ClipHint="Ornamen L luar otomatis disesuaikan agar tetap masuk batas sumber saat ekspansi mati' in id_locale
+assert 'dapat mengecilkan mask' in id_locale
 # A primitive min is an occupancy union, NOT the exposed contour distance:
 # its hidden body bottom/tail base caused a phantom horizontal neon seam.
 assert "float ds=edgeDistanceSquared(p,tlN,trP)" in shader
@@ -230,9 +231,11 @@ assert "gs_effect_set_vec2(f->output_size, &output_dimensions)" in host
 assert "gs_effect_set_vec2(f->input_origin, &origin)" in host
 assert 'Mask.SafeFit="Keep glow / outer ornaments inside source (may shrink mask)"' in en_locale
 assert 'Mask.SafeFit="Jaga glow / ornamen luar di dalam sumber (mask dapat mengecil)"' in id_locale
-assert "const bool outer_authored =" in host
-assert 'if (outer_authored && !expanded)' in host
-assert 'obs_data_set_bool(settings,"safe_fit",true)' in host
+assert "const bool outer_authored =" in safe_fit
+assert "const bool fit_inside_source = cfg->safe_fit || outer_authored;" in safe_fit
+assert "if (!fit_inside_source && !cfg->expand_canvas)" in safe_fit
+assert 'obs_data_set_bool(settings,"safe_fit",true)' not in host
+assert "obs_property_set_visible(p,!expanded && !outer_authored)" in host
 assert "if (!valid)" in host, "Missing shader parameters must disable effect gracefully"
 # No shader / zero-size rendering must fail closed, not display the webcam.
 render = host.split("static void nm_render(", 1)[1].split("struct obs_source_info neonmask_filter_info", 1)[0]
