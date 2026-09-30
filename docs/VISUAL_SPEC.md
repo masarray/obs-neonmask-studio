@@ -261,3 +261,26 @@ reproduces the original geometric card. Do not globally round the card,
 stretch the webcam, or implement a separate ornamental overlay. Source alpha
 and luminous border/glow must agree on each selective fillet. Cut depth
 (`shape_detail`) and rounding (`roundness`) are independently adjustable.
+
+## P6A — Gradient Rainbow hero preset
+
+Gradient Rainbow is appended as preset ID 11; every previous preset ID and
+saved scene setting remains stable. The preset uses the existing D4D analytic
+HSV pipeline on the real rounded-rectangle perimeter: hue phase travels around
+the contour while frame brightness remains stable. It deliberately uses no
+signature ornament and sets Flow hotspot strength to zero, so motion reads as
+a smooth rotating spectrum rather than a white comet or full-frame pulse.
+
+Preset color state is now first-class data rather than an ID-specific override.
+The preset recipe stores color mode plus rainbow speed, saturation, hue offset
+and spread. IDs 1..10 explicitly store their legacy Dual/default values, so
+applying an old preset after Gradient Rainbow deterministically restores the
+same pre-P6A color behavior. No scene-schema bump is required because these are
+built-in recipe fields, not new persisted OBS keys.
+
+Acceptance combines existing OpenGL/D3D11 full-spectrum perimeter pixels and
+bounded eight-hour rainbow phase tests with new preset/config invariants.
+Actual OBS review still decides final art tuning (speed, bloom and perceived
+smoothness at the intended facecam size) before the preset is called visually
+final.
+
