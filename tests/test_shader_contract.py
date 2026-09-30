@@ -169,10 +169,17 @@ assert "ornament_mode == 6 && shape_id == 1" in shader
 assert "ringAnglePoint=float2(1.0,0.0)" in shader
 assert "dot(ringAnglePoint,ringAnglePoint)<0.0001" in shader
 assert "outerRel=frac(t-phase+1.0)" in shader
-assert "innerRel=frac(t+phase-0.50+2.0)" in shader
+assert "float innerStart=frac(0.50-phase+1.0)" in shader
+assert "float innerRel=frac(t-innerStart+1.0)" in shader
 assert "const float span=0.6666666667" in shader
 assert "outerOffset=halfCore+max(0.0,art_gap)+outerHalf" in shader
-assert "lerp(neon,float3(1.0,1.0,1.0),0.16)" in shader
+assert "float dualOuterA = 0.0" in shader
+assert "float dualInnerA = 0.0" in shader
+assert "dualOuterColor=lerp(color_a.rgb,color_b.rgb,outerMix*0.78)" in shader
+assert "dualInnerColor=lerp(color_b.rgb,color_a.rgb,innerMix*0.78)" in shader
+assert "float2 outerStartP=" in shader and "float2 innerStartP=" in shader
+assert "dualOuterHotA" in shader and "dualInnerHotA" in shader
+assert "coreA*=0.42" in shader and "outerA*=0.18" in shader
 assert "coreA*=0.80" in shader and "outerA*=0.40" in shader
 assert "float nodeD=" not in shader
 for key in ("art_intensity", "art_gap"):
