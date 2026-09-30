@@ -815,3 +815,30 @@ and acquire samples consistent with counter-clockwise motion. Glow is disabled
 in that fixture so base-border spill cannot fake a pass. Actual OBS capture and
 motion review still decide final speed, spacing and perceived smoothness.
 
+## P6C — Rotating Ring visual hierarchy polish
+
+Actual OBS review of P6B showed that the counter-rotation logic was correct
+but the authored visual recipe was underpowered: the 6 px / 4 px rails sat too
+close to the base circle and collapsed perceptually into one thin outline in
+the filter preview.
+
+P6C treats the ring as a hero composition rather than a border variant:
+- outer 2/3 orbit: 10 px authored width;
+- inner 2/3 orbit: 7 px authored width;
+- frame-to-outer gap: 11 px;
+- the inner orbit keeps its own proportional inward separation;
+- the 360-degree base circle is reduced to a quiet locator (~one-third of its
+  previous core presence after Minimal-style attenuation);
+- each orbit owns its own alpha/light layer and opposed cyan/magenta color
+  progression instead of sharing one generic artBar color;
+- true rounded geometric caps replace hairline angular fade-outs;
+- local cap whitening and controlled bloom improve motion readability without
+  adding a separate comet or changing webcam mask alpha.
+
+The direct libobs GPU fixture now validates both motion and visual hierarchy.
+At a 100 px mask radius it samples the inner and outer edges of both rails,
+requires dark radial separation bands around the base circle, requires the base
+circle to remain visible but subordinate, and still proves outer CW / inner CCW
+motion over two deterministic frames. Glow is disabled for the thickness/gap
+proof so bloom cannot fake the pass.
+
