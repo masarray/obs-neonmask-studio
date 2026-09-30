@@ -16,9 +16,9 @@ int main(void)
     nm_preset p = {0};
     check("custom preset invalid", !nm_get_preset(0, &p));
     check("negative preset invalid", !nm_get_preset(-1, &p));
-    check("unknown preset invalid", !nm_get_preset(12, &p));
+    check("unknown preset invalid", !nm_get_preset(13, &p));
     check("null output invalid", !nm_get_preset(1, NULL));
-    for (int id = 1; id <= 11; ++id) {
+    for (int id = 1; id <= 12; ++id) {
         check("known preset", nm_get_preset(id, &p));
         check("valid shape", p.shape >= NM_SHAPE_ROUNDED && p.shape <= NM_SHAPE_GAME_UI);
         check("valid animation", p.animation >= NM_ANIM_STATIC && p.animation <= NM_ANIM_FLOW);
@@ -97,7 +97,17 @@ int main(void)
           p.rainbow_spread > 0.80 && p.rainbow_spread < 1.20);
     check("P6A Gradient Rainbow moves hue without white Flow comet",
           p.animation == NM_ANIM_FLOW && p.hotspot_strength == 0.0);
+    nm_get_preset(12, &p);
+    check("P6B Rotating Ring uses Circle + dedicated dual-ring recipe",
+          p.shape == NM_SHAPE_CIRCLE &&
+          p.ornament_mode == NM_ORNAMENT_DUAL_RING &&
+          p.animation == NM_ANIM_FLOW);
+    check("P6B Rotating Ring authors two distinct rail widths",
+          p.ornament_width >= 5.0 && p.inner_rail_width >= 3.0 &&
+          p.ornament_width > p.inner_rail_width);
+    check("P6B Rotating Ring uses cyan-magenta dual palette",
+          p.color_mode == NM_COLOR_DUAL && p.primary != p.secondary);
     if (failures) return 1;
-    puts("PASS: stable preset IDs through P6A Gradient Rainbow preset 11");
+    puts("PASS: stable preset IDs through P6B Rotating Ring preset 12");
     return 0;
 }

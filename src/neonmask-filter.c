@@ -456,16 +456,18 @@ static void nm_context_visibility(obs_properties_t *props, int shape_id,
                           ornament==NM_ORNAMENT_TECH_HUD;
         const bool game = shape_id==NM_SHAPE_GAME_UI &&
                           ornament==NM_ORNAMENT_GAME_UI;
+        const bool ring = shape_id==NM_SHAPE_CIRCLE &&
+                          ornament==NM_ORNAMENT_DUAL_RING;
         p=obs_properties_get(arts,"ornament_width");
-        if(p) obs_property_set_visible(p,tech || game);
+        if(p) obs_property_set_visible(p,tech || game || ring);
         p=obs_properties_get(arts,"ornament_length_x");
         if(p) obs_property_set_visible(p,tech || game);
         p=obs_properties_get(arts,"ornament_length_y");
         if(p) obs_property_set_visible(p,tech || game);
         p=obs_properties_get(arts,"inner_rail_width");
-        if(p) obs_property_set_visible(p,game);
+        if(p) obs_property_set_visible(p,game || ring);
         p=obs_properties_get(arts,"art_clip_hint");
-        if(p) obs_property_set_visible(p,tech || game);
+        if(p) obs_property_set_visible(p,tech || game || ring);
     }
     obs_property_t *light=obs_properties_get(props,"premium_lighting");
     obs_properties_t *lights=light?obs_property_group_content(light):NULL;
@@ -492,7 +494,8 @@ static void nm_context_visibility(obs_properties_t *props, int shape_id,
     if(geometry) {
         const bool outer_authored =
             (shape_id==NM_SHAPE_TECH_HUD && ornament==NM_ORNAMENT_TECH_HUD) ||
-            (shape_id==NM_SHAPE_GAME_UI && ornament==NM_ORNAMENT_GAME_UI);
+            (shape_id==NM_SHAPE_GAME_UI && ornament==NM_ORNAMENT_GAME_UI) ||
+            (shape_id==NM_SHAPE_CIRCLE && ornament==NM_ORNAMENT_DUAL_RING);
         p=obs_properties_get(geometry,"safe_fit");
         if(p) obs_property_set_visible(p,!expanded && !outer_authored);
     }
@@ -641,6 +644,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(preset, obs_module_text("Preset.Squircle"), 9);
     obs_property_list_add_int(preset, obs_module_text("Preset.GameUI"), 10);
     obs_property_list_add_int(preset, obs_module_text("Preset.GradientRainbow"), 11);
+    obs_property_list_add_int(preset, obs_module_text("Preset.RotatingRing"), 12);
     obs_property_set_modified_callback(preset, nm_preset_changed);
 
     obs_property_t *shape = obs_properties_add_list(props, "shape", obs_module_text("Shape"),
@@ -728,6 +732,7 @@ static obs_properties_t *nm_properties(void *data)
     obs_property_list_add_int(ornament, obs_module_text("Art.TechHUD"), NM_ORNAMENT_TECH_HUD);
     obs_property_list_add_int(ornament, obs_module_text("Art.Streamer"), NM_ORNAMENT_STREAMER);
     obs_property_list_add_int(ornament, obs_module_text("Art.GameUI"), NM_ORNAMENT_GAME_UI);
+    obs_property_list_add_int(ornament, obs_module_text("Art.DualRing"), NM_ORNAMENT_DUAL_RING);
     obs_property_set_modified_callback(ornament, nm_context_changed);
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "art_intensity",
                          obs_module_text("Art.Intensity"), 0.0, 1.0, 0.01));

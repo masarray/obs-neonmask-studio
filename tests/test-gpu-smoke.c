@@ -995,6 +995,146 @@ done_expanded_game:
     return failed;
 }
 
+/* P6B motion gate: two 240-degree circle rails must derive opposite
+ * directions from one bounded flow phase. Positive screen-space atan2 turns
+ * clockwise, so +phase moves the outer gap CW while -phase moves the inner
+ * gap CCW. Samples are on each rail centerline with glow disabled, ensuring
+ * the result is ring geometry rather than base-border spill. */
+static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
+{
+    enum { W=320, H=320 };
+    uint8_t *pixels=bzalloc((size_t)W*H*4u);
+    if(!pixels) return 1;
+    const uint8_t *layers[]={pixels};
+    gs_texture_t *input=gs_texture_create(W,H,GS_RGBA,1,layers,0);
+    bfree(pixels);
+    gs_texrender_t *target=gs_texrender_create(GS_RGBA,GS_ZS_NONE);
+    gs_stagesurf_t *stage=gs_stagesurface_create(W,H,GS_RGBA);
+    if(!input||!target||!stage){
+        if(stage)gs_stagesurface_destroy(stage);
+        if(target)gs_texrender_destroy(target);
+        if(input)gs_texture_destroy(input);
+        fprintf(stderr,"FAIL: P6B dual-ring resources\n");
+        return 1;
+    }
+
+    struct vec2 dims,zero,half;
+    struct vec4 cyan,magenta,btop,bbottom,btail;
+    vec2_set(&dims,(float)W,(float)H);
+    vec2_set(&zero,0.0f,0.0f);
+    vec2_set(&half,100.0f,100.0f);
+    vec4_set(&cyan,0.0f,0.86f,1.0f,1.0f);
+    vec4_set(&magenta,1.0f,0.16f,0.86f,1.0f);
+    vec4_set(&btop,-1,-1,1,-1);
+    vec4_set(&bbottom,1,.6f,-1,.6f);
+    vec4_set(&btail,.11f,.33f,.14f,.22f);
+#define P(name) gs_effect_get_param_by_name(effect,name)
+    gs_effect_set_vec2(P("uv_size"),&dims);
+    gs_effect_set_vec2(P("output_size"),&dims);
+    gs_effect_set_vec2(P("input_origin"),&zero);
+    gs_effect_set_vec2(P("half_size"),&half);
+    gs_effect_set_vec2(P("mask_offset"),&zero);
+    gs_effect_set_vec2(P("subject_pan"),&zero);
+    gs_effect_set_float(P("subject_zoom"),1.0f);
+    gs_effect_set_float(P("shape_rotation"),0.0f);
+    gs_effect_set_int(P("polygon_sides"),8);
+    gs_effect_set_float(P("shape_detail"),0.22f);
+    gs_effect_set_vec4(P("bubble_top"),&btop);
+    gs_effect_set_vec4(P("bubble_bottom"),&bbottom);
+    gs_effect_set_vec4(P("bubble_tail"),&btail);
+    gs_effect_set_float(P("corner_radius"),0.0f);
+    gs_effect_set_int(P("shape_id"),1);
+    gs_effect_set_float(P("border_width"),2.5f);
+    gs_effect_set_int(P("style_id"),3);
+    gs_effect_set_int(P("ornament_mode"),6);
+    gs_effect_set_float(P("art_intensity"),1.0f);
+    gs_effect_set_float(P("art_gap"),5.0f);
+    gs_effect_set_float(P("ornament_width"),6.0f);
+    gs_effect_set_float(P("ornament_length_x"),60.0f);
+    gs_effect_set_float(P("ornament_length_y"),48.0f);
+    gs_effect_set_float(P("inner_rail_width"),4.0f);
+    gs_effect_set_float(P("feather"),0.70f);
+    gs_effect_set_float(P("glow_radius"),16.0f);
+    gs_effect_set_float(P("glow_strength"),0.0f);
+    gs_effect_set_float(P("mid_glow_strength"),0.74f);
+    gs_effect_set_float(P("bloom_strength"),0.76f);
+    gs_effect_set_float(P("hotspot_strength"),0.0f);
+    gs_effect_set_float(P("hotspot_size"),0.08f);
+    gs_effect_set_vec4(P("color_a"),&cyan);
+    gs_effect_set_vec4(P("color_b"),&magenta);
+    gs_effect_set_int(P("color_mode"),1);
+    gs_effect_set_float(P("rainbow_phase"),0.0f);
+    gs_effect_set_float(P("rainbow_saturation"),0.92f);
+    gs_effect_set_float(P("rainbow_hue_offset"),0.0f);
+    gs_effect_set_float(P("rainbow_spread"),1.0f);
+    gs_effect_set_float(P("color_phase"),0.0f);
+    gs_effect_set_float(P("pulse_phase"),0.0f);
+    gs_effect_set_int(P("animation_id"),2);
+    gs_effect_set_int(P("segment_count"),0);
+    gs_effect_set_int(P("border_enabled"),1);
+    gs_effect_set_int(P("glow_enabled"),0);
+    gs_effect_set_texture(P("svg_sdf"),NULL);
+    gs_effect_set_int(P("svg_ready"),0);
+    gs_effect_set_texture(P("image"),input);
+#undef P
+
+    unsigned outer_start[2]={0},outer_arrive[2]={0};
+    unsigned inner_hold[2]={0},inner_arrive[2]={0},center_a[2]={0};
+    int failed=0;
+    for(int frame=0;frame<2;++frame){
+        gs_effect_set_float(gs_effect_get_param_by_name(effect,"flow_phase"),
+                            frame==0 ? 0.0f : 0.25f);
+        if(!gs_texrender_begin(target,W,H)){failed=1;break;}
+        const bool srgb=gs_framebuffer_srgb_enabled();
+        gs_enable_framebuffer_srgb(false);
+        gs_blend_state_push(); gs_enable_blending(false);
+        struct vec4 clear; vec4_zero(&clear);
+        gs_clear(GS_CLEAR_COLOR,&clear,0,0);
+        gs_ortho(0,(float)W,0,(float)H,-100,100);
+        gs_matrix_push(); gs_matrix_identity();
+        const enum gs_cull_mode cull=gs_get_cull_mode();
+        gs_set_cull_mode(GS_NEITHER);
+        while(gs_effect_loop(effect,"Draw")) gs_draw_sprite(input,0,W,H);
+        gs_set_cull_mode(cull);
+        gs_matrix_pop();
+        gs_blend_state_pop();
+        gs_enable_framebuffer_srgb(srgb);
+        gs_texrender_end(target);
+
+        gs_stage_texture(stage,gs_texrender_get_texture(target));
+        uint8_t *mapped=NULL; uint32_t stride=0;
+        if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;break;}
+        /* outer_start t=.05, outer_arrive t=.80; inner_hold t=.55 and
+         * inner_arrive t=.30. Radius coordinates are derived from the
+         * authored 100px mask radius plus/minus the exact rail offsets. */
+        outer_start[frame]=(mapped+194u*stride+264u*4u)[3];
+        outer_arrive[frame]=(mapped+56u*stride+194u*4u)[3];
+        inner_hold[frame]=(mapped+131u*stride+71u*4u)[3];
+        inner_arrive[frame]=(mapped+249u*stride+131u*4u)[3];
+        center_a[frame]=(mapped+160u*stride+160u*4u)[3];
+        gs_stagesurface_unmap(stage);
+    }
+
+    if(!failed &&
+       (outer_start[0]<150 || outer_arrive[0]>15 ||
+        inner_hold[0]<130 || inner_arrive[0]>15 ||
+        outer_start[1]>15 || outer_arrive[1]<150 ||
+        inner_hold[1]<130 || inner_arrive[1]<130 ||
+        center_a[0]>3 || center_a[1]>3)){
+        fprintf(stderr,
+                "FAIL: P6B counter rotation outer=%u/%u -> %u/%u inner=%u/%u -> %u/%u center=%u/%u\n",
+                outer_start[0],outer_arrive[0],outer_start[1],outer_arrive[1],
+                inner_hold[0],inner_arrive[0],inner_hold[1],inner_arrive[1],
+                center_a[0],center_a[1]);
+        failed=1;
+    }
+
+    gs_stagesurface_destroy(stage);
+    gs_texrender_destroy(target);
+    gs_texture_destroy(input);
+    return failed;
+}
+
 /* D4D preview-scale GPU gate: one full spectrum is distributed continuously
  * around the rounded perimeter. The frame itself does not rotate and the
  * transparent portrait center remains untouched. */
@@ -1213,6 +1353,7 @@ int main(int argc, char **argv)
             missing += verify_tech_hud_preview_scale(effect);
             missing += verify_game_ui_preview_scale(effect);
             missing += verify_game_ui_expanded_top_padding(effect);
+            missing += verify_counter_rotating_dual_ring(effect);
             missing += verify_rainbow_preview_scale(effect);
         }
         gs_effect_destroy(effect);
@@ -1221,6 +1362,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: libobs alpha/framing/light + SVG + D3 + freeform Bubble + Tech HUD + Game UI + expanded outer-L + Rainbow GPU fixtures (partial G4)");
+    puts("PASS: libobs alpha/framing/light + SVG + D3 + Bubble + Tech HUD + Game UI + counter-rotating ring + Rainbow GPU fixtures (partial G4)");
     return 0;
 }

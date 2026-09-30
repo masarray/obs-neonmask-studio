@@ -35,6 +35,7 @@ int main(void)
     test("HUD allowed",nm_art_recipe_valid(3,3.0f,.8f));
     test("Streamer allowed",nm_art_recipe_valid(4,3.0f,.8f));
     test("Game UI allowed",nm_art_recipe_valid(5,3.0f,.8f));
+    test("P6B dual ring allowed",nm_art_recipe_valid(6,5.0f,1.0f));
     test("reject mode",!nm_art_recipe_valid(9,3.0f,1.0f));
     test("reject nan",!nm_art_recipe_valid(1,NAN,.7f));
     test("reject inf",!nm_art_recipe_valid(1,3.0f,INFINITY));

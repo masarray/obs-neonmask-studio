@@ -131,7 +131,7 @@ void nm_config_validate(nm_config *cfg)
     cfg->ornament_length_x_px = nm_clamp(cfg->ornament_length_x_px, 8.0f, 240.0f);
     cfg->ornament_length_y_px = nm_clamp(cfg->ornament_length_y_px, 8.0f, 240.0f);
     cfg->inner_rail_width_px = nm_clamp(cfg->inner_rail_width_px, 0.5f, 12.0f);
-    if (cfg->ornament_mode < NM_ORNAMENT_NONE || cfg->ornament_mode > NM_ORNAMENT_GAME_UI)
+    if (cfg->ornament_mode < NM_ORNAMENT_NONE || cfg->ornament_mode > NM_ORNAMENT_DUAL_RING)
         cfg->ornament_mode = NM_ORNAMENT_NONE;
     cfg->animation_speed = nm_clamp(cfg->animation_speed, 0.0f, 5.0f);
     if (cfg->color_mode < NM_COLOR_SOLID || cfg->color_mode > NM_COLOR_RAINBOW)

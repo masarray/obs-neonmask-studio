@@ -812,7 +812,8 @@ float4 drawNeonMask(VertData v_in) : TARGET
         float artBarA = 0.0;
         float artBarGlowA = 0.0;
         bool authoredOverlay = (shape_id == 13 && ornament_mode == 3) ||
-                               (shape_id == 14 && ornament_mode == 5);
+                               (shape_id == 14 && ornament_mode == 5) ||
+                               (shape_id == 1 && ornament_mode == 6);
         if ((style_id == 1 || style_id == 2) && !authoredOverlay) {
             float spacing = halfCore + 3.0;
             float outerRim = 1.0 - smoothstep(0.30, 1.15, abs(d - spacing));
@@ -912,6 +913,63 @@ float4 drawNeonMask(VertData v_in) : TARGET
                                art_intensity * hotspot_strength * 0.67);
             if (glow_enabled != 0)
                 artBarGlowA = artBarA * glow_strength * 0.22;
+        }
+
+        // P6B Counter-Rotating Dual Ring: two independent 240-degree rails
+        // derive equal/opposite angular motion from ONE bounded flow phase.
+        // Positive screen-space angle is clockwise (Y grows downward), so
+        // outer start=+phase is CW and inner start=0.5-phase is CCW.
+        // The missing 120-degree sectors are intentionally broad negative
+        // space; a short angular fade gives premium luminous arc ends.
+        if (ornament_mode == 6 && shape_id == 1 && art_intensity > 0.0) {
+            float t=frac(angle/TAU+1.0);
+            float phase=animation_id == 2 ? flow_phase : 0.0;
+            const float span=0.6666666667;
+            const float edge=0.018;
+
+            float outerRel=frac(t-phase+1.0);
+            float innerRel=frac(t+phase-0.50+2.0);
+            float outerGate=smoothstep(0.0,edge,outerRel) *
+                            (1.0-smoothstep(span-edge,span,outerRel));
+            float innerGate=smoothstep(0.0,edge,innerRel) *
+                            (1.0-smoothstep(span-edge,span,innerRel));
+
+            float outerHalf=max(0.50,ornament_width*0.50);
+            float innerHalf=max(0.35,inner_rail_width*0.50);
+            float outerOffset=halfCore+max(0.0,art_gap)+outerHalf;
+            // Keep the inner rail visibly separate without consuming the
+            // portrait center; art_gap still remains the user-facing spacing.
+            float innerGap=max(2.0,art_gap*0.65);
+            float innerOffset=halfCore+innerGap+innerHalf;
+
+            float outerD=abs(d-outerOffset);
+            float innerD=abs(d+innerOffset);
+            float outerArc=(1.0-smoothstep(max(0.0,outerHalf-0.60),
+                                           outerHalf+0.65,outerD))*outerGate;
+            float innerArc=(1.0-smoothstep(max(0.0,innerHalf-0.55),
+                                           innerHalf+0.60,innerD))*innerGate;
+            artBarA=saturate(art_intensity*
+                             (outerArc*0.99+innerArc*0.91));
+
+            if(glow_enabled != 0) {
+                float glowSpread=max(4.0,glow_radius*0.20);
+                float outerGlow=(1.0-smoothstep(0.0,glowSpread,
+                    max(0.0,outerD-outerHalf)))*outerGate;
+                float innerGlow=(1.0-smoothstep(0.0,glowSpread*0.82,
+                    max(0.0,innerD-innerHalf)))*innerGate;
+                artBarGlowA=saturate(art_intensity*glow_strength*
+                                     (outerGlow*0.30+innerGlow*0.23));
+            }
+
+            // The circle mask keeps a restrained stable neon edge; rotating
+            // rails are the hero motion rather than competing with a bright
+            // full 360-degree base ring.
+            coreA*=0.62;
+            fineA*=0.58;
+            midA*=0.42;
+            outerA*=0.36;
+            rimA*=0.30;
+            glintA*=0.30;
         }
 
         // Tech HUD: rigid orthogonal brackets, sparse track cuts and strong

@@ -97,19 +97,22 @@ assert 'obs_property_set_visible(body,shape_id==NM_SHAPE_CHAT_BUBBLE)' in host
 assert 'obs_property_set_visible(tail,shape_id==NM_SHAPE_CHAT_BUBBLE)' in host
 assert "nm_context_visibility(" in host
 assert 'obs_properties_add_text(art_group,"art_clip_hint"' in host
-assert 'obs_property_set_visible(p,tech || game)' in host
+assert 'obs_property_set_visible(p,tech || game || ring)' in host
 assert "NM_SHOW(\"speed\",border && animation!=NM_ANIM_STATIC)" in host
 assert "NM_SHOW(\"glow_radius\",border && glow)" in host
 assert 'Bubble.TLX="Top-left X"' in en_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — cut corners + brackets"' in en_locale
 assert 'Art.Width="Outer ornament width (px)"' in en_locale
-assert 'Art.ClipHint="Outer L ornaments are auto-fitted inside the source when expansion is off' in en_locale
+assert 'Art.ClipHint="Outer ornaments are auto-fitted inside the source when expansion is off' in en_locale
 assert 'may shrink the mask' in en_locale
 assert 'Art.Gap="Outer ornament gap from frame (px)"' in en_locale
 assert 'Border.Width="Base neon border width (px)"' in en_locale
 assert 'Preset.TechHUD="Tech HUD Advanced — Cyan + Amber"' in en_locale
 assert 'Shape.GameUI="Game UI — corner brackets + inner rail"' in en_locale
 assert 'Preset.GameUI="Game UI — Neon Green"' in en_locale
+assert 'Preset.GradientRainbow="Gradient Rainbow — Rotating Spectrum"' in en_locale
+assert 'Preset.RotatingRing="Rotating Ring — Counter Orbit"' in en_locale
+assert 'Art.DualRing="Dual Ring — counter-rotating 2/3 arcs"' in en_locale
 assert 'Color.Mode.Rainbow="Rainbow gradient"' in en_locale
 assert 'Rainbow.Spread="Gradient spread"' in en_locale
 assert 'Color.Mode.Rainbow="Gradien pelangi"' in id_locale
@@ -117,7 +120,7 @@ assert 'Rainbow.Spread="Sebaran gradien"' in id_locale
 assert 'Bubble.TLX="Sudut kiri-atas X"' in id_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — sudut potong + bracket"' in id_locale
 assert 'Art.Width="Ketebalan ornamen luar (px)"' in id_locale
-assert 'Art.ClipHint="Ornamen L luar otomatis disesuaikan agar tetap masuk batas sumber saat ekspansi mati' in id_locale
+assert 'Art.ClipHint="Ornamen luar otomatis disesuaikan agar tetap masuk batas sumber saat ekspansi mati' in id_locale
 assert 'dapat mengecilkan mask' in id_locale
 # A primitive min is an occupancy union, NOT the exposed contour distance:
 # its hidden body bottom/tail base caused a phantom horizontal neon seam.
@@ -152,8 +155,8 @@ assert "return min(elbow,min(hBar,vBar))" in shader
 assert "artBarA" in shader and "artBarGlowA" in shader
 assert "NM_ORNAMENT_CYBER" in host and "NM_ORNAMENT_NONE" in host
 assert "NM_ORNAMENT_REACTOR" in host and "NM_ORNAMENT_TECH_HUD" in host and "NM_ORNAMENT_STREAMER" in host
-assert "NM_ORNAMENT_GAME_UI" in host
-for mode in (2, 3, 4, 5):
+assert "NM_ORNAMENT_GAME_UI" in host and "NM_ORNAMENT_DUAL_RING" in host
+for mode in (2, 3, 4, 5, 6):
     assert f"ornament_mode == {mode}" in shader
 assert "float segmentDistance(" in shader
 assert "ornament_mode == 5 && shape_id == 14" in shader
@@ -162,6 +165,11 @@ assert "float2 outerCorner=float2(hx+gap+thickness," in shader
 assert "connectedLCornerDistance(" in shader
 assert "float innerD=abs(d+innerGap)" in shader
 assert "corners*0.99+innerRail*0.58" in shader
+assert "ornament_mode == 6 && shape_id == 1" in shader
+assert "outerRel=frac(t-phase+1.0)" in shader
+assert "innerRel=frac(t+phase-0.50+2.0)" in shader
+assert "const float span=0.6666666667" in shader
+assert "outerOffset=halfCore+max(0.0,art_gap)+outerHalf" in shader
 assert "coreA*=0.80" in shader and "outerA*=0.40" in shader
 assert "float nodeD=" not in shader
 for key in ("art_intensity", "art_gap"):

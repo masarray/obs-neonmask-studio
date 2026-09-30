@@ -10,7 +10,9 @@ enum nm_ornament {
     NM_ORNAMENT_REACTOR = 2,
     NM_ORNAMENT_TECH_HUD = 3,
     NM_ORNAMENT_STREAMER = 4,
-    NM_ORNAMENT_GAME_UI = 5
+    NM_ORNAMENT_GAME_UI = 5,
+    /* P6B append-only: two 2/3 circle rails counter-rotate around Circle. */
+    NM_ORNAMENT_DUAL_RING = 6
 };
 
 /* Signed-distance contour coordinate in turns [0,1). Starts at the top-left
