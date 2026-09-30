@@ -653,3 +653,29 @@ takes precedence and preserves the authored mask size by adding padding.
 Regression tests now use the user's large Game UI / Tech HUD screenshot values
 with `safe_fit=false` and require automatic shrink, while a separate expansion
 case requires scale 1.0 plus real top/right padding.
+
+## D4J — rotation-aware connected-L bounds and padded-pixel regression
+
+D4H/D4I made clipping protection automatic for the dedicated Tech HUD and
+Game UI outer-L recipes, but their calculator still represented ornament reach
+as one scalar margin added *after* rotating the mask AABB. The D4G connected L
+is authored in local shape axes and then rotated with the frame, so at diagonal
+angles its local `gap + thickness` projects onto both output axes. Near 45
+degrees the old formula could underestimate that reach by approximately
+`(sqrt(2)-1) * (gap+width)`.
+
+D4J keeps the legacy scalar envelope for every other recipe and adds a focused
+rotation-aware support calculation for the D4G Tech HUD/Game UI outer Ls.
+Zero-degree scenes retain the same bounds; rotated scenes now include the local
+ornament offset before output padding or in-source shrink is chosen. Requested
+ornament width is used conservatively even when the shader would clamp an
+extreme width/arm combination down.
+
+Regression coverage now includes a 45-degree large-Game-UI case for both
+automatic in-source fit and expanded output. A direct libobs GPU fixture also
+renders the user's large gap/width geometry into a padded target and requires
+the top horizontal L arm to emit alpha *above the original source origin* while
+the true gap and portrait center remain transparent. This closes the prior
+numbers-only coverage gap, but actual OBS source/filter-chain and scene
+composition acceptance remains a G4-V/G5 runtime gate.
+

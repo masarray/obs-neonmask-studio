@@ -843,6 +843,140 @@ done_game:
 }
 
 
+/* D4J regression: reproduce the large Game UI controls that previously
+ * clipped at the source top, but render into a genuinely padded output.
+ * The outer horizontal L arm must light pixels ABOVE the original input
+ * origin; a dark true-gap pixel proves this is ornament geometry rather than
+ * stretched/clamped webcam content. */
+static int verify_game_ui_expanded_top_padding(gs_effect_t *effect)
+{
+    enum { W=320, H=180, PAD_X=40, PAD_Y=52,
+           OUT_W=W+PAD_X*2, OUT_H=H+PAD_Y*2 };
+    uint8_t *pixels=bzalloc((size_t)W*H*4u);
+    if(!pixels) return 1;
+    const uint8_t *layers[]={pixels};
+    gs_texture_t *input=gs_texture_create(W,H,GS_RGBA,1,layers,0);
+    bfree(pixels);
+    gs_texrender_t *target=gs_texrender_create(GS_RGBA,GS_ZS_NONE);
+    gs_stagesurf_t *stage=gs_stagesurface_create(OUT_W,OUT_H,GS_RGBA);
+    if(!input||!target||!stage){
+        if(stage)gs_stagesurface_destroy(stage);
+        if(target)gs_texrender_destroy(target);
+        if(input)gs_texture_destroy(input);
+        fprintf(stderr,"FAIL: D4J expanded Game UI resources\n");
+        return 1;
+    }
+
+    struct vec2 dims,out_dims,origin,half,zero;
+    struct vec4 green,btop,bbottom,btail;
+    vec2_set(&dims,(float)W,(float)H);
+    vec2_set(&out_dims,(float)OUT_W,(float)OUT_H);
+    vec2_set(&origin,(float)PAD_X,(float)PAD_Y);
+    vec2_set(&half,128.0f,72.0f);
+    vec2_set(&zero,0.0f,0.0f);
+    vec4_set(&green,0.2f,1.0f,0.25f,1.0f);
+    vec4_set(&btop,-1,-1,1,-1);
+    vec4_set(&bbottom,1,.6f,-1,.6f);
+    vec4_set(&btail,.11f,.33f,.14f,.22f);
+#define P(name) gs_effect_get_param_by_name(effect,name)
+    gs_effect_set_vec2(P("uv_size"),&dims);
+    gs_effect_set_vec2(P("output_size"),&out_dims);
+    gs_effect_set_vec2(P("input_origin"),&origin);
+    gs_effect_set_vec2(P("half_size"),&half);
+    gs_effect_set_vec2(P("mask_offset"),&zero);
+    gs_effect_set_vec2(P("subject_pan"),&zero);
+    gs_effect_set_float(P("subject_zoom"),1.0f);
+    gs_effect_set_float(P("shape_rotation"),0.0f);
+    gs_effect_set_int(P("polygon_sides"),8);
+    gs_effect_set_float(P("shape_detail"),0.14f);
+    gs_effect_set_vec4(P("bubble_top"),&btop);
+    gs_effect_set_vec4(P("bubble_bottom"),&bbottom);
+    gs_effect_set_vec4(P("bubble_tail"),&btail);
+    gs_effect_set_float(P("corner_radius"),0.0f);
+    gs_effect_set_int(P("shape_id"),14);
+    gs_effect_set_float(P("border_width"),22.5f);
+    gs_effect_set_int(P("style_id"),0);
+    gs_effect_set_int(P("ornament_mode"),5);
+    gs_effect_set_float(P("art_intensity"),1.0f);
+    gs_effect_set_float(P("art_gap"),30.0f);
+    gs_effect_set_float(P("ornament_width"),38.5f);
+    gs_effect_set_float(P("ornament_length_x"),76.0f);
+    gs_effect_set_float(P("ornament_length_y"),64.0f);
+    gs_effect_set_float(P("inner_rail_width"),1.4f);
+    gs_effect_set_float(P("feather"),0.5f);
+    gs_effect_set_float(P("glow_radius"),12.0f);
+    gs_effect_set_float(P("glow_strength"),0.0f);
+    gs_effect_set_float(P("mid_glow_strength"),0.8f);
+    gs_effect_set_float(P("bloom_strength"),0.84f);
+    gs_effect_set_float(P("hotspot_strength"),0.0f);
+    gs_effect_set_float(P("hotspot_size"),0.1f);
+    gs_effect_set_vec4(P("color_a"),&green);
+    gs_effect_set_vec4(P("color_b"),&green);
+    gs_effect_set_int(P("color_mode"),1);
+    gs_effect_set_float(P("rainbow_phase"),0.0f);
+    gs_effect_set_float(P("rainbow_saturation"),0.92f);
+    gs_effect_set_float(P("rainbow_hue_offset"),0.0f);
+    gs_effect_set_float(P("rainbow_spread"),1.0f);
+    gs_effect_set_float(P("color_phase"),0.0f);
+    gs_effect_set_float(P("pulse_phase"),0.0f);
+    gs_effect_set_float(P("flow_phase"),0.0f);
+    gs_effect_set_int(P("animation_id"),0);
+    gs_effect_set_int(P("segment_count"),0);
+    gs_effect_set_int(P("border_enabled"),1);
+    gs_effect_set_int(P("glow_enabled"),0);
+    gs_effect_set_texture(P("svg_sdf"),NULL);
+    gs_effect_set_int(P("svg_ready"),0);
+    gs_effect_set_texture(P("image"),input);
+#undef P
+
+    int failed=0;
+    if(!gs_texrender_begin(target,OUT_W,OUT_H)){
+        failed=1; goto done_expanded_game;
+    }
+    const bool srgb=gs_framebuffer_srgb_enabled();
+    gs_enable_framebuffer_srgb(false);
+    gs_blend_state_push(); gs_enable_blending(false);
+    struct vec4 clear; vec4_zero(&clear);
+    gs_clear(GS_CLEAR_COLOR,&clear,0,0);
+    gs_ortho(0,(float)OUT_W,0,(float)OUT_H,-100,100);
+    gs_matrix_push(); gs_matrix_identity();
+    const enum gs_cull_mode cull=gs_get_cull_mode();
+    gs_set_cull_mode(GS_NEITHER);
+    while(gs_effect_loop(effect,"Draw"))
+        gs_draw_sprite(input,0,OUT_W,OUT_H);
+    gs_set_cull_mode(cull);
+    gs_matrix_pop();
+    gs_blend_state_pop();
+    gs_enable_framebuffer_srgb(srgb);
+    gs_texrender_end(target);
+
+    gs_stage_texture(stage,gs_texrender_get_texture(target));
+    uint8_t *mapped=NULL; uint32_t stride=0;
+    if(!gs_stagesurface_map(stage,&mapped,&stride)){
+        failed=1; goto done_expanded_game;
+    }
+
+    /* Original input starts at y=52. The top L sample at y=12 is therefore
+     * unquestionably in added output padding. y=55 lies in the authored
+     * 30px negative-space gap between that L and the source frame. */
+    const uint8_t *top_l=mapped+12u*stride+350u*4u;
+    const uint8_t *true_gap=mapped+55u*stride+350u*4u;
+    const uint8_t *center=mapped+142u*stride+200u*4u;
+    if(top_l[3]<190 || true_gap[3]>15 || center[3]>3){
+        fprintf(stderr,
+                "FAIL: D4J expanded top ornament alpha=%u gap=%u center=%u\n",
+                top_l[3],true_gap[3],center[3]);
+        failed=1;
+    }
+    gs_stagesurface_unmap(stage);
+
+done_expanded_game:
+    gs_stagesurface_destroy(stage);
+    gs_texrender_destroy(target);
+    gs_texture_destroy(input);
+    return failed;
+}
+
 /* D4D preview-scale GPU gate: one full spectrum is distributed continuously
  * around the rounded perimeter. The frame itself does not rotate and the
  * transparent portrait center remains untouched. */
@@ -1060,6 +1194,7 @@ int main(int argc, char **argv)
                 missing += verify_pixel_fixture(effect, variant);
             missing += verify_tech_hud_preview_scale(effect);
             missing += verify_game_ui_preview_scale(effect);
+            missing += verify_game_ui_expanded_top_padding(effect);
             missing += verify_rainbow_preview_scale(effect);
         }
         gs_effect_destroy(effect);
@@ -1068,6 +1203,6 @@ int main(int argc, char **argv)
     bfree(errors);
     obs_shutdown();
     if (missing) return 1;
-    puts("PASS: libobs alpha/framing/light + SVG + D3 + freeform Bubble + Tech HUD + Game UI + Rainbow GPU fixtures (partial G4)");
+    puts("PASS: libobs alpha/framing/light + SVG + D3 + freeform Bubble + Tech HUD + Game UI + expanded outer-L + Rainbow GPU fixtures (partial G4)");
     return 0;
 }
