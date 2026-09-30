@@ -182,6 +182,40 @@ int main(void)
     check("D4I expansion preserves authored Tech HUD mask size",
           nm_safe_fit_calculate(&c,640,480,&f) && f.fits &&
           near(f.scale,1.0f) && f.pad_top>0 && f.pad_right>0);
+
+    /* D4J: connected L geometry is placed in local shape coordinates before
+     * shape rotation. At 45 degrees its local gap+thickness contributes on
+     * both output axes; the old scalar post-rotation envelope under-sized
+     * this case by roughly (sqrt(2)-1)*(gap+width). */
+    nm_config_defaults(&c);
+    c.safe_fit=false;
+    c.mask_width=0.80f; c.mask_height=0.80f;
+    c.shape_id=NM_SHAPE_GAME_UI;
+    c.ornament_mode=NM_ORNAMENT_GAME_UI;
+    c.art_intensity=1.0f;
+    c.art_gap=30.0f; c.ornament_width_px=38.5f;
+    c.border_px=22.5f; c.show_glow=false;
+    c.shape_rotation_deg=45.0f;
+    check("D4J rotated Game UI auto-fit includes local outer-L reach",
+          nm_safe_fit_calculate(&c,640,480,&f) && f.fits &&
+          f.scale<1.0f && f.scale>0.0f &&
+          0.70710679f*f.half_width + 0.70710679f*f.half_height +
+          1.41421356f*(c.art_gap+c.ornament_width_px) + 2.0f <=
+          240.01f);
+
+    c.expand_canvas=true;
+    check("D4J rotated Game UI expansion pads the real connected-L AABB",
+          nm_safe_fit_calculate(&c,640,480,&f) && f.fits &&
+          near(f.scale,1.0f) &&
+          320.0f + 0.70710679f*f.half_width +
+          0.70710679f*f.half_height +
+          1.41421356f*(c.art_gap+c.ornament_width_px) + 2.0f <=
+          (float)f.output_width + 0.01f &&
+          240.0f + 0.70710679f*f.half_width +
+          0.70710679f*f.half_height +
+          1.41421356f*(c.art_gap+c.ornament_width_px) + 2.0f <=
+          (float)f.output_height + 0.01f &&
+          f.pad_top>=176u && f.pad_right>=96u);
     /* D3 gate: deterministic coverage of input/output dimensions, asymmetric
      * offsets and rotated AABBs over landscape, square and portrait captures.
      * This tests geometry, not OBS scene-item transform semantics. */
