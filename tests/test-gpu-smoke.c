@@ -1084,7 +1084,14 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
     for(int frame=0;frame<2;++frame){
         gs_effect_set_float(gs_effect_get_param_by_name(effect,"flow_phase"),
                             frame==0 ? 0.0f : 0.25f);
-        if(!gs_texrender_begin(target,W,H)){failed=1;break;}
+        /* libobs texrender objects are single-use until reset. Reusing the
+         * first frame's target without this makes the second begin fail before
+         * any P6B pixels are exercised. */
+        gs_texrender_reset(target);
+        if(!gs_texrender_begin(target,W,H)){
+            fprintf(stderr,"FAIL: P6B texrender begin frame=%d\n",frame);
+            failed=1; break;
+        }
         const bool srgb=gs_framebuffer_srgb_enabled();
         gs_enable_framebuffer_srgb(false);
         gs_blend_state_push(); gs_enable_blending(false);
