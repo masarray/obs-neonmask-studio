@@ -65,8 +65,20 @@ bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
     out->fits = true;
     out->output_width = width;
     out->output_height = height;
-    if (!cfg->safe_fit && !cfg->expand_canvas)
-        return true; /* All saved legacy scenes retain their exact dimensions. */
+
+    /* D4I: dedicated Tech HUD / Game UI outer-L recipes are intrinsically
+     * outside the mask silhouette. If expansion is off, clipping protection
+     * is a runtime invariant even for old/custom scenes that never re-applied
+     * a preset after D4H. Other shapes keep the legacy safe_fit opt-in. */
+    const bool outer_authored =
+        cfg->art_intensity > 0.0f &&
+        ((cfg->shape_id == NM_SHAPE_TECH_HUD &&
+          cfg->ornament_mode == NM_ORNAMENT_TECH_HUD) ||
+         (cfg->shape_id == NM_SHAPE_GAME_UI &&
+          cfg->ornament_mode == NM_ORNAMENT_GAME_UI));
+    const bool fit_inside_source = cfg->safe_fit || outer_authored;
+    if (!fit_inside_source && !cfg->expand_canvas)
+        return true; /* Legacy/non-authored scenes retain exact dimensions. */
 
     const float envelope = nm_light_envelope(cfg);
     out->envelope_px = envelope;
