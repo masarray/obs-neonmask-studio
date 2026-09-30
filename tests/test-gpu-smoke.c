@@ -1008,11 +1008,19 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
     const uint8_t *layers[]={pixels};
     gs_texture_t *input=gs_texture_create(W,H,GS_RGBA,1,layers,0);
     bfree(pixels);
-    gs_texrender_t *target=gs_texrender_create(GS_RGBA,GS_ZS_NONE);
-    gs_stagesurf_t *stage=gs_stagesurface_create(W,H,GS_RGBA);
-    if(!input||!target||!stage){
-        if(stage)gs_stagesurface_destroy(stage);
-        if(target)gs_texrender_destroy(target);
+    gs_texrender_t *targets[2]={
+        gs_texrender_create(GS_RGBA,GS_ZS_NONE),
+        gs_texrender_create(GS_RGBA,GS_ZS_NONE)
+    };
+    gs_stagesurf_t *stages[2]={
+        gs_stagesurface_create(W,H,GS_RGBA),
+        gs_stagesurface_create(W,H,GS_RGBA)
+    };
+    if(!input||!targets[0]||!targets[1]||!stages[0]||!stages[1]){
+        for(int i=0;i<2;++i){
+            if(stages[i])gs_stagesurface_destroy(stages[i]);
+            if(targets[i])gs_texrender_destroy(targets[i]);
+        }
         if(input)gs_texture_destroy(input);
         fprintf(stderr,"FAIL: P6B dual-ring resources\n");
         return 1;
@@ -1082,12 +1090,13 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
     unsigned inner_hold[2]={0},inner_arrive[2]={0},center_a[2]={0};
     int failed=0;
     for(int frame=0;frame<2;++frame){
+        gs_texrender_t *target=targets[frame];
+        gs_stagesurf_t *stage=stages[frame];
         gs_effect_set_float(gs_effect_get_param_by_name(effect,"flow_phase"),
                             frame==0 ? 0.0f : 0.25f);
-        /* libobs texrender objects are single-use until reset. Reusing the
-         * first frame's target without this makes the second begin fail before
-         * any P6B pixels are exercised. */
-        gs_texrender_reset(target);
+        /* Each deterministic snapshot owns its render/readback target. This
+         * avoids backend-dependent staging history from masquerading as
+         * animation state in a two-frame regression. */
         if(!gs_texrender_begin(target,W,H)){
             fprintf(stderr,"FAIL: P6B texrender begin frame=%d\n",frame);
             failed=1; break;
@@ -1136,8 +1145,10 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
         failed=1;
     }
 
-    gs_stagesurface_destroy(stage);
-    gs_texrender_destroy(target);
+    for(int i=0;i<2;++i){
+        gs_stagesurface_destroy(stages[i]);
+        gs_texrender_destroy(targets[i]);
+    }
     gs_texture_destroy(input);
     return failed;
 }
