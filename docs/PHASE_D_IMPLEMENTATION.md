@@ -629,3 +629,27 @@ adds output padding (with the documented scene-item +left/+top shift).
 Pure-C regression cases use the real screenshot-scale values (Game UI
 30/38.5/22.5 and Tech HUD 31/46.5/19) and require the resulting
 half-size + D4F/D4G ornament envelope to remain within a 640x480 source.
+
+## D4I — automatic authored-ornament fit invariant
+
+A second real OBS screenshot showed D4H did not solve an already-custom Game
+UI scene: the top L was still clipped. Root cause: D4H only enabled `safe_fit`
+inside the **preset callback**. Existing/custom scenes that did not re-apply a
+preset kept `safe_fit=false`, so large gap/width edits continued to render
+against the original source bounds and the top horizontal arm disappeared.
+
+D4I moves the protection into `nm_safe_fit_calculate` itself. Whenever a
+visible dedicated Tech HUD or Game UI outer-ornament recipe is active and
+expanded output is off, the calculator automatically performs in-source fit.
+It only shrinks when the real envelope would otherwise overflow, so ordinary
+settings are unchanged. This applies to old scenes, custom scenes and live
+slider edits without requiring a preset re-apply.
+
+The legacy Safe Fit checkbox keeps its original semantics for all other shapes.
+For dedicated outer-L recipes it is hidden because clipping protection is now a
+visual invariant, not an optional preset side effect. Expanded output still
+takes precedence and preserves the authored mask size by adding padding.
+
+Regression tests now use the user's large Game UI / Tech HUD screenshot values
+with `safe_fit=false` and require automatic shrink, while a separate expansion
+case requires scale 1.0 plus real top/right padding.
