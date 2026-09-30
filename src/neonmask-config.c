@@ -167,13 +167,14 @@ bool nm_config_apply_preset(nm_config *cfg, int preset_id)
     cfg->animation_id = preset.animation;
     cfg->primary = preset.primary | 0xFF000000u;
     cfg->secondary = preset.secondary | 0xFF000000u;
-    /* Named presets retain their authored two-color identity. Rainbow is an
-     * explicit user customization and never leaks across preset selection. */
-    cfg->color_mode = NM_COLOR_DUAL;
-    cfg->rainbow_speed = 0.65f;
-    cfg->rainbow_saturation = 0.92f;
-    cfg->rainbow_hue_offset = 0.0f;
-    cfg->rainbow_spread = 1.0f;
+    /* P6A: color is part of the authored preset recipe. IDs 1..10 store the
+     * exact legacy Dual/default values, while appended visual presets may
+     * explicitly opt into Rainbow without numeric-ID special cases. */
+    cfg->color_mode = preset.color_mode;
+    cfg->rainbow_speed = (float)preset.rainbow_speed;
+    cfg->rainbow_saturation = (float)preset.rainbow_saturation;
+    cfg->rainbow_hue_offset = (float)preset.rainbow_hue_offset;
+    cfg->rainbow_spread = (float)preset.rainbow_spread;
     cfg->scale = (float)preset.scale;
     cfg->roundness = (float)preset.roundness;
     cfg->shape_detail = (float)preset.shape_detail;

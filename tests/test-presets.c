@@ -16,9 +16,9 @@ int main(void)
     nm_preset p = {0};
     check("custom preset invalid", !nm_get_preset(0, &p));
     check("negative preset invalid", !nm_get_preset(-1, &p));
-    check("unknown preset invalid", !nm_get_preset(11, &p));
+    check("unknown preset invalid", !nm_get_preset(12, &p));
     check("null output invalid", !nm_get_preset(1, NULL));
-    for (int id = 1; id <= 10; ++id) {
+    for (int id = 1; id <= 11; ++id) {
         check("known preset", nm_get_preset(id, &p));
         check("valid shape", p.shape >= NM_SHAPE_ROUNDED && p.shape <= NM_SHAPE_GAME_UI);
         check("valid animation", p.animation >= NM_ANIM_STATIC && p.animation <= NM_ANIM_FLOW);
@@ -44,6 +44,11 @@ int main(void)
         check("glow enabled", p.glow_enabled);
         check("segments range", p.segments >= 0 && p.segments <= 48);
         check("border style range", p.style >= NM_STYLE_CLASSIC && p.style <= NM_STYLE_MINIMAL);
+        check("color mode range", p.color_mode >= NM_COLOR_SOLID && p.color_mode <= NM_COLOR_RAINBOW);
+        check("rainbow speed range", p.rainbow_speed >= 0.0 && p.rainbow_speed <= 5.0);
+        check("rainbow saturation range", p.rainbow_saturation >= 0.0 && p.rainbow_saturation <= 1.0);
+        check("rainbow hue range", p.rainbow_hue_offset >= 0.0 && p.rainbow_hue_offset <= 1.0);
+        check("rainbow spread range", p.rainbow_spread >= 0.25 && p.rainbow_spread <= 3.0);
     }
     nm_get_preset(1, &p);
     check("Cyber has authored ornament", p.ornament_mode == NM_ORNAMENT_CYBER);
@@ -83,7 +88,16 @@ int main(void)
           p.border_width >= 4.0 && p.art_gap >= 12.0 &&
           p.ornament_width >= 14.0 && p.inner_rail_width <= 2.0 &&
           p.art_intensity >= 0.99);
+    nm_get_preset(11, &p);
+    check("P6A Gradient Rainbow uses rounded hero frame",
+          p.shape == NM_SHAPE_ROUNDED && p.ornament_mode == NM_ORNAMENT_NONE);
+    check("P6A Gradient Rainbow owns Rainbow color recipe",
+          p.color_mode == NM_COLOR_RAINBOW &&
+          p.rainbow_speed > 0.0 && p.rainbow_saturation >= 0.90 &&
+          p.rainbow_spread > 0.80 && p.rainbow_spread < 1.20);
+    check("P6A Gradient Rainbow moves hue without white Flow comet",
+          p.animation == NM_ANIM_FLOW && p.hotspot_strength == 0.0);
     if (failures) return 1;
-    puts("PASS: nine legacy preset IDs plus appended Game UI preset 10");
+    puts("PASS: stable preset IDs through P6A Gradient Rainbow preset 11");
     return 0;
 }

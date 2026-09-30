@@ -241,6 +241,20 @@ int main(void)
           fabsf(cfg.art_gap-14.0f)<0.0001f &&
           fabsf(cfg.ornament_width_px-16.0f)<0.0001f &&
           fabsf(cfg.inner_rail_width_px-1.4f)<0.0001f);
+    check("P6A Gradient Rainbow preset selects first-class rainbow recipe",
+          nm_config_apply_preset(&cfg,11) &&
+          cfg.shape_id==NM_SHAPE_ROUNDED &&
+          cfg.color_mode==NM_COLOR_RAINBOW &&
+          cfg.animation_id==NM_ANIM_FLOW &&
+          fabsf(cfg.rainbow_speed-0.78f)<0.0001f &&
+          fabsf(cfg.rainbow_saturation-0.96f)<0.0001f &&
+          fabsf(cfg.rainbow_spread-1.0f)<0.0001f &&
+          fabsf(cfg.hotspot_strength)<0.0001f);
+    check("P6A applying legacy preset after Rainbow restores Dual recipe",
+          nm_config_apply_preset(&cfg,2) &&
+          cfg.color_mode==NM_COLOR_DUAL &&
+          fabsf(cfg.rainbow_speed-0.65f)<0.0001f &&
+          fabsf(cfg.rainbow_saturation-0.92f)<0.0001f);
     check("legacy schema supported", nm_config_schema_supported(0));
     check("current schema supported", nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION));
     check("legacy v1 schema supported", nm_config_schema_supported(1));

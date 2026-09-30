@@ -73,6 +73,14 @@ typedef struct nm_preset {
     double ornament_length_x;
     double ornament_length_y;
     double inner_rail_width;
+    /* P6A append-only color recipe. Existing preset IDs explicitly store the
+     * legacy Dual defaults; new visual presets can opt into Rainbow without
+     * special-casing their numeric ID in config application. */
+    int color_mode;
+    double rainbow_speed;
+    double rainbow_saturation;
+    double rainbow_hue_offset;
+    double rainbow_spread;
 } nm_preset;
 
 /* Preset IDs stay stable. Preset 5 keeps the Tech HUD identity but now
