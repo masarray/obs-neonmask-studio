@@ -42,12 +42,12 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                         (variant == 3 || variant == 4 || variant == 18 ||
                          variant == 19 || variant == 21 || variant == 22 ||
                          variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                          variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 || variant == 41 || variant == 43 ? 255 : 0);
+                          variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 || variant == 41 || variant == 43 || variant == 45 || variant == 46 ? 255 : 0);
     const uint8_t alpha = variant == 0 ? 255 : variant == 1 ? 128 :
                           (variant == 3 || variant == 4 || variant == 18 ||
                            variant == 19 || variant == 21 || variant == 22 ||
                            variant == 24 || variant == 25 || variant == 27 || variant == 28 ||
-                            variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 || variant == 41 || variant == 43 ? 255 : 0);
+                            variant == 30 || variant == 32 || variant == 34 || variant == 35 || variant == 37 || variant == 38 || variant == 39 || variant == 41 || variant == 43 || variant == 45 || variant == 46 ? 255 : 0);
     for (size_t i = 0; i < W * H; ++i) {
         pixels[4 * i + 0] = red;   /* premultiplied red */
         pixels[4 * i + 1] = 0;
@@ -125,7 +125,8 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "subject_zoom"), 1.0f);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_rotation"), 0.0f);
     gs_effect_set_int(gs_effect_get_param_by_name(effect, "polygon_sides"), 8);
-    gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_detail"), 0.23f);
+    gs_effect_set_float(gs_effect_get_param_by_name(effect, "shape_detail"),
+                        variant == 45 ? 0.70f : variant == 46 ? 0.35f : 0.23f);
     gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "bubble_top"), &bubble_top);
     gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "bubble_bottom"), &bubble_bottom);
     gs_effect_set_vec4(gs_effect_get_param_by_name(effect, "bubble_tail"), &bubble_tail);
@@ -141,7 +142,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
                       variant == 40 ? 0 :
                       variant == 30 || variant == 31 ? 10 :
                        variant == 32 || variant == 33 ? 11 :
-                      variant == 41 || variant == 42 ? 13 :
+                      variant == 41 || variant == 42 || variant == 45 || variant == 46 ? 13 :
                       variant == 43 || variant == 44 ? 14 :
                        variant == 21 || variant == 23 || (variant >= 24 && variant <= 29) ? 9 : 0);
     gs_effect_set_float(gs_effect_get_param_by_name(effect, "border_width"), 4.0f);
@@ -276,6 +277,7 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
     const uint8_t *tech_tr_bracket = mapped + 3u * stride + 61u * 4u;
     const uint8_t *tech_bl_bracket = mapped + 61u * stride + 3u * 4u;
     const uint8_t *tech_diag_overlay = mapped + 9u * stride + 9u * 4u;
+    const uint8_t *tech_detail_probe = mapped + 12u * stride + 12u * 4u;
     /* Sample the horizontal arms rather than the exact render-target corner;
      * the latter is intentionally clipped by the tiny 64x64 fixture edge. */
     const uint8_t *game_corner_tl = mapped + 3u * stride + 13u * 4u;
@@ -569,6 +571,22 @@ static int verify_pixel_fixture(gs_effect_t *effect, int variant)
             fprintf(stderr,"FAIL: Game UI ornament center=%u inner=%u corners=%u/%u/%u/%u\n",
                     center[3],game_inner_top[3],game_corner_tl[3],
                     game_corner_tr[3],game_corner_br[3],game_corner_bl[3]);
+            failed=1;
+        }
+    }
+
+    else if(variant==45) {
+        if(tech_detail_probe[3]>3) {
+            fprintf(stderr,"FAIL: D4K Tech HUD 0.70 detail did not deepen cut alpha=%u\n",
+                    tech_detail_probe[3]);
+            failed=1;
+        }
+    }
+
+    else if(variant==46) {
+        if(tech_detail_probe[0]<240 || tech_detail_probe[3]<245) {
+            fprintf(stderr,"FAIL: D4K legacy Tech HUD 0.35 geometry drifted alpha=%u\n",
+                    tech_detail_probe[3]);
             failed=1;
         }
     }
@@ -1190,7 +1208,7 @@ int main(int argc, char **argv)
             }
         }
         if (!missing) {
-            for (int variant = 0; variant < 45; ++variant)
+            for (int variant = 0; variant < 47; ++variant)
                 missing += verify_pixel_fixture(effect, variant);
             missing += verify_tech_hud_preview_scale(effect);
             missing += verify_game_ui_preview_scale(effect);
