@@ -296,10 +296,23 @@ static float hud_panel(nm_p2 p,nm_p2 b,float detail)
 /* D4B Tech HUD: opposite chamfers are part of source coverage.
  * The remaining top-right / bottom-left square corners are reserved for
  * external luminous L-brackets in the shader ornament layer. */
+static float tech_hud_cut(nm_p2 b,float detail)
+{
+    const float m=fminf(b.x,b.y);
+    const float legacy=fminf(fmaxf(detail,0.08f),0.35f);
+    float ratio=fminf(legacy*1.10f,0.20f);
+    /* Preserve every <=0.35 scene exactly. The new upper half deliberately
+     * resumes from the old 20% plateau and reaches a bounded 45% chamfer. */
+    if(detail>0.35f) {
+        const float t=nm_clamp((detail-0.35f)/0.35f,0.0f,1.0f);
+        ratio=0.20f+0.25f*t;
+    }
+    return fmaxf(2.0f,m*ratio);
+}
+
 static float tech_hud(nm_p2 p,nm_p2 b,float detail)
 {
-    const float cut=fminf(fmaxf(2.0f,fminf(b.x,b.y)*detail*1.10f),
-                          fminf(b.x,b.y)*0.20f);
+    const float cut=tech_hud_cut(b,detail);
     const nm_p2 v[6]={
         {-b.x+cut,-b.y}, {b.x,-b.y}, {b.x,b.y-cut},
         {b.x-cut,b.y}, {-b.x,b.y}, {-b.x,-b.y+cut}
@@ -364,7 +377,8 @@ float nm_authored_shape_distance(int shape_id,float x,float y,
     if (!isfinite(x)||!isfinite(y)||!isfinite(half_width)||
         !isfinite(half_height)||!isfinite(radius)||!isfinite(detail)||
         half_width<=0||half_height<=0) return NAN;
-    detail=nm_clamp(detail,0.08f,0.35f);
+    detail=nm_clamp(detail,0.08f,
+                    shape_id==NM_SHAPE_TECH_HUD ? 0.70f : 0.35f);
     const nm_p2 p={x,y},b={half_width,half_height};
     if(shape_id==NM_SHAPE_CHAT_BUBBLE) {
         const float bottom=1.0f-1.8f*detail;

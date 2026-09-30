@@ -189,6 +189,15 @@ int main(void)
     check("Tech HUD detail visibly changes chamfer",
           nm_authored_shape_distance(tech,-22.5f,-22.5f,bx,by,r,0.08f)<0.0f &&
           nm_authored_shape_distance(tech,-22.5f,-22.5f,bx,by,r,0.35f)>0.0f);
+    check("D4K legacy Tech HUD geometry is unchanged through 0.35",
+          nm_authored_shape_distance(tech,-20.0f,-20.0f,bx,by,r,0.35f)<0.0f);
+    check("D4K extended 0.70 Tech HUD cut reaches deeper",
+          nm_authored_shape_distance(tech,-20.0f,-20.0f,bx,by,r,0.70f)>0.0f);
+    check("D4K non-Tech authored shapes retain legacy effective cap",
+          fabsf(nm_authored_shape_distance(NM_SHAPE_HUD_PANEL,20.0f,-20.0f,
+                                           bx,by,r,0.70f)-
+                nm_authored_shape_distance(NM_SHAPE_HUD_PANEL,20.0f,-20.0f,
+                                           bx,by,r,0.35f))<0.0001f);
 
     /* D4C.1: clean rectangular source coverage; gaming identity lives in the
      * outer brackets and one inset rail rather than webcam corner clipping. */

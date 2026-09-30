@@ -155,6 +155,12 @@ int main(void)
     cfg.shape_id = NM_SHAPE_TECH_HUD;
     nm_config_validate(&cfg);
     check("Tech HUD advanced shape ID accepted",cfg.shape_id == NM_SHAPE_TECH_HUD);
+    cfg.shape_detail = 0.70f;
+    nm_config_validate(&cfg);
+    near("D4K Tech HUD persisted detail accepts 0.70",cfg.shape_detail,0.70f);
+    cfg.shape_detail = 9.0f;
+    nm_config_validate(&cfg);
+    near("D4K detail hard cap remains bounded",cfg.shape_detail,0.70f);
     cfg.shape_id = NM_SHAPE_GAME_UI;
     cfg.ornament_mode = NM_ORNAMENT_GAME_UI;
     nm_config_validate(&cfg);

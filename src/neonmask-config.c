@@ -93,7 +93,7 @@ void nm_config_validate(nm_config *cfg)
     if (cfg->polygon_sides < 5) cfg->polygon_sides = 5;
     if (cfg->polygon_sides > 12) cfg->polygon_sides = 12;
     cfg->roundness = nm_clamp(cfg->roundness, 0.0f, 1.0f);
-    cfg->shape_detail = nm_clamp(cfg->shape_detail, 0.08f, 0.35f);
+    cfg->shape_detail = nm_clamp(cfg->shape_detail, 0.08f, 0.70f);
     cfg->bubble_left_inset = nm_clamp(cfg->bubble_left_inset, 0.0f, 0.25f);
     cfg->bubble_right_inset = nm_clamp(cfg->bubble_right_inset, 0.0f, 0.25f);
     cfg->bubble_top_inset = nm_clamp(cfg->bubble_top_inset, 0.0f, 0.25f);

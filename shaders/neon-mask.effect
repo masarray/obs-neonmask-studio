@@ -483,10 +483,23 @@ float hudPanelDistance(float2 p,float2 b,float detail)
 // D4B: a dedicated HUD mask, not a rectangle with decoration. Top-left and
 // bottom-right are diagonal cuts; top-right and bottom-left stay square so
 // external L-brackets have deliberate anchor corners.
+float techHudCutAmount(float2 b,float detail)
+{
+    float m=min(b.x,b.y);
+    float legacy=min(max(detail,0.08),0.35);
+    float ratio=min(legacy*1.10,0.20);
+    // D4K preserves every <=0.35 frame exactly, then extends the old
+    // plateau smoothly to a bounded 45% cut at detail 0.70.
+    if(detail>0.35) {
+        float t=saturate((detail-0.35)/0.35);
+        ratio=0.20+0.25*t;
+    }
+    return max(2.0,m*ratio);
+}
+
 float techHudDistance(float2 p,float2 b,float detail)
 {
-    float cut=min(max(2.0,min(b.x,b.y)*detail*1.10),
-                  min(b.x,b.y)*0.20);
+    float cut=techHudCutAmount(b,detail);
     float2 v0=float2(-b.x+cut,-b.y);
     float2 v1=float2( b.x,-b.y);
     float2 v2=float2( b.x, b.y-cut);
@@ -575,13 +588,13 @@ float shapeDistance(float2 p)
                                   corner_radius);
     if (shape_id == 9)
         return angledCardDistance(rotatePoint(p,shape_rotation),half_size,
-                                  shape_detail,corner_radius);
+                                  min(shape_detail,0.35),corner_radius);
     if (shape_id == 10)
         return hudPanelDistance(rotatePoint(p,shape_rotation),half_size,
-                                shape_detail);
+                                min(shape_detail,0.35));
     if (shape_id == 11)
         return squircleDistance(rotatePoint(p,shape_rotation),half_size,
-                                shape_detail);
+                                min(shape_detail,0.35));
     if (shape_id == 13)
         return techHudDistance(rotatePoint(p,shape_rotation),half_size,
                                shape_detail);
@@ -938,8 +951,7 @@ float4 drawNeonMask(VertData v_in) : TARGET
         if (ornament_mode == 3 && shape_id == 13 && art_intensity > 0.0) {
             float2 q=rotatePoint(p,shape_rotation);
             float hx=half_size.x,hy=half_size.y;
-            float cut=min(max(2.0,min(hx,hy)*shape_detail*1.10),
-                          min(hx,hy)*0.20);
+            float cut=techHudCutAmount(float2(hx,hy),shape_detail);
             float gap=max(0.0,art_gap);
             float armX=min(max(8.0,ornament_length_x),max(8.0,hx*0.95));
             float armY=min(max(8.0,ornament_length_y),max(8.0,hy*0.95));
@@ -999,7 +1011,7 @@ float4 drawNeonMask(VertData v_in) : TARGET
         if (ornament_mode == 3 && shape_id == 10 && art_intensity > 0.0) {
             float2 q = rotatePoint(p,shape_rotation);
             float cut = min(max(2.0,min(half_size.x,half_size.y)*
-                                shape_detail*1.8),
+                                min(shape_detail,0.35)*1.8),
                             min(half_size.x,half_size.y)*0.45);
             float railGap = halfCore+art_gap+3.0;
             float rail = 1.0-smoothstep(0.25,1.35,abs(d-railGap));
