@@ -922,7 +922,12 @@ float4 drawNeonMask(VertData v_in) : TARGET
         // The missing 120-degree sectors are intentionally broad negative
         // space; a short angular fade gives premium luminous arc ends.
         if (ornament_mode == 6 && shape_id == 1 && art_intensity > 0.0) {
-            float t=frac(angle/TAU+1.0);
+            // atan2(0,0) is backend-undefined. A ring gate must never allow
+            // that NaN to become opaque at the exact mask center.
+            float2 ringAnglePoint=p;
+            if(dot(ringAnglePoint,ringAnglePoint)<0.0001)
+                ringAnglePoint=float2(1.0,0.0);
+            float t=frac(atan2(ringAnglePoint.y,ringAnglePoint.x)/TAU+1.0);
             float phase=animation_id == 2 ? flow_phase : 0.0;
             const float span=0.6666666667;
             const float edge=0.018;
