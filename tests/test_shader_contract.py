@@ -8,7 +8,7 @@ host = (ROOT / "src" / "neonmask-filter.c").read_text(encoding="utf-8")
 safe_fit = (ROOT / "src" / "neonmask-safe-fit.c").read_text(encoding="utf-8")
 shader = (ROOT / "shaders" / "neon-mask.effect").read_text(encoding="utf-8")
 names = re.findall(r'NM_PARAM\([^,]+,\s*"([a-z_]+)"\)', host)
-assert len(names) == len(set(names)) == 47, f"Expected 47 unique bindings: {names!r}"
+assert len(names) == len(set(names)) == 49, f"Expected 49 unique bindings: {names!r}"
 uniforms = {name: kind for kind, name in re.findall(r"\buniform\s+(float\d?|int|texture2d|float4x4)\s+([A-Za-z_][A-Za-z0-9_]*)\s*;", shader)}
 assert len(uniforms) == 49, f"Unexpected number of shader uniforms: {uniforms}"
 assert set(names) == set(uniforms) - {"ViewProj", "image"}, (
