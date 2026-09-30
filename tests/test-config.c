@@ -255,17 +255,18 @@ int main(void)
           cfg.color_mode==NM_COLOR_DUAL &&
           fabsf(cfg.rainbow_speed-0.65f)<0.0001f &&
           fabsf(cfg.rainbow_saturation-0.92f)<0.0001f);
-    check("P6C Rotating Ring preset selects polished counter-orbit state",
+    check("P6D Rotating Ring preset selects external premium orbit state",
           nm_config_apply_preset(&cfg,12) &&
           cfg.shape_id==NM_SHAPE_CIRCLE &&
           cfg.ornament_mode==NM_ORNAMENT_DUAL_RING &&
           cfg.animation_id==NM_ANIM_FLOW &&
-          fabsf(cfg.border_px-1.6f)<0.0001f &&
-          fabsf(cfg.art_gap-11.0f)<0.0001f &&
-          fabsf(cfg.ornament_width_px-10.0f)<0.0001f &&
-          fabsf(cfg.inner_rail_width_px-7.0f)<0.0001f &&
-          fabsf(cfg.glow_px-20.0f)<0.0001f &&
-          fabsf(cfg.glow_amount-0.86f)<0.0001f);
+          fabsf(cfg.border_px-0.9f)<0.0001f &&
+          fabsf(cfg.art_gap-8.0f)<0.0001f &&
+          fabsf(cfg.ornament_width_px-13.0f)<0.0001f &&
+          fabsf(cfg.inner_rail_width_px-10.0f)<0.0001f &&
+          fabsf(cfg.glow_px-22.0f)<0.0001f &&
+          fabsf(cfg.glow_amount-0.90f)<0.0001f &&
+          fabsf(cfg.speed-0.60f)<0.0001f);
     check("legacy schema supported", nm_config_schema_supported(0));
     check("current schema supported", nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION));
     check("legacy v1 schema supported", nm_config_schema_supported(1));
