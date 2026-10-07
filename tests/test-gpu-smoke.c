@@ -1004,10 +1004,11 @@ static unsigned sample_alpha_polar(const uint8_t *mapped, uint32_t stride,
     return (unsigned)(mapped+(size_t)y*stride+(size_t)x*4u)[3];
 }
 
-/* P6F resolution-invariant orbit gate. Host-side tests prove percentage
- * conversion; this live GPU fixture renders the 100px-radius canonical case
- * (14/10/11/20%) and requires thick body, dark gaps, tapered tips and opposite
- * motion. Glow is disabled so geometry itself must satisfy every sample. */
+/* P6G distinct counter-orbit gate. Each object spans 44% of a circle (< 1/2),
+ * starts on the opposite side, and moves in the opposite direction. The GPU
+ * fixture requires large angular negative space, thick radial body, tapered
+ * points and directional arrival/departure. Glow is disabled so geometry
+ * itself must satisfy every sample. */
 static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
 {
     enum { W=320, H=320 };
@@ -1030,7 +1031,7 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
             if(targets[i])gs_texrender_destroy(targets[i]);
         }
         if(input)gs_texture_destroy(input);
-        fprintf(stderr,"FAIL: P6F dual-ring resources\n");
+        fprintf(stderr,"FAIL: P6G dual-ring resources\n");
         return 1;
     }
 
@@ -1096,10 +1097,11 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
     gs_effect_set_texture(P("image"),input);
 #undef P
 
-    unsigned outer_start[2]={0},outer_arrive[2]={0};
-    unsigned inner_hold[2]={0},inner_arrive[2]={0},center_a[2]={0};
+    unsigned outer_leave[2]={0},outer_arrive[2]={0};
+    unsigned inner_leave[2]={0},inner_arrive[2]={0},center_a[2]={0};
     unsigned outer_inner_edge=0,outer_outer_edge=0,orbit_gap=0;
     unsigned base_circle=0,locator_gap=0,inner_inner_edge=0,inner_outer_edge=0;
+    unsigned outer_angle_gap=0,inner_angle_gap=0;
     unsigned outer_before=0,outer_tip=0,outer_shoulder=0,outer_body=0;
     unsigned inner_before=0,inner_tip=0,inner_shoulder=0,inner_body=0;
     int failed=0;
@@ -1107,7 +1109,7 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
         gs_texrender_t *target=targets[frame];
         gs_stagesurf_t *stage=stages[frame];
         gs_effect_set_float(gs_effect_get_param_by_name(effect,"flow_phase"),
-                            frame==0 ? 0.0f : 0.25f);
+                            frame==0 ? 0.0f : 0.125f);
         /* Standalone gs_effect_loop does not model the filter's per-frame
          * source binding for us. Re-bind the transparent source on every
          * deterministic snapshot just as production nm_render does. */
@@ -1116,7 +1118,7 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
          * avoids backend-dependent staging history from masquerading as
          * animation state in a two-frame regression. */
         if(!gs_texrender_begin(target,W,H)){
-            fprintf(stderr,"FAIL: P6F texrender begin frame=%d\n",frame);
+            fprintf(stderr,"FAIL: P6G texrender begin frame=%d\n",frame);
             failed=1; break;
         }
         const bool srgb=gs_framebuffer_srgb_enabled();
@@ -1138,62 +1140,70 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
         gs_stage_texture(stage,gs_texrender_get_texture(target));
         uint8_t *mapped=NULL; uint32_t stride=0;
         if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;break;}
-        /* P6F 100px-radius premium geometry:
-         * halfCore=.40, inner center=111.40 and outer center=131.40.
-         * Widths are 10px/14px and the two negative-space bands remain clear. */
-        outer_start[frame]=sample_alpha_polar(mapped,stride,160,160,131.4f,0.05f);
-        outer_arrive[frame]=sample_alpha_polar(mapped,stride,160,160,131.4f,0.80f);
-        inner_hold[frame]=sample_alpha_polar(mapped,stride,160,160,111.4f,0.55f);
-        inner_arrive[frame]=sample_alpha_polar(mapped,stride,160,160,111.4f,0.30f);
+        /* P6G directional proof:
+         * phase 0.000: outer occupies [0,.44], inner [.50,.94].
+         * phase 0.125: outer shifts CW to [.125,.565], inner shifts CCW
+         * to [.375,.815]. Arrival/departure samples therefore prove opposite
+         * motion without relying on a long near-complete arc. */
+        outer_leave[frame]=sample_alpha_polar(mapped,stride,160,160,131.4f,0.05f);
+        outer_arrive[frame]=sample_alpha_polar(mapped,stride,160,160,131.4f,0.50f);
+        inner_leave[frame]=sample_alpha_polar(mapped,stride,160,160,111.4f,0.90f);
+        inner_arrive[frame]=sample_alpha_polar(mapped,stride,160,160,111.4f,0.45f);
         center_a[frame]=(mapped+160u*stride+160u*4u)[3];
         if(frame==0){
-            const float overlap_turn=0.58f;
-            base_circle=sample_alpha_polar(mapped,stride,160,160,100.0f,overlap_turn);
-            locator_gap=sample_alpha_polar(mapped,stride,160,160,104.0f,overlap_turn);
-            inner_inner_edge=sample_alpha_polar(mapped,stride,160,160,108.0f,overlap_turn);
-            inner_outer_edge=sample_alpha_polar(mapped,stride,160,160,114.8f,overlap_turn);
-            orbit_gap=sample_alpha_polar(mapped,stride,160,160,120.0f,overlap_turn);
-            outer_inner_edge=sample_alpha_polar(mapped,stride,160,160,126.0f,overlap_turn);
-            outer_outer_edge=sample_alpha_polar(mapped,stride,160,160,136.5f,overlap_turn);
+            const float outer_turn=0.22f;
+            const float inner_turn=0.72f;
+            base_circle=sample_alpha_polar(mapped,stride,160,160,100.0f,outer_turn);
+            locator_gap=sample_alpha_polar(mapped,stride,160,160,104.0f,outer_turn);
+            outer_inner_edge=sample_alpha_polar(mapped,stride,160,160,126.0f,outer_turn);
+            outer_outer_edge=sample_alpha_polar(mapped,stride,160,160,136.5f,outer_turn);
+            inner_inner_edge=sample_alpha_polar(mapped,stride,160,160,108.0f,inner_turn);
+            inner_outer_edge=sample_alpha_polar(mapped,stride,160,160,114.8f,inner_turn);
+            orbit_gap=sample_alpha_polar(mapped,stride,160,160,120.0f,inner_turn);
 
-            /* Longer P6F fade must remain a point, never a cap/dot. */
+            /* Every radius owns > half-circle negative space. These probes
+             * sit just beyond each 44% object and must remain dark. */
+            outer_angle_gap=sample_alpha_polar(mapped,stride,160,160,131.4f,0.47f);
+            inner_angle_gap=sample_alpha_polar(mapped,stride,160,160,111.4f,0.97f);
+
+            /* Fading-point contract at the leading edge. */
             outer_before=sample_alpha_polar(mapped,stride,160,160,131.4f,0.985f);
             outer_tip=sample_alpha_polar(mapped,stride,160,160,131.4f,0.008f);
             outer_shoulder=sample_alpha_polar(mapped,stride,160,160,131.4f,0.025f);
-            outer_body=sample_alpha_polar(mapped,stride,160,160,131.4f,0.090f);
+            outer_body=sample_alpha_polar(mapped,stride,160,160,131.4f,0.075f);
             inner_before=sample_alpha_polar(mapped,stride,160,160,111.4f,0.485f);
             inner_tip=sample_alpha_polar(mapped,stride,160,160,111.4f,0.508f);
             inner_shoulder=sample_alpha_polar(mapped,stride,160,160,111.4f,0.525f);
-            inner_body=sample_alpha_polar(mapped,stride,160,160,111.4f,0.590f);
+            inner_body=sample_alpha_polar(mapped,stride,160,160,111.4f,0.575f);
         }
         gs_stagesurface_unmap(stage);
     }
 
     if(!failed &&
-       (outer_start[0]<145 || outer_arrive[0]>15 ||
-        inner_hold[0]<135 || inner_arrive[0]>15 ||
-        outer_start[1]>15 || outer_arrive[1]<145 ||
-        inner_hold[1]<125 || inner_arrive[1]<125 ||
+       (outer_leave[0]<130 || outer_arrive[0]>15 ||
+        inner_leave[0]<120 || inner_arrive[0]>15 ||
+        outer_leave[1]>15 || outer_arrive[1]<130 ||
+        inner_leave[1]>15 || inner_arrive[1]<120 ||
         center_a[0]>3 || center_a[1]>3 ||
         inner_inner_edge<85 || inner_outer_edge<85 ||
         outer_inner_edge<100 || outer_outer_edge<100 ||
-        locator_gap>24 || orbit_gap>24 ||
-        base_circle<8 || base_circle>90 ||
+        locator_gap>12 || orbit_gap>24 || base_circle>8 ||
+        outer_angle_gap>15 || inner_angle_gap>15 ||
         outer_before>8 || inner_before>8 ||
-        outer_tip<2 || outer_tip>95 ||
-        inner_tip<2 || inner_tip>95 ||
-        outer_shoulder<=outer_tip+25 ||
-        inner_shoulder<=inner_tip+25 ||
-        outer_body<=outer_shoulder+25 ||
-        inner_body<=inner_shoulder+25 ||
-        outer_body<180 || inner_body<170)){
+        outer_tip<2 || outer_tip>105 ||
+        inner_tip<2 || inner_tip>105 ||
+        outer_shoulder<=outer_tip+20 ||
+        inner_shoulder<=inner_tip+20 ||
+        outer_body<=outer_shoulder+20 ||
+        inner_body<=inner_shoulder+20 ||
+        outer_body<175 || inner_body<165)){
         fprintf(stderr,
-                "FAIL: P6F motion outer=%u/%u -> %u/%u inner=%u/%u -> %u/%u center=%u/%u radial base=%u gap=%u inner=%u/%u gap=%u outer=%u/%u taper O=%u/%u/%u/%u I=%u/%u/%u/%u\n",
-                outer_start[0],outer_arrive[0],outer_start[1],outer_arrive[1],
-                inner_hold[0],inner_arrive[0],inner_hold[1],inner_arrive[1],
+                "FAIL: P6G motion O=%u/%u -> %u/%u I=%u/%u -> %u/%u center=%u/%u radial base=%u gap=%u inner=%u/%u gap=%u outer=%u/%u angular=%u/%u taper O=%u/%u/%u/%u I=%u/%u/%u/%u\n",
+                outer_leave[0],outer_arrive[0],outer_leave[1],outer_arrive[1],
+                inner_leave[0],inner_arrive[0],inner_leave[1],inner_arrive[1],
                 center_a[0],center_a[1],base_circle,locator_gap,
                 inner_inner_edge,inner_outer_edge,orbit_gap,
-                outer_inner_edge,outer_outer_edge,
+                outer_inner_edge,outer_outer_edge,outer_angle_gap,inner_angle_gap,
                 outer_before,outer_tip,outer_shoulder,outer_body,
                 inner_before,inner_tip,inner_shoulder,inner_body);
         failed=1;
