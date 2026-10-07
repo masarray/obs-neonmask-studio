@@ -99,10 +99,12 @@ assert "nm_context_visibility(" in host
 assert 'obs_properties_add_text(art_group,"art_clip_hint"' in host
 assert 'obs_property_set_visible(p,tech || game || ring)' in host
 assert 'obs_property_set_visible(p,ornament!=NM_ORNAMENT_NONE && !ring)' in host
-assert 'obs_properties_get(arts,"ring_inner_offset")' in host
-assert 'obs_properties_get(arts,"ring_spacing")' in host
-assert 'ring ? 26.0 : 64.0' in host
-assert 'ring ? 20.0 : 12.0' in host
+assert 'obs_properties_get(arts,"ring_outer_width_pct")' in host
+assert 'obs_properties_get(arts,"ring_inner_width_pct")' in host
+assert 'obs_properties_get(arts,"ring_inner_offset_pct")' in host
+assert 'obs_properties_get(arts,"ring_spacing_pct")' in host
+assert 'obs_property_set_visible(p,tech || game);' in host
+assert 'obs_property_set_visible(p,game);' in host
 assert "NM_SHOW(\"speed\",border && animation!=NM_ANIM_STATIC)" in host
 assert "NM_SHOW(\"glow_radius\",border && glow)" in host
 assert 'Bubble.TLX="Top-left X"' in en_locale
