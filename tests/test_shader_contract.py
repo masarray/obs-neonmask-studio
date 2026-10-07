@@ -115,7 +115,7 @@ assert 'may shrink the mask' in en_locale
 assert 'Art.Gap="Outer ornament gap from frame (px)"' in en_locale
 assert 'Art.RingInnerOffset="Inner orbit center distance from frame (px)"' in en_locale
 assert 'Art.RingSpacing="Inner ↔ outer orbit center spacing (px)"' in en_locale
-assert 'Art.RingGeometryHint="Dual Ring geometry is decoupled:' in en_locale
+assert 'Art.RingGeometryHint="Dual Ring is mask-relative:' in en_locale
 assert 'Border.Width="Base neon border width (px)"' in en_locale
 assert 'Preset.TechHUD="Tech HUD Advanced — Cyan + Amber"' in en_locale
 assert 'Shape.GameUI="Game UI — corner brackets + inner rail"' in en_locale
