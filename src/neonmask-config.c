@@ -53,6 +53,10 @@ void nm_config_defaults(nm_config *cfg)
         .inner_rail_width_px = 1.4f,
         .ring_inner_offset_px = 18.0f,
         .ring_spacing_px = 30.0f,
+        .ring_outer_width_pct = 12.0f,
+        .ring_inner_width_pct = 9.0f,
+        .ring_inner_offset_pct = 10.0f,
+        .ring_spacing_pct = 17.0f,
         .ornament_mode = NM_ORNAMENT_NONE,
         .animation_speed = 0.65f,
         .primary = 0xFFDD31FFu,
@@ -135,16 +139,15 @@ void nm_config_validate(nm_config *cfg)
     cfg->inner_rail_width_px = nm_clamp(cfg->inner_rail_width_px, 0.5f, 20.0f);
     cfg->ring_inner_offset_px = nm_clamp(cfg->ring_inner_offset_px, 10.0f, 30.0f);
     cfg->ring_spacing_px = nm_clamp(cfg->ring_spacing_px, 26.0f, 44.0f);
+    cfg->ring_outer_width_pct = nm_clamp(cfg->ring_outer_width_pct, 8.0f, 16.0f);
+    cfg->ring_inner_width_pct = nm_clamp(cfg->ring_inner_width_pct, 6.0f, 12.0f);
+    cfg->ring_inner_offset_pct = nm_clamp(cfg->ring_inner_offset_pct, 9.0f, 18.0f);
+    cfg->ring_spacing_pct = nm_clamp(cfg->ring_spacing_pct, 16.0f, 26.0f);
     if (cfg->ornament_mode < NM_ORNAMENT_NONE || cfg->ornament_mode > NM_ORNAMENT_DUAL_RING)
         cfg->ornament_mode = NM_ORNAMENT_NONE;
-    /* P6E: Dual Ring gets an intentionally narrow artistic envelope. Width
-     * controls thickness only; centerline geometry lives in the dedicated
-     * offset/spacing fields and can no longer explode with 64px/96px values. */
-    if (cfg->ornament_mode == NM_ORNAMENT_DUAL_RING &&
-        cfg->shape_id == NM_SHAPE_CIRCLE) {
-        cfg->ornament_width_px = nm_clamp(cfg->ornament_width_px, 8.0f, 26.0f);
-        cfg->inner_rail_width_px = nm_clamp(cfg->inner_rail_width_px, 6.0f, 20.0f);
-    }
+    /* P6F: Dual Ring no longer uses generic pixel width controls at runtime.
+     * Its dedicated percentage ranges are chosen so EVERY slider combination
+     * keeps both rails external and leaves non-zero radial negative space. */
     cfg->animation_speed = nm_clamp(cfg->animation_speed, 0.0f, 5.0f);
     if (cfg->color_mode < NM_COLOR_SOLID || cfg->color_mode > NM_COLOR_RAINBOW)
         cfg->color_mode = NM_COLOR_DUAL;
@@ -224,6 +227,14 @@ bool nm_config_apply_preset(nm_config *cfg, int preset_id)
         cfg->ring_inner_offset_px = (float)preset.ring_inner_offset;
     if (preset.ring_spacing > 0.0)
         cfg->ring_spacing_px = (float)preset.ring_spacing;
+    if (preset.ring_outer_width_pct > 0.0)
+        cfg->ring_outer_width_pct = (float)preset.ring_outer_width_pct;
+    if (preset.ring_inner_width_pct > 0.0)
+        cfg->ring_inner_width_pct = (float)preset.ring_inner_width_pct;
+    if (preset.ring_inner_offset_pct > 0.0)
+        cfg->ring_inner_offset_pct = (float)preset.ring_inner_offset_pct;
+    if (preset.ring_spacing_pct > 0.0)
+        cfg->ring_spacing_pct = (float)preset.ring_spacing_pct;
     cfg->animation_speed = (float)preset.speed;
     cfg->segment_count = preset.segments;
     cfg->style_id = preset.style;
@@ -233,6 +244,24 @@ bool nm_config_apply_preset(nm_config *cfg, int preset_id)
 
     nm_config_validate(cfg);
     return true;
+}
+
+void nm_config_migrate_ring_v3(nm_config *cfg)
+{
+    if (!cfg) return;
+    /* P6E was tuned against an approximately 200px design radius. Converting
+     * px -> % with that reference preserves its intended proportions while
+     * removing capture-resolution dependence. The P6F validator then applies
+     * the deliberately narrow artistic envelope. */
+    const float k = 100.0f / 200.0f;
+    cfg->ring_outer_width_pct = cfg->ornament_width_px * k;
+    cfg->ring_inner_width_pct = cfg->inner_rail_width_px * k;
+    cfg->ring_inner_offset_pct = cfg->ring_inner_offset_px * k;
+    cfg->ring_spacing_pct = cfg->ring_spacing_px * k;
+    cfg->ring_outer_width_pct = nm_clamp(cfg->ring_outer_width_pct, 8.0f, 16.0f);
+    cfg->ring_inner_width_pct = nm_clamp(cfg->ring_inner_width_pct, 6.0f, 12.0f);
+    cfg->ring_inner_offset_pct = nm_clamp(cfg->ring_inner_offset_pct, 9.0f, 18.0f);
+    cfg->ring_spacing_pct = nm_clamp(cfg->ring_spacing_pct, 16.0f, 26.0f);
 }
 
 bool nm_config_schema_supported(uint32_t schema_version)
