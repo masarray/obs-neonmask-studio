@@ -255,37 +255,65 @@ int main(void)
           cfg.color_mode==NM_COLOR_DUAL &&
           fabsf(cfg.rainbow_speed-0.65f)<0.0001f &&
           fabsf(cfg.rainbow_saturation-0.92f)<0.0001f);
-    check("P6E Rotating Ring preset selects decoupled premium orbit state",
+    check("P6F Rotating Ring preset selects mask-relative premium orbit state",
           nm_config_apply_preset(&cfg,12) &&
           cfg.shape_id==NM_SHAPE_CIRCLE &&
           cfg.ornament_mode==NM_ORNAMENT_DUAL_RING &&
           cfg.animation_id==NM_ANIM_FLOW &&
           fabsf(cfg.border_px-0.8f)<0.0001f &&
-          fabsf(cfg.ornament_width_px-20.0f)<0.0001f &&
-          fabsf(cfg.inner_rail_width_px-15.0f)<0.0001f &&
-          fabsf(cfg.ring_inner_offset_px-18.0f)<0.0001f &&
-          fabsf(cfg.ring_spacing_px-30.0f)<0.0001f &&
+          fabsf(cfg.ring_outer_width_pct-12.0f)<0.0001f &&
+          fabsf(cfg.ring_inner_width_pct-9.0f)<0.0001f &&
+          fabsf(cfg.ring_inner_offset_pct-10.0f)<0.0001f &&
+          fabsf(cfg.ring_spacing_pct-17.0f)<0.0001f &&
           fabsf(cfg.glow_px-22.0f)<0.0001f &&
           fabsf(cfg.glow_amount-0.90f)<0.0001f &&
-          fabsf(cfg.animation_speed-0.58f)<0.0001f);
+          fabsf(cfg.animation_speed-0.56f)<0.0001f);
     cfg.shape_id=NM_SHAPE_CIRCLE;
     cfg.ornament_mode=NM_ORNAMENT_DUAL_RING;
-    cfg.ornament_width_px=64.0f;
-    cfg.inner_rail_width_px=64.0f;
-    cfg.ring_inner_offset_px=999.0f;
-    cfg.ring_spacing_px=999.0f;
+    cfg.ring_outer_width_pct=999.0f;
+    cfg.ring_inner_width_pct=999.0f;
+    cfg.ring_inner_offset_pct=999.0f;
+    cfg.ring_spacing_pct=999.0f;
     nm_config_validate(&cfg);
-    check("P6E Dual Ring pathological controls clamp to artistic envelope",
-          fabsf(cfg.ornament_width_px-26.0f)<0.0001f &&
-          fabsf(cfg.inner_rail_width_px-20.0f)<0.0001f &&
-          fabsf(cfg.ring_inner_offset_px-30.0f)<0.0001f &&
-          fabsf(cfg.ring_spacing_px-44.0f)<0.0001f);
+    check("P6F Dual Ring percentage controls clamp to artistic envelope",
+          fabsf(cfg.ring_outer_width_pct-16.0f)<0.0001f &&
+          fabsf(cfg.ring_inner_width_pct-12.0f)<0.0001f &&
+          fabsf(cfg.ring_inner_offset_pct-18.0f)<0.0001f &&
+          fabsf(cfg.ring_spacing_pct-26.0f)<0.0001f);
+
+    nm_config_defaults(&cfg);
+    cfg.ornament_width_px=20.0f;
+    cfg.inner_rail_width_px=15.0f;
+    cfg.ring_inner_offset_px=18.0f;
+    cfg.ring_spacing_px=30.0f;
+    nm_config_migrate_ring_v3(&cfg);
+    check("P6F schema-3 ring migration preserves 200px design proportions",
+          fabsf(cfg.ring_outer_width_pct-10.0f)<0.0001f &&
+          fabsf(cfg.ring_inner_width_pct-7.5f)<0.0001f &&
+          fabsf(cfg.ring_inner_offset_pct-9.0f)<0.0001f &&
+          fabsf(cfg.ring_spacing_pct-16.0f)<0.0001f);
+
+    cfg.ring_outer_width_pct=12.0f;
+    cfg.ring_inner_width_pct=9.0f;
+    cfg.ring_inner_offset_pct=10.0f;
+    cfg.ring_spacing_pct=17.0f;
+    float ow50=0,iw50=0,io50=0,sp50=0;
+    float ow200=0,iw200=0,io200=0,sp200=0;
+    nm_config_ring_geometry_px(&cfg,50.0f,&ow50,&iw50,&io50,&sp50);
+    nm_config_ring_geometry_px(&cfg,200.0f,&ow200,&iw200,&io200,&sp200);
+    check("P6F ring geometry scales linearly with mask radius",
+          fabsf(ow50-6.0f)<0.0001f && fabsf(iw50-4.5f)<0.0001f &&
+          fabsf(io50-5.0f)<0.0001f && fabsf(sp50-8.5f)<0.0001f &&
+          fabsf(ow200-24.0f)<0.0001f && fabsf(iw200-18.0f)<0.0001f &&
+          fabsf(io200-20.0f)<0.0001f && fabsf(sp200-34.0f)<0.0001f);
+
     check("legacy schema supported", nm_config_schema_supported(0));
     check("current schema supported", nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION));
     check("legacy v1 schema supported", nm_config_schema_supported(1));
+    check("legacy v3 schema supported", nm_config_schema_supported(3));
     check("future schema rejected", !nm_config_schema_supported(NM_CONFIG_SCHEMA_VERSION + 1));
-    check("D4A freeform migration advances schema to v3",
-          NM_CONFIG_SCHEMA_VERSION == 3u);
+    check("P6F ring migration advances schema to v4",
+          NM_CONFIG_SCHEMA_VERSION == 4u);
 
     check("unknown preset rejected", !nm_config_apply_preset(&cfg, 99));
     check("null preset target rejected", !nm_config_apply_preset(NULL, 1));
