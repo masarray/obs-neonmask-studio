@@ -255,7 +255,7 @@ int main(void)
           cfg.color_mode==NM_COLOR_DUAL &&
           fabsf(cfg.rainbow_speed-0.65f)<0.0001f &&
           fabsf(cfg.rainbow_saturation-0.92f)<0.0001f);
-    check("P6F Rotating Ring preset selects mask-relative premium orbit state",
+    check("P6G Rotating Ring preset selects faster distinct-orbit state",
           nm_config_apply_preset(&cfg,12) &&
           cfg.shape_id==NM_SHAPE_CIRCLE &&
           cfg.ornament_mode==NM_ORNAMENT_DUAL_RING &&
@@ -267,7 +267,7 @@ int main(void)
           fabsf(cfg.ring_spacing_pct-20.0f)<0.0001f &&
           fabsf(cfg.glow_px-22.0f)<0.0001f &&
           fabsf(cfg.glow_amount-0.90f)<0.0001f &&
-          fabsf(cfg.animation_speed-0.56f)<0.0001f);
+          fabsf(cfg.animation_speed-0.72f)<0.0001f);
     cfg.shape_id=NM_SHAPE_CIRCLE;
     cfg.ornament_mode=NM_ORNAMENT_DUAL_RING;
     cfg.ring_outer_width_pct=999.0f;
