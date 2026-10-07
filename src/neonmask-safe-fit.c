@@ -49,16 +49,16 @@ static float nm_light_envelope(const nm_config *cfg, float mask_radius)
         }
         if (dual_ring) {
             const float r=fmaxf(1.0f,mask_radius);
-            const float design=0.01f*r;
-            const float inner_offset=cfg->ring_inner_offset_pct*design;
-            const float spacing=cfg->ring_spacing_pct*design;
-            const float outer_half=0.5f*cfg->ring_outer_width_pct*design;
+            float outer_width=0.0f,inner_width=0.0f;
+            float inner_offset=0.0f,spacing=0.0f;
+            nm_config_ring_geometry_px(cfg,r,&outer_width,&inner_width,
+                                       &inner_offset,&spacing);
             const float glow_scale=nm_clamp(cfg->glow_px/22.0f,0.5f,2.0f);
             const float glow=cfg->show_glow && cfg->glow_amount>0.0f ?
                 r*0.045f*glow_scale : 0.0f;
-            /* P6F support scales with mask radius. This is the same authored
-             * geometry the host sends to the shader after safe-fit. */
-            accent=half_core+inner_offset+spacing+outer_half+glow+2.0f;
+            /* P6F support uses the same canonical resolver as nm_render. */
+            accent=half_core+inner_offset+spacing+
+                   0.5f*outer_width+glow+2.0f;
         }
         if (cfg->ornament_mode != NM_ORNAMENT_NONE)
             margin = fmaxf(margin, accent);
