@@ -1250,17 +1250,19 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
                     const float turn=0.58f;
                     const unsigned locator=sample_alpha_polar(mapped,stride,160,160,50.0f,turn);
                     const unsigned gap1=sample_alpha_polar(mapped,stride,160,160,52.0f,turn);
-                    const unsigned inner_edge1=sample_alpha_polar(mapped,stride,160,160,54.0f,turn);
+                    /* Probe comfortably inside both sides of each body;
+                     * exact AA boundary alpha is backend/subpixel dependent. */
+                    const unsigned inner_edge1=sample_alpha_polar(mapped,stride,160,160,54.7f,turn);
                     const unsigned inner_center=sample_alpha_polar(mapped,stride,160,160,55.9f,turn);
-                    const unsigned inner_edge2=sample_alpha_polar(mapped,stride,160,160,57.8f,turn);
+                    const unsigned inner_edge2=sample_alpha_polar(mapped,stride,160,160,57.1f,turn);
                     const unsigned gap2=sample_alpha_polar(mapped,stride,160,160,60.4f,turn);
-                    const unsigned outer_edge1=sample_alpha_polar(mapped,stride,160,160,63.0f,turn);
+                    const unsigned outer_edge1=sample_alpha_polar(mapped,stride,160,160,63.8f,turn);
                     const unsigned outer_center=sample_alpha_polar(mapped,stride,160,160,65.9f,turn);
-                    const unsigned outer_edge2=sample_alpha_polar(mapped,stride,160,160,68.8f,turn);
+                    const unsigned outer_edge2=sample_alpha_polar(mapped,stride,160,160,68.0f,turn);
                     const unsigned center=(mapped+160u*stride+160u*4u)[3];
                     if(locator>80 || gap1>40 || gap2>40 ||
-                       inner_edge1<45 || inner_center<150 || inner_edge2<45 ||
-                       outer_edge1<55 || outer_center<165 || outer_edge2<55 ||
+                       inner_edge1<70 || inner_center<150 || inner_edge2<70 ||
+                       outer_edge1<80 || outer_center<165 || outer_edge2<80 ||
                        center>3) {
                         fprintf(stderr,
                             "FAIL: P6F small radius locator=%u gap=%u inner=%u/%u/%u gap=%u outer=%u/%u/%u center=%u\n",
