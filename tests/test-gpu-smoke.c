@@ -1006,7 +1006,7 @@ static unsigned sample_alpha_polar(const uint8_t *mapped, uint32_t stride,
 
 /* P6F resolution-invariant orbit gate. Host-side tests prove percentage
  * conversion; this live GPU fixture renders the 100px-radius canonical case
- * (12/9/10/17%) and requires thick body, dark gaps, tapered tips and opposite
+ * (14/10/11/20%) and requires thick body, dark gaps, tapered tips and opposite
  * motion. Glow is disabled so geometry itself must satisfy every sample. */
 static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
 {
@@ -1065,12 +1065,12 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
     gs_effect_set_int(P("ornament_mode"),6);
     gs_effect_set_float(P("art_intensity"),1.0f);
     gs_effect_set_float(P("art_gap"),8.0f);
-    gs_effect_set_float(P("ornament_width"),12.0f);
+    gs_effect_set_float(P("ornament_width"),14.0f);
     gs_effect_set_float(P("ornament_length_x"),60.0f);
     gs_effect_set_float(P("ornament_length_y"),48.0f);
-    gs_effect_set_float(P("inner_rail_width"),9.0f);
-    gs_effect_set_float(P("ring_inner_offset"),10.0f);
-    gs_effect_set_float(P("ring_spacing"),17.0f);
+    gs_effect_set_float(P("inner_rail_width"),10.0f);
+    gs_effect_set_float(P("ring_inner_offset"),11.0f);
+    gs_effect_set_float(P("ring_spacing"),20.0f);
     gs_effect_set_float(P("feather"),0.70f);
     gs_effect_set_float(P("glow_radius"),22.0f);
     gs_effect_set_float(P("glow_strength"),0.0f);
@@ -1138,33 +1138,33 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
         gs_stage_texture(stage,gs_texrender_get_texture(target));
         uint8_t *mapped=NULL; uint32_t stride=0;
         if(!gs_stagesurface_map(stage,&mapped,&stride)){failed=1;break;}
-        /* P6F 100px-radius canonical geometry:
-         * halfCore=.40, inner center=110.40 and outer center=127.40.
-         * Widths are 9px/12px, i.e. exactly 9%/12% of this radius. */
-        outer_start[frame]=sample_alpha_polar(mapped,stride,160,160,127.4f,0.05f);
-        outer_arrive[frame]=sample_alpha_polar(mapped,stride,160,160,127.4f,0.80f);
-        inner_hold[frame]=sample_alpha_polar(mapped,stride,160,160,110.4f,0.55f);
-        inner_arrive[frame]=sample_alpha_polar(mapped,stride,160,160,110.4f,0.30f);
+        /* P6F 100px-radius premium geometry:
+         * halfCore=.40, inner center=111.40 and outer center=131.40.
+         * Widths are 10px/14px and the two negative-space bands remain clear. */
+        outer_start[frame]=sample_alpha_polar(mapped,stride,160,160,131.4f,0.05f);
+        outer_arrive[frame]=sample_alpha_polar(mapped,stride,160,160,131.4f,0.80f);
+        inner_hold[frame]=sample_alpha_polar(mapped,stride,160,160,111.4f,0.55f);
+        inner_arrive[frame]=sample_alpha_polar(mapped,stride,160,160,111.4f,0.30f);
         center_a[frame]=(mapped+160u*stride+160u*4u)[3];
         if(frame==0){
             const float overlap_turn=0.58f;
             base_circle=sample_alpha_polar(mapped,stride,160,160,100.0f,overlap_turn);
-            locator_gap=sample_alpha_polar(mapped,stride,160,160,103.5f,overlap_turn);
-            inner_inner_edge=sample_alpha_polar(mapped,stride,160,160,107.0f,overlap_turn);
-            inner_outer_edge=sample_alpha_polar(mapped,stride,160,160,114.0f,overlap_turn);
-            orbit_gap=sample_alpha_polar(mapped,stride,160,160,118.5f,overlap_turn);
-            outer_inner_edge=sample_alpha_polar(mapped,stride,160,160,123.0f,overlap_turn);
-            outer_outer_edge=sample_alpha_polar(mapped,stride,160,160,132.0f,overlap_turn);
+            locator_gap=sample_alpha_polar(mapped,stride,160,160,104.0f,overlap_turn);
+            inner_inner_edge=sample_alpha_polar(mapped,stride,160,160,108.0f,overlap_turn);
+            inner_outer_edge=sample_alpha_polar(mapped,stride,160,160,114.8f,overlap_turn);
+            orbit_gap=sample_alpha_polar(mapped,stride,160,160,120.0f,overlap_turn);
+            outer_inner_edge=sample_alpha_polar(mapped,stride,160,160,126.0f,overlap_turn);
+            outer_outer_edge=sample_alpha_polar(mapped,stride,160,160,136.5f,overlap_turn);
 
             /* Longer P6F fade must remain a point, never a cap/dot. */
-            outer_before=sample_alpha_polar(mapped,stride,160,160,127.4f,0.985f);
-            outer_tip=sample_alpha_polar(mapped,stride,160,160,127.4f,0.008f);
-            outer_shoulder=sample_alpha_polar(mapped,stride,160,160,127.4f,0.025f);
-            outer_body=sample_alpha_polar(mapped,stride,160,160,127.4f,0.090f);
-            inner_before=sample_alpha_polar(mapped,stride,160,160,110.4f,0.485f);
-            inner_tip=sample_alpha_polar(mapped,stride,160,160,110.4f,0.508f);
-            inner_shoulder=sample_alpha_polar(mapped,stride,160,160,110.4f,0.525f);
-            inner_body=sample_alpha_polar(mapped,stride,160,160,110.4f,0.590f);
+            outer_before=sample_alpha_polar(mapped,stride,160,160,131.4f,0.985f);
+            outer_tip=sample_alpha_polar(mapped,stride,160,160,131.4f,0.008f);
+            outer_shoulder=sample_alpha_polar(mapped,stride,160,160,131.4f,0.025f);
+            outer_body=sample_alpha_polar(mapped,stride,160,160,131.4f,0.090f);
+            inner_before=sample_alpha_polar(mapped,stride,160,160,111.4f,0.485f);
+            inner_tip=sample_alpha_polar(mapped,stride,160,160,111.4f,0.508f);
+            inner_shoulder=sample_alpha_polar(mapped,stride,160,160,111.4f,0.525f);
+            inner_body=sample_alpha_polar(mapped,stride,160,160,111.4f,0.590f);
         }
         gs_stagesurface_unmap(stage);
     }
@@ -1201,7 +1201,7 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
 
 
     /* P6F small-facecam raster gate. A 50px mask radius resolves the authored
-     * 12/9/10/17% recipe to 6/4.5/5/8.5px. This catches the exact failure
+     * 14/10/11/20% recipe to 7/5/5.5/10px. This catches the exact failure
      * observed in OBS where source-pixel styling collapsed into hairlines
      * after a facecam was shown small. */
     if(!failed) {
@@ -1215,10 +1215,10 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
         } else {
             struct vec2 small_half; vec2_set(&small_half,50.0f,50.0f);
             gs_effect_set_vec2(gs_effect_get_param_by_name(effect,"half_size"),&small_half);
-            gs_effect_set_float(gs_effect_get_param_by_name(effect,"ornament_width"),6.0f);
-            gs_effect_set_float(gs_effect_get_param_by_name(effect,"inner_rail_width"),4.5f);
-            gs_effect_set_float(gs_effect_get_param_by_name(effect,"ring_inner_offset"),5.0f);
-            gs_effect_set_float(gs_effect_get_param_by_name(effect,"ring_spacing"),8.5f);
+            gs_effect_set_float(gs_effect_get_param_by_name(effect,"ornament_width"),7.0f);
+            gs_effect_set_float(gs_effect_get_param_by_name(effect,"inner_rail_width"),5.0f);
+            gs_effect_set_float(gs_effect_get_param_by_name(effect,"ring_inner_offset"),5.5f);
+            gs_effect_set_float(gs_effect_get_param_by_name(effect,"ring_spacing"),10.0f);
             gs_effect_set_float(gs_effect_get_param_by_name(effect,"flow_phase"),0.0f);
             gs_effect_set_texture(gs_effect_get_param_by_name(effect,"image"),input);
 
@@ -1250,13 +1250,13 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
                     const float turn=0.58f;
                     const unsigned locator=sample_alpha_polar(mapped,stride,160,160,50.0f,turn);
                     const unsigned gap1=sample_alpha_polar(mapped,stride,160,160,52.0f,turn);
-                    const unsigned inner_edge1=sample_alpha_polar(mapped,stride,160,160,53.8f,turn);
-                    const unsigned inner_center=sample_alpha_polar(mapped,stride,160,160,55.4f,turn);
-                    const unsigned inner_edge2=sample_alpha_polar(mapped,stride,160,160,57.0f,turn);
-                    const unsigned gap2=sample_alpha_polar(mapped,stride,160,160,59.3f,turn);
-                    const unsigned outer_edge1=sample_alpha_polar(mapped,stride,160,160,61.5f,turn);
-                    const unsigned outer_center=sample_alpha_polar(mapped,stride,160,160,63.9f,turn);
-                    const unsigned outer_edge2=sample_alpha_polar(mapped,stride,160,160,66.3f,turn);
+                    const unsigned inner_edge1=sample_alpha_polar(mapped,stride,160,160,54.0f,turn);
+                    const unsigned inner_center=sample_alpha_polar(mapped,stride,160,160,55.9f,turn);
+                    const unsigned inner_edge2=sample_alpha_polar(mapped,stride,160,160,57.8f,turn);
+                    const unsigned gap2=sample_alpha_polar(mapped,stride,160,160,60.4f,turn);
+                    const unsigned outer_edge1=sample_alpha_polar(mapped,stride,160,160,63.0f,turn);
+                    const unsigned outer_center=sample_alpha_polar(mapped,stride,160,160,65.9f,turn);
+                    const unsigned outer_edge2=sample_alpha_polar(mapped,stride,160,160,68.8f,turn);
                     const unsigned center=(mapped+160u*stride+160u*4u)[3];
                     if(locator>80 || gap1>40 || gap2>40 ||
                        inner_edge1<45 || inner_center<150 || inner_edge2<45 ||
