@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "neonmask-config.h"
 #include "neonmask-math.h"
+#include <math.h>
 
 void nm_config_defaults(nm_config *cfg)
 {
