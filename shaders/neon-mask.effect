@@ -963,7 +963,7 @@ float4 drawNeonMask(VertData v_in) : TARGET
             float innerHalf=max(1.00,inner_rail_width*0.50);
             float baseRadius=min(half_size.x,half_size.y);
 
-            // P6F host resolves percentage controls into pixels from the
+            // P6F/P6G host resolves percentage controls into pixels from the
             // CURRENT fitted mask radius. Width and centerline positions are
             // therefore resolution-independent proportions yet remain fully
             // decoupled in shader space.
@@ -973,7 +973,7 @@ float4 drawNeonMask(VertData v_in) : TARGET
             float outerD=abs(d-outerOffset);
             float innerD=abs(d-innerOffset);
 
-            // Width tapers to ~18% at the fading tip while the alpha envelope
+            // Width tapers to ~8% at the fading tip while the alpha envelope
             // simultaneously falls to zero. This is a line termination, not
             // a round cap, so no endpoint dot can be formed.
             float outerTaperHalf=outerHalf*lerp(0.08,1.0,outerTaper);
