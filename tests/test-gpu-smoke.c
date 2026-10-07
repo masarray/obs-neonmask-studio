@@ -661,7 +661,7 @@ static int verify_tech_hud_preview_scale(gs_effect_t *effect)
     gs_effect_set_float(P("glow_strength"),0.0f);
     gs_effect_set_float(P("mid_glow_strength"),0.72f);
     gs_effect_set_float(P("bloom_strength"),0.86f);
-    gs_effect_set_float(P("hotspot_strength"),1.0f);
+    gs_effect_set_float(P("hotspot_strength"),0.0f);
     gs_effect_set_float(P("hotspot_size"),0.09f);
     gs_effect_set_vec4(P("color_a"),&magenta);
     gs_effect_set_vec4(P("color_b"),&magenta);
@@ -1076,7 +1076,7 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
     gs_effect_set_float(P("glow_strength"),0.0f);
     gs_effect_set_float(P("mid_glow_strength"),0.86f);
     gs_effect_set_float(P("bloom_strength"),0.88f);
-    gs_effect_set_float(P("hotspot_strength"),0.0f);
+    gs_effect_set_float(P("hotspot_strength"),1.0f);
     gs_effect_set_float(P("hotspot_size"),0.08f);
     gs_effect_set_vec4(P("color_a"),&cyan);
     gs_effect_set_vec4(P("color_b"),&magenta);
