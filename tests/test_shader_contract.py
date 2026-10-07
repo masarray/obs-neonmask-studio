@@ -121,6 +121,12 @@ assert 'Preset.GameUI="Game UI — Neon Green"' in en_locale
 assert 'Preset.GradientRainbow="Gradient Rainbow — Rotating Spectrum"' in en_locale
 assert 'Preset.RotatingRing="Rotating Ring — Counter Orbit"' in en_locale
 assert 'Art.DualRing="Dual Ring — counter-rotating 2/3 arcs"' in en_locale
+assert 'Art.RingOuterWidthPct="Outer orbit width (% mask radius)"' in en_locale
+assert 'Art.RingInnerWidthPct="Inner orbit width (% mask radius)"' in en_locale
+assert 'Art.RingInnerOffsetPct="Frame → inner orbit center (% mask radius)"' in en_locale
+assert 'Art.RingSpacingPct="Inner ↔ outer center spacing (% mask radius)"' in en_locale
+assert 'Art.RingOuterWidthPct="Ketebalan orbit luar (% radius mask)"' in id_locale
+
 assert 'Color.Mode.Rainbow="Rainbow gradient"' in en_locale
 assert 'Rainbow.Spread="Gradient spread"' in en_locale
 assert 'Color.Mode.Rainbow="Gradien pelangi"' in id_locale
@@ -181,7 +187,7 @@ assert "outerRel=frac(t-phase+1.0)" in shader
 assert "float innerStart=frac(0.50-phase+1.0)" in shader
 assert "float innerRel=frac(t-innerStart+1.0)" in shader
 assert "const float span=0.6666666667" in shader
-assert "const float tipFade=0.055" in shader
+assert "const float tipFade=0.070" in shader
 assert "float innerOffset=halfCore+ring_inner_offset" in shader
 assert "float outerOffset=innerOffset+ring_spacing" in shader
 assert "float locatorGap=max(5.0,art_gap*0.65)" not in shader
@@ -189,18 +195,23 @@ assert "float orbitGap=max(7.0,art_gap*0.90)" not in shader
 assert "innerOffset+innerHalf+orbitGap+outerHalf" not in shader
 assert "float outerD=abs(d-outerOffset)" in shader
 assert "float innerD=abs(d-innerOffset)" in shader
-assert "outerHalf*lerp(0.18,1.0,outerTaper)" in shader
-assert "innerHalf*lerp(0.18,1.0,innerTaper)" in shader
+assert "outerHalf*lerp(0.08,1.0,outerTaper)" in shader
+assert "innerHalf*lerp(0.08,1.0,innerTaper)" in shader
 assert "float dualOuterA = 0.0" in shader
 assert "float dualInnerA = 0.0" in shader
 assert "float dualOuterCoreA = 0.0" in shader
 assert "float dualInnerCoreA = 0.0" in shader
+assert "outerHalf*0.42" in shader and "innerHalf*0.40" in shader
+assert "art_intensity*0.54*outerCore" in shader
+assert "art_intensity*0.48*innerCore" in shader
+assert "baseRadius*0.045*glowScale" in shader
+
 assert "dualOuterColor=lerp(color_a.rgb,color_b.rgb,outerMix*0.80)" in shader
 assert "dualInnerColor=lerp(color_b.rgb,color_a.rgb,innerMix*0.80)" in shader
 assert "dualOuterHotA" not in shader and "dualInnerHotA" not in shader
 assert "outerStartCap" not in shader and "innerStartCap" not in shader
 assert "outerEndCap" not in shader and "innerEndCap" not in shader
-assert "coreA*=0.22" in shader and "outerA*=0.08" in shader
+assert "coreA*=0.10" in shader and "outerA*=0.03" in shader
 assert "coreA*=0.80" in shader and "outerA*=0.40" in shader
 assert "float nodeD=" not in shader
 for key in ("art_intensity", "art_gap"):
@@ -212,6 +223,14 @@ for key in ("ornament_width","ornament_length_x","ornament_length_y",
 assert 'obs_data_has_user_value(settings,d4f_keys[i])' in host
 assert 'obs_data_has_user_value(settings, "ring_inner_offset")' in host
 assert 'obs_data_has_user_value(settings, "ring_spacing")' in host
+for key in ("ring_outer_width_pct","ring_inner_width_pct",
+            "ring_inner_offset_pct","ring_spacing_pct"):
+    assert f'obs_data_set_default_double(settings, "{key}"' in host
+    assert key in host
+assert 'nm_config_migrate_ring_v3(&next)' in host
+assert 'nm_config_ring_geometry_px(&f->config,rx' in host
+assert 'schema < 4u' in host
+
 assert 'obs_data_has_user_value(settings, "ornament_mode")' in host
 assert 'obs_data_set_int(settings, "ornament_mode", next.ornament_mode)' in host
 for key in ("mid_glow_strength", "bloom_strength", "hotspot_strength", "hotspot_size"):
