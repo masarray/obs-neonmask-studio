@@ -55,13 +55,13 @@ static const nm_preset builtin[] = {
      10.0, 60.0, 48.0, 1.4, NM_COLOR_RAINBOW, 0.78, 0.96, 0.0, 1.0},
     /* P6F: premium Dual Ring geometry is mask-relative, so camera/source
      * resolution can no longer make the rails collapse into hairlines. The
-     * last four values are % of current circle radius: 12% outer width,
-     * 9% inner width, 10% frame->inner center and 17% centerline spacing. */
+     * last four values are % of current circle radius: 14% outer width,
+     * 10% inner width, 11% frame->inner center and 20% centerline spacing. */
     {NM_SHAPE_CIRCLE, NM_ANIM_FLOW, 0x00FFEA28u, 0x00F52CFFu,
      0.72, 0.0, 0.8, 0.70, 22.0, 0.90, 0.56, 0, NM_STYLE_MINIMAL,
      true, true, 0.88, 0.90, 0.0, 0.08, NM_ORNAMENT_DUAL_RING, 1.0, 8.0, 0.22,
      20.0, 60.0, 48.0, 15.0, NM_COLOR_DUAL, 0.65, 0.92, 0.0, 1.0,
-     18.0, 30.0, 12.0, 9.0, 10.0, 17.0}
+     18.0, 30.0, 14.0, 10.0, 11.0, 20.0}
 };
 
 bool nm_get_preset(int id, nm_preset *out)
