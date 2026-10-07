@@ -94,3 +94,7 @@ bool nm_config_schema_supported(uint32_t schema_version);
 /* Convert schema-3 P6E source-pixel Dual Ring values using the documented
  * 200px design radius. Pure helper so migration is unit-testable. */
 void nm_config_migrate_ring_v3(nm_config *cfg);
+/* Resolve P6F mask-relative ring authoring into shader/source pixels. */
+void nm_config_ring_geometry_px(const nm_config *cfg, float mask_radius,
+                                float *outer_width, float *inner_width,
+                                float *inner_offset, float *spacing);
