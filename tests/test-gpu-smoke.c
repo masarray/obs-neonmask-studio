@@ -1210,7 +1210,7 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
     }
 
 
-    /* P6F small-facecam raster gate. A 50px mask radius resolves the authored
+    /* P6G small-facecam raster gate. A 50px mask radius resolves the authored
      * 14/10/11/20% recipe to 7/5/5.5/10px. This catches the exact failure
      * observed in OBS where source-pixel styling collapsed into hairlines
      * after a facecam was shown small. */
@@ -1220,7 +1220,7 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
         if(!small_target||!small_stage) {
             if(small_stage) gs_stagesurface_destroy(small_stage);
             if(small_target) gs_texrender_destroy(small_target);
-            fprintf(stderr,"FAIL: P6F small-radius resources\n");
+            fprintf(stderr,"FAIL: P6G small-radius resources\n");
             failed=1;
         } else {
             struct vec2 small_half; vec2_set(&small_half,50.0f,50.0f);
@@ -1233,7 +1233,7 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
             gs_effect_set_texture(gs_effect_get_param_by_name(effect,"image"),input);
 
             if(!gs_texrender_begin(small_target,W,H)) {
-                fprintf(stderr,"FAIL: P6F small-radius texrender begin\n");
+                fprintf(stderr,"FAIL: P6G small-radius texrender begin\n");
                 failed=1;
             } else {
                 const bool srgb=gs_framebuffer_srgb_enabled();
@@ -1257,27 +1257,31 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
                 if(!gs_stagesurface_map(small_stage,&mapped,&stride)) {
                     failed=1;
                 } else {
-                    const float turn=0.58f;
-                    const unsigned locator=sample_alpha_polar(mapped,stride,160,160,50.0f,turn);
-                    const unsigned gap1=sample_alpha_polar(mapped,stride,160,160,52.0f,turn);
-                    /* Probe comfortably inside both sides of each body;
+                    const float outer_turn=0.22f;
+                    const float inner_turn=0.72f;
+                    const unsigned locator=sample_alpha_polar(mapped,stride,160,160,50.0f,outer_turn);
+                    const unsigned gap1=sample_alpha_polar(mapped,stride,160,160,52.0f,inner_turn);
+                    /* Probe comfortably inside both sides of each short object;
                      * exact AA boundary alpha is backend/subpixel dependent. */
-                    const unsigned inner_edge1=sample_alpha_polar(mapped,stride,160,160,54.7f,turn);
-                    const unsigned inner_center=sample_alpha_polar(mapped,stride,160,160,55.9f,turn);
-                    const unsigned inner_edge2=sample_alpha_polar(mapped,stride,160,160,57.1f,turn);
-                    const unsigned gap2=sample_alpha_polar(mapped,stride,160,160,60.4f,turn);
-                    const unsigned outer_edge1=sample_alpha_polar(mapped,stride,160,160,63.8f,turn);
-                    const unsigned outer_center=sample_alpha_polar(mapped,stride,160,160,65.9f,turn);
-                    const unsigned outer_edge2=sample_alpha_polar(mapped,stride,160,160,68.0f,turn);
+                    const unsigned inner_edge1=sample_alpha_polar(mapped,stride,160,160,54.7f,inner_turn);
+                    const unsigned inner_center=sample_alpha_polar(mapped,stride,160,160,55.9f,inner_turn);
+                    const unsigned inner_edge2=sample_alpha_polar(mapped,stride,160,160,57.1f,inner_turn);
+                    const unsigned gap2=sample_alpha_polar(mapped,stride,160,160,60.4f,inner_turn);
+                    const unsigned outer_edge1=sample_alpha_polar(mapped,stride,160,160,63.8f,outer_turn);
+                    const unsigned outer_center=sample_alpha_polar(mapped,stride,160,160,65.9f,outer_turn);
+                    const unsigned outer_edge2=sample_alpha_polar(mapped,stride,160,160,68.0f,outer_turn);
+                    const unsigned outer_blank=sample_alpha_polar(mapped,stride,160,160,65.9f,0.47f);
+                    const unsigned inner_blank=sample_alpha_polar(mapped,stride,160,160,55.9f,0.97f);
                     const unsigned center=(mapped+160u*stride+160u*4u)[3];
-                    if(locator>80 || gap1>40 || gap2>40 ||
+                    if(locator>8 || gap1>35 || gap2>35 ||
                        inner_edge1<70 || inner_center<150 || inner_edge2<70 ||
                        outer_edge1<80 || outer_center<165 || outer_edge2<80 ||
-                       center>3) {
+                       outer_blank>18 || inner_blank>18 || center>3) {
                         fprintf(stderr,
-                            "FAIL: P6F small radius locator=%u gap=%u inner=%u/%u/%u gap=%u outer=%u/%u/%u center=%u\n",
+                            "FAIL: P6G small radius locator=%u gap=%u inner=%u/%u/%u gap=%u outer=%u/%u/%u blank=%u/%u center=%u\n",
                             locator,gap1,inner_edge1,inner_center,inner_edge2,
-                            gap2,outer_edge1,outer_center,outer_edge2,center);
+                            gap2,outer_edge1,outer_center,outer_edge2,
+                            outer_blank,inner_blank,center);
                         failed=1;
                     }
                     gs_stagesurface_unmap(small_stage);
