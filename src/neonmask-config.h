@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define NM_CONFIG_SCHEMA_VERSION 3u
+#define NM_CONFIG_SCHEMA_VERSION 4u
 
 typedef struct nm_config {
     uint32_t schema_version;
@@ -54,10 +54,17 @@ typedef struct nm_config {
     float ornament_length_x_px;  /* horizontal L arm */
     float ornament_length_y_px;  /* vertical L arm */
     float inner_rail_width_px;   /* Game UI inset rail / Dual Ring inner width */
-    /* P6E: Dual Ring centerline geometry is independent from rail thickness.
-     * These fields are ignored by every other ornament recipe. */
-    float ring_inner_offset_px;  /* frame edge -> inner orbit centerline */
-    float ring_spacing_px;       /* inner centerline -> outer centerline */
+    /* P6E legacy source-pixel Dual Ring geometry, retained only so schema-3
+     * scenes can migrate deterministically into P6F mask-relative geometry. */
+    float ring_inner_offset_px;
+    float ring_spacing_px;
+    /* P6F: Dual Ring geometry is authored as percentages of the current
+     * circular mask radius. This makes the visual proportions independent of
+     * camera/source resolution. These fields are ignored by other ornaments. */
+    float ring_outer_width_pct;
+    float ring_inner_width_pct;
+    float ring_inner_offset_pct;
+    float ring_spacing_pct;
     int ornament_mode;
     float animation_speed;
     uint32_t primary;
@@ -84,3 +91,10 @@ void nm_config_defaults(nm_config *cfg);
 void nm_config_validate(nm_config *cfg);
 bool nm_config_apply_preset(nm_config *cfg, int preset_id);
 bool nm_config_schema_supported(uint32_t schema_version);
+/* Convert schema-3 P6E source-pixel Dual Ring values using the documented
+ * 200px design radius. Pure helper so migration is unit-testable. */
+void nm_config_migrate_ring_v3(nm_config *cfg);
+/* Resolve P6F mask-relative ring authoring into shader/source pixels. */
+void nm_config_ring_geometry_px(const nm_config *cfg, float mask_radius,
+                                float *outer_width, float *inner_width,
+                                float *inner_offset, float *spacing);

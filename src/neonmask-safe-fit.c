@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #include "neonmask-safe-fit.h"
+#include "neonmask-math.h"
 #include <math.h>
 #include <string.h>
 
@@ -9,7 +10,14 @@
  * flow multiplier its alpha is well below 1/255. Ornament extents
  * include the outermost tip/bracket plus their 4.2px glow cutoff.
  * Re-audit this bound whenever neon-mask.effect changes its formula. */
-static float nm_light_envelope(const nm_config *cfg)
+static bool nm_dual_ring_active(const nm_config *cfg)
+{
+    return cfg && cfg->show_border && cfg->art_intensity > 0.0f &&
+           cfg->shape_id == NM_SHAPE_CIRCLE &&
+           cfg->ornament_mode == NM_ORNAMENT_DUAL_RING;
+}
+
+static float nm_light_envelope(const nm_config *cfg, float mask_radius)
 {
     float margin = cfg->feather_px + 2.0f;
     if (!cfg->show_border) return margin;
@@ -19,7 +27,8 @@ static float nm_light_envelope(const nm_config *cfg)
     if (cfg->style_id == NM_STYLE_DOUBLE || cfg->style_id == NM_STYLE_HUD)
         margin = fmaxf(margin, half_core + 5.0f);
 
-    if (cfg->show_glow && cfg->glow_amount > 0.0f &&
+    const bool dual_ring = nm_dual_ring_active(cfg);
+    if (!dual_ring && cfg->show_glow && cfg->glow_amount > 0.0f &&
         (cfg->mid_glow_strength > 0.0f || cfg->bloom_strength > 0.0f))
         margin = fmaxf(margin, half_core + 2.5f * cfg->glow_px + 2.0f);
 
@@ -39,16 +48,18 @@ static float nm_light_envelope(const nm_config *cfg)
                 fmaxf(3.5f,cfg->glow_px*0.16f) : 0.0f;
             accent=cfg->art_gap+cfg->ornament_width_px+glow+2.0f;
         }
-        if (cfg->ornament_mode == NM_ORNAMENT_DUAL_RING &&
-            cfg->shape_id == NM_SHAPE_CIRCLE) {
-            const float glow=cfg->show_glow ?
-                fmaxf(5.0f,cfg->glow_px*0.24f) : 0.0f;
-            /* P6E centerline positions are first-class and thickness-neutral.
-             * Only HALF the outer width extends beyond its fixed centerline. */
-            accent=half_core+
-                   fmaxf(10.0f,cfg->ring_inner_offset_px)+
-                   fmaxf(26.0f,cfg->ring_spacing_px)+
-                   0.5f*fmaxf(8.0f,cfg->ornament_width_px)+glow+2.0f;
+        if (dual_ring) {
+            const float r=fmaxf(1.0f,mask_radius);
+            float outer_width=0.0f,inner_width=0.0f;
+            float inner_offset=0.0f,spacing=0.0f;
+            nm_config_ring_geometry_px(cfg,r,&outer_width,&inner_width,
+                                       &inner_offset,&spacing);
+            const float glow_scale=nm_clamp(cfg->glow_px/22.0f,0.5f,2.0f);
+            const float glow=cfg->show_glow && cfg->glow_amount>0.0f ?
+                fmaxf(2.0f,r*0.045f*glow_scale) : 0.0f;
+            /* P6F support uses the same canonical resolver as nm_render. */
+            accent=half_core+inner_offset+spacing+
+                   0.5f*outer_width+glow+2.0f;
         }
         if (cfg->ornament_mode != NM_ORNAMENT_NONE)
             margin = fmaxf(margin, accent);
@@ -119,7 +130,7 @@ bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
     out->output_width = width;
     out->output_height = height;
 
-    /* D4I/P6E: dedicated authored geometry outside the mask silhouette
+    /* D4I/P6F: dedicated authored geometry outside the mask silhouette
      * (Tech/Game outer Ls and both external rotating rings) gets automatic
      * clipping protection when expansion is off. Other shapes keep legacy
      * safe_fit. */
@@ -135,7 +146,7 @@ bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
     if (!fit_inside_source && !cfg->expand_canvas)
         return true; /* Legacy/non-authored scenes retain exact dimensions. */
 
-    const float envelope = nm_light_envelope(cfg);
+    const float envelope = nm_light_envelope(cfg, fminf(hx,hy));
     out->envelope_px = envelope;
     if (!isfinite(envelope)) return false;
     /* Conservative shape AABB: covers the tail and every rotated silhouette.
@@ -180,24 +191,50 @@ bool nm_safe_fit_calculate(const nm_config *cfg, uint32_t width,
         return true;
     }
 
-    /* D3a safe-fit: shrink the mask uniformly within the existing canvas. */
-    const float available_x = 0.5f * (float)width -
-                              fabsf(cfg->mask_x_px) - support_x;
-    const float available_y = 0.5f * (float)height -
-                              fabsf(cfg->mask_y_px) - support_y;
+    /* D3a/P6F safe-fit: legacy ornaments have a mostly fixed-pixel
+     * support and keep the closed-form path. Dual Ring support itself scales
+     * with mask radius, so solve the authored composition as one uniformly
+     * shrinking unit. This prevents auto-fit from destroying its proportions. */
+    const float available_x = 0.5f * (float)width - fabsf(cfg->mask_x_px);
+    const float available_y = 0.5f * (float)height - fabsf(cfg->mask_y_px);
     if (!isfinite(available_x) || !isfinite(available_y) ||
         available_x <= 0.0f || available_y <= 0.0f) {
         out->fits = false;
         return true;
     }
-    const float factor = fminf(1.0f,
-                         fminf(available_x / box_x, available_y / box_y));
-    if (!isfinite(factor) || factor <= 0.0f) {
-        out->fits = false;
-        return true;
+
+    float factor=1.0f;
+    if (nm_dual_ring_active(cfg)) {
+        float lo=0.0f, hi=1.0f;
+        for (unsigned i=0;i<24u;++i) {
+            const float mid=0.5f*(lo+hi);
+            const float env=nm_light_envelope(cfg,fminf(hx,hy)*mid);
+            const bool ok=(box_x*mid+env<=available_x) &&
+                          (box_y*mid+env<=available_y);
+            if(ok) lo=mid; else hi=mid;
+        }
+        factor=lo;
+        if (!isfinite(factor) || factor <= 0.0001f) {
+            out->fits=false;
+            return true;
+        }
+        out->envelope_px=nm_light_envelope(cfg,fminf(hx,hy)*factor);
+    } else {
+        const float legacy_available_x=available_x-support_x;
+        const float legacy_available_y=available_y-support_y;
+        if (legacy_available_x<=0.0f || legacy_available_y<=0.0f) {
+            out->fits=false;
+            return true;
+        }
+        factor=fminf(1.0f,fminf(legacy_available_x/box_x,
+                                legacy_available_y/box_y));
+        if (!isfinite(factor) || factor <= 0.0f) {
+            out->fits=false;
+            return true;
+        }
     }
-    out->scale = factor;
-    out->half_width = hx * factor;
-    out->half_height = hy * factor;
+    out->scale=factor;
+    out->half_width=hx*factor;
+    out->half_height=hy*factor;
     return true;
 }

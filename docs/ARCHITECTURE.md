@@ -39,7 +39,7 @@ Dependency rule: core math/config must remain testable without OBS. Effects have
 
 Canonical means an authoritative representation, not a special optimization technology.
 
-Settings flow: OBS settings → schema check/migrate → validate all fields → complete config snapshot → derived geometry/render parameters. `neonmask-config.*` now owns validation/defaults and `schema_version = 2`; v0/v1 scenes migrate the legacy uniform `scale` into equal mask width/height with zero mask offset, zero subject pan and 1× zoom. Presets write complete values and updates replace the filter snapshot only after validation. Rendering reads that snapshot and never parses user files.
+Settings flow: OBS settings → schema check/migrate → validate all fields → complete config snapshot → derived geometry/render parameters. `neonmask-config.*` owns validation/defaults and the current `schema_version = 4`; v0/v1 framing migrates to independent dimensions, schema-2 Bubble insets migrate to schema-3 freeform corners, and schema-3 P6E Dual Ring pixels migrate once to schema-4 mask-relative proportions. Presets write complete values and updates replace the filter snapshot only after validation. Rendering reads that snapshot and never parses user files.
 
 The config schema owns field name, type, unit, default, valid range and enum identity. Use one schema table where practical for host validation/UI bounds; test GPU enum and uniform agreement. Keep current keys and enum numeric values stable. `schema_version` is present: missing-version scenes are detected with `obs_data_has_user_value` (not default-value lookup); v0/v1 framing migrates additively to v2 without reinterpreting existing shape/style enum IDs; unsupported future versions keep the last validated state. Save explicit user values so changed preset defaults do not rewrite old scenes; scene-fixture runtime verification remains required.
 
@@ -282,3 +282,8 @@ beyond budget fails closed. The OBS filter size API cannot express a negative
 scene-space origin, so opt-in expansion shifts source content +left/+top and
 requires scene-transform compensation when exact world placement matters.
 Never change scene items implicitly; validate chains and transforms in G5.
+
+
+### P6F Dual Ring geometry resolution
+
+Dual Ring percentage authoring is resolved once per render from the fitted circular mask radius by `nm_config_ring_geometry_px`. Safe-fit calls the same resolver. This single-source derivation is required: do not duplicate percentage-to-pixel formulas in host, shader setup or bounds code. OBS scene-item transform happens downstream of the source filter and is intentionally outside this contract.
