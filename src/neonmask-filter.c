@@ -190,6 +190,14 @@ static void nm_update(void *data, obs_data_t *settings)
         .inner_rail_width_px = (float)obs_data_get_double(settings, "inner_rail_width"),
         .ring_inner_offset_px = (float)obs_data_get_double(settings, "ring_inner_offset"),
         .ring_spacing_px = (float)obs_data_get_double(settings, "ring_spacing"),
+        .ring_outer_width_pct = schema < 4u ? 12.0f :
+            (float)obs_data_get_double(settings, "ring_outer_width_pct"),
+        .ring_inner_width_pct = schema < 4u ? 9.0f :
+            (float)obs_data_get_double(settings, "ring_inner_width_pct"),
+        .ring_inner_offset_pct = schema < 4u ? 10.0f :
+            (float)obs_data_get_double(settings, "ring_inner_offset_pct"),
+        .ring_spacing_pct = schema < 4u ? 17.0f :
+            (float)obs_data_get_double(settings, "ring_spacing_pct"),
         .show_border = obs_data_get_bool(settings, "border_enabled"),
         .show_glow = obs_data_get_bool(settings, "glow_enabled"),
     };
@@ -222,6 +230,9 @@ static void nm_update(void *data, obs_data_t *settings)
         next.bubble_tail_tip_pos = 0.5f*(next.bubble_tail_tip + 1.0f);
         next.bubble_tail_depth = depth;
     }
+    if (schema < 4u && next.shape_id == NM_SHAPE_CIRCLE &&
+        next.ornament_mode == NM_ORNAMENT_DUAL_RING)
+        nm_config_migrate_ring_v3(&next);
     nm_config_validate(&next);
     const bool asset_changed=strcmp(next.svg_path,f->config.svg_path)!=0;
     f->config = next;
@@ -293,12 +304,29 @@ static void nm_update(void *data, obs_data_t *settings)
         if (!obs_data_has_user_value(settings,d4f_keys[i]))
             obs_data_set_double(settings,d4f_keys[i],d4f_values[i]);
 
-    /* P6E additive Dual Ring geometry: old scenes receive sane independent
-     * centerline defaults once; legacy ornaments ignore these hidden fields. */
+    /* P6E legacy pixel fields stay pinned for deterministic schema-3
+     * migration only; P6F rendering no longer consumes them. */
     if (!obs_data_has_user_value(settings, "ring_inner_offset"))
         obs_data_set_double(settings, "ring_inner_offset", next.ring_inner_offset_px);
     if (!obs_data_has_user_value(settings, "ring_spacing"))
         obs_data_set_double(settings, "ring_spacing", next.ring_spacing_px);
+
+    /* P6F mask-relative geometry. Schema-3 Dual Ring scenes are converted
+     * once from the documented 200px design radius; other scenes receive the
+     * canonical defaults without changing visible non-ring recipes. */
+    const char *const p6f_ring_keys[] = {
+        "ring_outer_width_pct","ring_inner_width_pct",
+        "ring_inner_offset_pct","ring_spacing_pct"
+    };
+    const double p6f_ring_values[] = {
+        next.ring_outer_width_pct,next.ring_inner_width_pct,
+        next.ring_inner_offset_pct,next.ring_spacing_pct
+    };
+    for (size_t i=0;i<4;++i)
+        if (schema < 4u || !obs_data_has_user_value(settings,p6f_ring_keys[i]))
+            obs_data_set_double(settings,p6f_ring_keys[i],p6f_ring_values[i]);
+    if (schema < 4u)
+        obs_data_set_int(settings, "schema_version", NM_CONFIG_SCHEMA_VERSION);
 
     /* v0/v1 used one uniform scale. Migrate once to independent dimensions
      * while keeping all old keys and enum values intact. */
@@ -391,6 +419,10 @@ static void nm_defaults(obs_data_t *settings)
     obs_data_set_default_double(settings, "inner_rail_width", cfg.inner_rail_width_px);
     obs_data_set_default_double(settings, "ring_inner_offset", cfg.ring_inner_offset_px);
     obs_data_set_default_double(settings, "ring_spacing", cfg.ring_spacing_px);
+    obs_data_set_default_double(settings, "ring_outer_width_pct", cfg.ring_outer_width_pct);
+    obs_data_set_default_double(settings, "ring_inner_width_pct", cfg.ring_inner_width_pct);
+    obs_data_set_default_double(settings, "ring_inner_offset_pct", cfg.ring_inner_offset_pct);
+    obs_data_set_default_double(settings, "ring_spacing_pct", cfg.ring_spacing_pct);
     obs_data_set_default_bool(settings, "border_enabled", cfg.show_border);
     obs_data_set_default_bool(settings, "glow_enabled", cfg.show_glow);
 }
@@ -471,15 +503,18 @@ static void nm_context_visibility(obs_properties_t *props, int shape_id,
                           ornament==NM_ORNAMENT_DUAL_RING;
         p=obs_properties_get(arts,"art_gap");
         if(p) obs_property_set_visible(p,ornament!=NM_ORNAMENT_NONE && !ring);
-        p=obs_properties_get(arts,"ring_inner_offset");
+        p=obs_properties_get(arts,"ring_outer_width_pct");
         if(p) obs_property_set_visible(p,ring);
-        p=obs_properties_get(arts,"ring_spacing");
+        p=obs_properties_get(arts,"ring_inner_width_pct");
+        if(p) obs_property_set_visible(p,ring);
+        p=obs_properties_get(arts,"ring_inner_offset_pct");
+        if(p) obs_property_set_visible(p,ring);
+        p=obs_properties_get(arts,"ring_spacing_pct");
         if(p) obs_property_set_visible(p,ring);
         p=obs_properties_get(arts,"ornament_width");
         if(p) {
-            obs_property_set_visible(p,tech || game || ring);
-            obs_property_float_set_limits(p,ring ? 8.0 : 1.0,
-                                           ring ? 26.0 : 64.0,0.5);
+            obs_property_set_visible(p,tech || game);
+            obs_property_float_set_limits(p,1.0,64.0,0.5);
         }
         p=obs_properties_get(arts,"ornament_length_x");
         if(p) obs_property_set_visible(p,tech || game);
@@ -487,10 +522,8 @@ static void nm_context_visibility(obs_properties_t *props, int shape_id,
         if(p) obs_property_set_visible(p,tech || game);
         p=obs_properties_get(arts,"inner_rail_width");
         if(p) {
-            obs_property_set_visible(p,game || ring);
-            obs_property_float_set_limits(p,ring ? 6.0 : 0.5,
-                                           ring ? 20.0 : 12.0,
-                                           ring ? 0.5 : 0.25);
+            obs_property_set_visible(p,game);
+            obs_property_float_set_limits(p,0.5,12.0,0.25);
         }
         p=obs_properties_get(arts,"ring_geometry_hint");
         if(p) obs_property_set_visible(p,ring);
@@ -587,6 +620,10 @@ static bool nm_preset_changed(obs_properties_t *props, obs_property_t *property,
     obs_data_set_double(settings, "inner_rail_width", cfg.inner_rail_width_px);
     obs_data_set_double(settings, "ring_inner_offset", cfg.ring_inner_offset_px);
     obs_data_set_double(settings, "ring_spacing", cfg.ring_spacing_px);
+    obs_data_set_double(settings, "ring_outer_width_pct", cfg.ring_outer_width_pct);
+    obs_data_set_double(settings, "ring_inner_width_pct", cfg.ring_inner_width_pct);
+    obs_data_set_double(settings, "ring_inner_offset_pct", cfg.ring_inner_offset_pct);
+    obs_data_set_double(settings, "ring_spacing_pct", cfg.ring_spacing_pct);
     obs_data_set_bool(settings, "border_enabled", cfg.show_border);
     obs_data_set_bool(settings, "glow_enabled", cfg.show_glow);
 
@@ -768,10 +805,14 @@ static obs_properties_t *nm_properties(void *data)
                          obs_module_text("Art.Intensity"), 0.0, 1.0, 0.01));
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "art_gap",
                          obs_module_text("Art.Gap"), 0.0, 96.0, 1.0));
-    NM_CUSTOM(obs_properties_add_float_slider(art_group, "ring_inner_offset",
-                         obs_module_text("Art.RingInnerOffset"), 10.0, 30.0, 0.5));
-    NM_CUSTOM(obs_properties_add_float_slider(art_group, "ring_spacing",
-                         obs_module_text("Art.RingSpacing"), 26.0, 44.0, 0.5));
+    NM_CUSTOM(obs_properties_add_float_slider(art_group, "ring_outer_width_pct",
+                         obs_module_text("Art.RingOuterWidthPct"), 8.0, 16.0, 0.25));
+    NM_CUSTOM(obs_properties_add_float_slider(art_group, "ring_inner_width_pct",
+                         obs_module_text("Art.RingInnerWidthPct"), 6.0, 12.0, 0.25));
+    NM_CUSTOM(obs_properties_add_float_slider(art_group, "ring_inner_offset_pct",
+                         obs_module_text("Art.RingInnerOffsetPct"), 9.0, 18.0, 0.25));
+    NM_CUSTOM(obs_properties_add_float_slider(art_group, "ring_spacing_pct",
+                         obs_module_text("Art.RingSpacingPct"), 16.0, 26.0, 0.25));
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "ornament_width",
                          obs_module_text("Art.Width"), 1.0, 64.0, 0.5));
     NM_CUSTOM(obs_properties_add_float_slider(art_group, "ornament_length_x",
@@ -1093,12 +1134,27 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_int(f->ornament_mode, f->config.ornament_mode);
     gs_effect_set_float(f->art_intensity, f->config.art_intensity);
     gs_effect_set_float(f->art_gap, f->config.art_gap);
-    gs_effect_set_float(f->ornament_width, f->config.ornament_width_px);
+    const bool dual_ring = f->config.shape_id == NM_SHAPE_CIRCLE &&
+                           f->config.ornament_mode == NM_ORNAMENT_DUAL_RING;
+    const float ring_design_scale = 0.01f * rx;
+    const float effective_outer_width = dual_ring ?
+        f->config.ring_outer_width_pct * ring_design_scale :
+        f->config.ornament_width_px;
+    const float effective_inner_width = dual_ring ?
+        f->config.ring_inner_width_pct * ring_design_scale :
+        f->config.inner_rail_width_px;
+    const float effective_inner_offset = dual_ring ?
+        f->config.ring_inner_offset_pct * ring_design_scale :
+        f->config.ring_inner_offset_px;
+    const float effective_ring_spacing = dual_ring ?
+        f->config.ring_spacing_pct * ring_design_scale :
+        f->config.ring_spacing_px;
+    gs_effect_set_float(f->ornament_width, effective_outer_width);
     gs_effect_set_float(f->ornament_length_x, f->config.ornament_length_x_px);
     gs_effect_set_float(f->ornament_length_y, f->config.ornament_length_y_px);
-    gs_effect_set_float(f->inner_rail_width, f->config.inner_rail_width_px);
-    gs_effect_set_float(f->ring_inner_offset, f->config.ring_inner_offset_px);
-    gs_effect_set_float(f->ring_spacing, f->config.ring_spacing_px);
+    gs_effect_set_float(f->inner_rail_width, effective_inner_width);
+    gs_effect_set_float(f->ring_inner_offset, effective_inner_offset);
+    gs_effect_set_float(f->ring_spacing, effective_ring_spacing);
     gs_effect_set_float(f->feather, f->config.feather_px);
     gs_effect_set_float(f->glow_radius, f->config.glow_px);
     gs_effect_set_float(f->glow_strength, f->config.glow_amount);
