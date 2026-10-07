@@ -905,3 +905,40 @@ move Dual Ring bounds, widening the outer rail changes safe-fit reach by only
 half the thickness delta, GPU pixels remain on the authored fixed radii, and
 the existing tapered-end / counter-rotation invariants continue to hold.
 
+## P6F — Resolution-Invariant Orbit Styling
+
+Actual OBS review of P6E showed the remaining failure mode was no longer
+centerline coupling: the same fixed source-pixel rail widths became visually
+thin after a high-resolution camera source was reduced to a small facecam in
+the scene. The filter cannot read a downstream OBS scene-item transform, so
+screen-pixel invariance is not available at filter-render time. P6F instead
+makes the Dual Ring **mask-relative**: the rail/body/gap proportions scale with
+the current fitted circular mask radius before OBS applies any scene transform.
+
+Canonical preset proportions are:
+- outer rail width: 12% of mask radius;
+- inner rail width: 9%;
+- frame edge -> inner centerline: 10%;
+- inner -> outer centerline spacing: 17%.
+
+Dedicated percentage controls replace the Dual Ring's generic pixel width
+controls in the UI. Their ranges are intentionally narrow (outer 8–16%, inner
+6–12%, inner offset 9–18%, spacing 16–26%) so every slider combination retains
+external rails and non-zero radial negative space. Generic pixel controls remain
+unchanged for Tech HUD/Game UI.
+
+Schema 4 migrates schema-3 P6E ring values through the documented 200px design
+radius (px × 0.5 = %). A single pure-C resolver converts percentage authoring to
+pixels and is shared by render and safe-fit, preventing host/shader bounds drift.
+Dual Ring safe-fit uses a bounded binary solve because mask-relative ornament
+support shrinks together with the mask. Expanded output keeps authored
+proportions exactly.
+
+P6F also changes the visual light hierarchy for downsampling resilience: the
+colored rail body remains dominant, the luminous core is broader but lower-alpha
+and less white, ring glow support is radius-relative, the locator is reduced
+again, and endpoint taper is lengthened. Unit tests cover migration and 50/200px
+radius conversion; safe-fit tests compare 320 and 1280 captures; the live
+OpenGL/D3D11 GPU fixture still requires thick rails, dark gaps, tapered points,
+transparent center and opposite CW/CCW motion.
+
