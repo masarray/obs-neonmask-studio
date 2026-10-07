@@ -56,7 +56,7 @@ static float nm_light_envelope(const nm_config *cfg, float mask_radius)
                                        &inner_offset,&spacing);
             const float glow_scale=nm_clamp(cfg->glow_px/22.0f,0.5f,2.0f);
             const float glow=cfg->show_glow && cfg->glow_amount>0.0f ?
-                r*0.045f*glow_scale : 0.0f;
+                fmaxf(2.0f,r*0.045f*glow_scale) : 0.0f;
             /* P6F support uses the same canonical resolver as nm_render. */
             accent=half_core+inner_offset+spacing+
                    0.5f*outer_width+glow+2.0f;
