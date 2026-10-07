@@ -227,10 +227,10 @@ int main(void)
     c.shape_id=NM_SHAPE_CIRCLE;
     c.ornament_mode=NM_ORNAMENT_DUAL_RING;
     c.art_intensity=1.0f;
-    c.ring_outer_width_pct=12.0f;
-    c.ring_inner_width_pct=9.0f;
-    c.ring_inner_offset_pct=10.0f;
-    c.ring_spacing_pct=17.0f;
+    c.ring_outer_width_pct=14.0f;
+    c.ring_inner_width_pct=10.0f;
+    c.ring_inner_offset_pct=11.0f;
+    c.ring_spacing_pct=20.0f;
     c.border_px=0.8f; c.show_glow=false;
 
     nm_fit_result f320={0},f1280={0};
@@ -262,7 +262,7 @@ int main(void)
           f.pad_right>0 && f.pad_bottom>0);
     const float authored_r=0.5f*320.0f*c.mask_width;
     const float expected_no_glow=0.5f*c.border_px+
-                                 authored_r*(0.10f+0.17f+0.06f)+2.0f;
+                                 authored_r*(0.11f+0.20f+0.07f)+2.0f;
     check("P6F expanded envelope matches canonical percentage reach",
           fabsf(f.envelope_px-expected_no_glow)<0.05f);
 
@@ -270,9 +270,9 @@ int main(void)
     c.ring_outer_width_pct=16.0f;
     check("P6F width changes only half-width reach at fixed centerlines",
           nm_safe_fit_calculate(&c,320,320,&f) && f.fits &&
-          fabsf((f.envelope_px-base_envelope)-authored_r*0.02f)<0.05f);
+          fabsf((f.envelope_px-base_envelope)-authored_r*0.01f)<0.05f);
 
-    c.ring_outer_width_pct=12.0f;
+    c.ring_outer_width_pct=14.0f;
     c.show_glow=true; c.glow_amount=0.90f; c.glow_px=22.0f;
     check("P6F default ring glow is radius-relative",
           nm_safe_fit_calculate(&c,320,320,&f) && f.fits &&
