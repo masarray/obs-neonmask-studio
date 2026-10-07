@@ -105,21 +105,21 @@ int main(void)
           p.shape == NM_SHAPE_CIRCLE &&
           p.ornament_mode == NM_ORNAMENT_DUAL_RING &&
           p.animation == NM_ANIM_FLOW);
-    check("P6E Rotating Ring authors substantial independent rail widths",
-          p.ornament_width >= 19.0 &&
-          p.inner_rail_width >= 14.0 &&
-          p.ornament_width > p.inner_rail_width &&
+    check("P6F Rotating Ring authors mask-relative rail mass",
+          p.ring_outer_width_pct >= 11.5 &&
+          p.ring_inner_width_pct >= 8.5 &&
+          p.ring_outer_width_pct > p.ring_inner_width_pct &&
           p.border_width <= 1.0);
-    check("P6E Rotating Ring owns independent centerline geometry",
-          p.ring_inner_offset >= 16.0 &&
-          p.ring_inner_offset <= 22.0 &&
-          p.ring_spacing >= 28.0 &&
-          p.ring_spacing <= 34.0);
-    check("P6E Rotating Ring uses premium controlled light hierarchy",
+    check("P6F Rotating Ring owns proportional centerline geometry",
+          p.ring_inner_offset_pct >= 9.5 &&
+          p.ring_inner_offset_pct <= 12.0 &&
+          p.ring_spacing_pct >= 16.0 &&
+          p.ring_spacing_pct <= 19.0);
+    check("P6F Rotating Ring uses body-first premium light hierarchy",
           p.color_mode == NM_COLOR_DUAL && p.primary != p.secondary &&
           p.glow_strength >= 0.88 && p.glow_radius >= 21.0 &&
-          p.mid_glow >= 0.84 && p.bloom_strength >= 0.86 &&
-          p.speed <= 0.60);
+          p.mid_glow >= 0.86 && p.bloom_strength >= 0.88 &&
+          p.speed <= 0.58);
     if (failures) return 1;
     puts("PASS: stable preset IDs through P6B Rotating Ring preset 12");
     return 0;
