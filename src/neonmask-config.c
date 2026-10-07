@@ -246,6 +246,18 @@ bool nm_config_apply_preset(nm_config *cfg, int preset_id)
     return true;
 }
 
+void nm_config_ring_geometry_px(const nm_config *cfg, float mask_radius,
+                                float *outer_width, float *inner_width,
+                                float *inner_offset, float *spacing)
+{
+    const float r=fmaxf(1.0f,mask_radius);
+    const float design=0.01f*r;
+    if(outer_width) *outer_width=cfg ? cfg->ring_outer_width_pct*design : 0.0f;
+    if(inner_width) *inner_width=cfg ? cfg->ring_inner_width_pct*design : 0.0f;
+    if(inner_offset) *inner_offset=cfg ? cfg->ring_inner_offset_pct*design : 0.0f;
+    if(spacing) *spacing=cfg ? cfg->ring_spacing_pct*design : 0.0f;
+}
+
 void nm_config_migrate_ring_v3(nm_config *cfg)
 {
     if (!cfg) return;
