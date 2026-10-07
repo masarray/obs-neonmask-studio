@@ -1136,19 +1136,14 @@ static void nm_render(void *data, gs_effect_t *unused)
     gs_effect_set_float(f->art_gap, f->config.art_gap);
     const bool dual_ring = f->config.shape_id == NM_SHAPE_CIRCLE &&
                            f->config.ornament_mode == NM_ORNAMENT_DUAL_RING;
-    const float ring_design_scale = 0.01f * rx;
-    const float effective_outer_width = dual_ring ?
-        f->config.ring_outer_width_pct * ring_design_scale :
-        f->config.ornament_width_px;
-    const float effective_inner_width = dual_ring ?
-        f->config.ring_inner_width_pct * ring_design_scale :
-        f->config.inner_rail_width_px;
-    const float effective_inner_offset = dual_ring ?
-        f->config.ring_inner_offset_pct * ring_design_scale :
-        f->config.ring_inner_offset_px;
-    const float effective_ring_spacing = dual_ring ?
-        f->config.ring_spacing_pct * ring_design_scale :
-        f->config.ring_spacing_px;
+    float effective_outer_width=f->config.ornament_width_px;
+    float effective_inner_width=f->config.inner_rail_width_px;
+    float effective_inner_offset=f->config.ring_inner_offset_px;
+    float effective_ring_spacing=f->config.ring_spacing_px;
+    if(dual_ring)
+        nm_config_ring_geometry_px(&f->config,rx,
+                                   &effective_outer_width,&effective_inner_width,
+                                   &effective_inner_offset,&effective_ring_spacing);
     gs_effect_set_float(f->ornament_width, effective_outer_width);
     gs_effect_set_float(f->ornament_length_x, f->config.ornament_length_x_px);
     gs_effect_set_float(f->ornament_length_y, f->config.ornament_length_y_px);
