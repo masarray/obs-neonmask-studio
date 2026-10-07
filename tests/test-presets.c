@@ -115,11 +115,11 @@ int main(void)
           p.ring_inner_offset_pct <= 13.0 &&
           p.ring_spacing_pct >= 19.0 &&
           p.ring_spacing_pct <= 22.0);
-    check("P6F Rotating Ring uses body-first premium light hierarchy",
+    check("P6G Rotating Ring uses faster distinct-orbit motion recipe",
           p.color_mode == NM_COLOR_DUAL && p.primary != p.secondary &&
           p.glow_strength >= 0.88 && p.glow_radius >= 21.0 &&
           p.mid_glow >= 0.86 && p.bloom_strength >= 0.88 &&
-          p.speed <= 0.58);
+          p.speed >= 0.68 && p.speed <= 0.78);
     if (failures) return 1;
     puts("PASS: stable preset IDs through P6B Rotating Ring preset 12");
     return 0;

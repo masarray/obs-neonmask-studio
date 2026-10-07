@@ -188,8 +188,9 @@ assert "dot(ringAnglePoint,ringAnglePoint)<0.0001" in shader
 assert "outerRel=frac(t-phase+1.0)" in shader
 assert "float innerStart=frac(0.50-phase+1.0)" in shader
 assert "float innerRel=frac(t-innerStart+1.0)" in shader
-assert "const float span=0.6666666667" in shader
-assert "const float tipFade=0.070" in shader
+assert "const float span=0.4400000000" in shader
+assert "const float span=0.6666666667" not in shader
+assert "const float tipFade=0.055" in shader
 assert "float innerOffset=halfCore+ring_inner_offset" in shader
 assert "float outerOffset=innerOffset+ring_spacing" in shader
 assert "float locatorGap=max(5.0,art_gap*0.65)" not in shader
@@ -203,17 +204,23 @@ assert "float dualOuterA = 0.0" in shader
 assert "float dualInnerA = 0.0" in shader
 assert "float dualOuterCoreA = 0.0" in shader
 assert "float dualInnerCoreA = 0.0" in shader
-assert "outerHalf*0.42" in shader and "innerHalf*0.40" in shader
-assert "art_intensity*0.54*outerCore" in shader
-assert "art_intensity*0.48*innerCore" in shader
-assert "baseRadius*0.045*glowScale" in shader
+assert "outerHalf*0.30" in shader and "innerHalf*0.28" in shader
+assert "art_intensity*0.40*outerCore" in shader
+assert "art_intensity*0.35*innerCore" in shader
+assert "baseRadius*0.032*glowScale" in shader
 
 assert "dualOuterColor=lerp(color_a.rgb,color_b.rgb,outerMix*0.80)" in shader
 assert "dualInnerColor=lerp(color_b.rgb,color_a.rgb,innerMix*0.80)" in shader
+assert "dualOuterGlowA=saturate(art_intensity*glow_strength*0.30" in shader
+assert "dualInnerGlowA=saturate(art_intensity*glow_strength*0.24" in shader
+assert "lerp(dualOuterColor,float3(1.0,1.0,1.0),0.22)" in shader
+assert "lerp(dualInnerColor,float3(1.0,1.0,1.0),0.18)" in shader
+
 assert "dualOuterHotA" not in shader and "dualInnerHotA" not in shader
 assert "outerStartCap" not in shader and "innerStartCap" not in shader
 assert "outerEndCap" not in shader and "innerEndCap" not in shader
-assert "coreA*=0.10" in shader and "outerA*=0.03" in shader
+assert "coreA*=0.0" in shader and "outerA*=0.0" in shader
+assert "fineA*=0.0" in shader and "rimA*=0.0" in shader
 assert "coreA*=0.80" in shader and "outerA*=0.40" in shader
 assert "float nodeD=" not in shader
 for key in ("art_intensity", "art_gap"):

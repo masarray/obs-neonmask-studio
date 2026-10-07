@@ -274,9 +274,9 @@ int main(void)
 
     c.ring_outer_width_pct=14.0f;
     c.show_glow=true; c.glow_amount=0.90f; c.glow_px=22.0f;
-    check("P6F default ring glow is radius-relative",
+    check("P6G tighter ring glow remains radius-relative",
           nm_safe_fit_calculate(&c,320,320,&f) && f.fits &&
-          fabsf((f.envelope_px-base_envelope)-authored_r*0.045f)<0.08f);
+          fabsf((f.envelope_px-base_envelope)-authored_r*0.032f)<0.08f);
 
     /* D3 gate: deterministic coverage of input/output dimensions, asymmetric
      * offsets and rotated AABBs over landscape, square and portrait captures.

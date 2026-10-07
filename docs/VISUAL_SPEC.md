@@ -137,7 +137,7 @@ filter pixel controls are source-relative, not screen/canvas coordinates.
 | Hexagon / diamond | Crisp sci-fi silhouette with stable corner joins | Exists approximately; validate corners in M2 |
 | Triangle / polygon | Parameterized sides with optional rounded joins | Triangle + regular polygon (5–12 sides) implemented in Phase A; rounded joins/visual parity still pending |
 | Neon Flow | Bright traveling accent over dim continuous rim | Angular preview exists; perimeter travel in M2 |
-| Rotating Ring | Two thick external 2/3-circle orbits keep mask-relative rail mass, clear radial gaps and tapered fading endpoints while counter-rotating | P6F mask-relative geometry + migration/safe-fit/GPU gates; actual OBS aesthetic acceptance pending |
+| Rotating Ring | Two short (< half-circle) external light objects counter-rotate with mask-relative mass, clear negative space and fading endpoints | P6G short-arc motion/optical GPU gates; actual OBS aesthetic acceptance pending |
 | Pulse Glow | Slow breathing halo with visible stable core | Pulse exists; restrained amplitude and long-session checks in M2 |
 | Electric | Sparse bounded arcs just outside the frame | New, opt-in M3; no full-screen flash |
 | Streamer | Rounded rim with small corner/status dots | New ornament recipe in M3 |
@@ -438,4 +438,33 @@ again, and endpoint taper is lengthened. Unit tests cover migration and 50/200px
 radius conversion; safe-fit tests compare 320 and 1280 captures; the live
 OpenGL/D3D11 GPU fixture still requires thick rails, dark gaps, tapered points,
 transparent center and opposite CW/CCW motion.
+
+## P6G — Distinct Counter-Orbit Polish
+
+Actual OBS review of P6F confirmed the mask-relative geometry solved the
+hairline/downscale failure, but the two 240-degree rails still read too much
+like incomplete circular borders and the authored motion felt slow. P6G keeps
+P6F's geometry and safe-fit architecture intact while changing the visual
+grammar from "two long rims" to "two unmistakable orbiting objects."
+
+The Dual Ring shader now uses a 44% turn span (~158.4 degrees), below half a
+circle, for both outer and inner objects. Their starts remain 180 degrees apart
+at phase zero, while the shared bounded Flow phase moves outer CW and inner CCW.
+The built-in Rotating Ring preset raises animation speed from 0.56 to 0.72,
+yielding a clearer counter-motion read without introducing another timer or
+state variable.
+
+Optical cleanup accompanies the shorter objects:
+- the 360-degree locator light is fully suppressed for Dual Ring;
+- luminous cores are narrower, lower-alpha and less white;
+- bloom support tightens from 4.5% to 3.2% of mask radius;
+- bloom contribution is reduced so saturated body color remains dominant;
+- endpoint taper shortens to suit the shorter object while preserving the
+  no-dot fading-point contract.
+
+GPU regression now proves the short-arc semantic directly: phase 0 and phase
+0.125 require outer departure/arrival in the CW direction and simultaneous
+inner departure/arrival in the CCW direction. It also samples angular blank
+regions beyond each 44% object at both normal and small-facecam radius, so a
+future regression toward near-complete rings will fail CI.
 
