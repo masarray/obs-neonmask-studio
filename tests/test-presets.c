@@ -106,15 +106,15 @@ int main(void)
           p.ornament_mode == NM_ORNAMENT_DUAL_RING &&
           p.animation == NM_ANIM_FLOW);
     check("P6F Rotating Ring authors mask-relative rail mass",
-          p.ring_outer_width_pct >= 11.5 &&
-          p.ring_inner_width_pct >= 8.5 &&
+          p.ring_outer_width_pct >= 13.5 &&
+          p.ring_inner_width_pct >= 9.5 &&
           p.ring_outer_width_pct > p.ring_inner_width_pct &&
           p.border_width <= 1.0);
     check("P6F Rotating Ring owns proportional centerline geometry",
-          p.ring_inner_offset_pct >= 9.5 &&
-          p.ring_inner_offset_pct <= 12.0 &&
-          p.ring_spacing_pct >= 16.0 &&
-          p.ring_spacing_pct <= 19.0);
+          p.ring_inner_offset_pct >= 10.5 &&
+          p.ring_inner_offset_pct <= 13.0 &&
+          p.ring_spacing_pct >= 19.0 &&
+          p.ring_spacing_pct <= 22.0);
     check("P6F Rotating Ring uses body-first premium light hierarchy",
           p.color_mode == NM_COLOR_DUAL && p.primary != p.secondary &&
           p.glow_strength >= 0.88 && p.glow_radius >= 21.0 &&
