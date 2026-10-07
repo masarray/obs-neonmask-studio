@@ -1199,6 +1199,83 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
         failed=1;
     }
 
+
+    /* P6F small-facecam raster gate. A 50px mask radius resolves the authored
+     * 12/9/10/17% recipe to 6/4.5/5/8.5px. This catches the exact failure
+     * observed in OBS where source-pixel styling collapsed into hairlines
+     * after a facecam was shown small. */
+    if(!failed) {
+        gs_texrender_t *small_target=gs_texrender_create(GS_RGBA,GS_ZS_NONE);
+        gs_stagesurf_t *small_stage=gs_stagesurface_create(W,H,GS_RGBA);
+        if(!small_target||!small_stage) {
+            if(small_stage) gs_stagesurface_destroy(small_stage);
+            if(small_target) gs_texrender_destroy(small_target);
+            fprintf(stderr,"FAIL: P6F small-radius resources\n");
+            failed=1;
+        } else {
+            struct vec2 small_half; vec2_set(&small_half,50.0f,50.0f);
+            gs_effect_set_vec2(gs_effect_get_param_by_name(effect,"half_size"),&small_half);
+            gs_effect_set_float(gs_effect_get_param_by_name(effect,"ornament_width"),6.0f);
+            gs_effect_set_float(gs_effect_get_param_by_name(effect,"inner_rail_width"),4.5f);
+            gs_effect_set_float(gs_effect_get_param_by_name(effect,"ring_inner_offset"),5.0f);
+            gs_effect_set_float(gs_effect_get_param_by_name(effect,"ring_spacing"),8.5f);
+            gs_effect_set_float(gs_effect_get_param_by_name(effect,"flow_phase"),0.0f);
+            gs_effect_set_texture(gs_effect_get_param_by_name(effect,"image"),input);
+
+            if(!gs_texrender_begin(small_target,W,H)) {
+                fprintf(stderr,"FAIL: P6F small-radius texrender begin\n");
+                failed=1;
+            } else {
+                const bool srgb=gs_framebuffer_srgb_enabled();
+                gs_enable_framebuffer_srgb(false);
+                gs_blend_state_push(); gs_enable_blending(false);
+                struct vec4 clear; vec4_zero(&clear);
+                gs_clear(GS_CLEAR_COLOR,&clear,0,0);
+                gs_ortho(0,(float)W,0,(float)H,-100,100);
+                gs_matrix_push(); gs_matrix_identity();
+                const enum gs_cull_mode cull=gs_get_cull_mode();
+                gs_set_cull_mode(GS_NEITHER);
+                while(gs_effect_loop(effect,"Draw")) gs_draw_sprite(input,0,W,H);
+                gs_set_cull_mode(cull);
+                gs_matrix_pop();
+                gs_blend_state_pop();
+                gs_enable_framebuffer_srgb(srgb);
+                gs_texrender_end(small_target);
+
+                gs_stage_texture(small_stage,gs_texrender_get_texture(small_target));
+                uint8_t *mapped=NULL; uint32_t stride=0;
+                if(!gs_stagesurface_map(small_stage,&mapped,&stride)) {
+                    failed=1;
+                } else {
+                    const float turn=0.58f;
+                    const unsigned locator=sample_alpha_polar(mapped,stride,160,160,50.0f,turn);
+                    const unsigned gap1=sample_alpha_polar(mapped,stride,160,160,52.0f,turn);
+                    const unsigned inner_edge1=sample_alpha_polar(mapped,stride,160,160,53.8f,turn);
+                    const unsigned inner_center=sample_alpha_polar(mapped,stride,160,160,55.4f,turn);
+                    const unsigned inner_edge2=sample_alpha_polar(mapped,stride,160,160,57.0f,turn);
+                    const unsigned gap2=sample_alpha_polar(mapped,stride,160,160,59.3f,turn);
+                    const unsigned outer_edge1=sample_alpha_polar(mapped,stride,160,160,61.5f,turn);
+                    const unsigned outer_center=sample_alpha_polar(mapped,stride,160,160,63.9f,turn);
+                    const unsigned outer_edge2=sample_alpha_polar(mapped,stride,160,160,66.3f,turn);
+                    const unsigned center=(mapped+160u*stride+160u*4u)[3];
+                    if(locator>80 || gap1>40 || gap2>40 ||
+                       inner_edge1<45 || inner_center<150 || inner_edge2<45 ||
+                       outer_edge1<55 || outer_center<165 || outer_edge2<55 ||
+                       center>3) {
+                        fprintf(stderr,
+                            "FAIL: P6F small radius locator=%u gap=%u inner=%u/%u/%u gap=%u outer=%u/%u/%u center=%u\n",
+                            locator,gap1,inner_edge1,inner_center,inner_edge2,
+                            gap2,outer_edge1,outer_center,outer_edge2,center);
+                        failed=1;
+                    }
+                    gs_stagesurface_unmap(small_stage);
+                }
+            }
+            gs_stagesurface_destroy(small_stage);
+            gs_texrender_destroy(small_target);
+        }
+    }
+
     for(int i=0;i<2;++i){
         gs_stagesurface_destroy(stages[i]);
         gs_texrender_destroy(targets[i]);
