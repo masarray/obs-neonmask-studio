@@ -53,12 +53,11 @@ static const nm_preset builtin[] = {
      0.82, 0.19, 5.0, 0.75, 20.0, 0.70, 0.70, 0, NM_STYLE_CLASSIC,
      true, true, 0.78, 0.84, 0.0, 0.10, NM_ORNAMENT_NONE, 0.0, 2.0, 0.22,
      10.0, 60.0, 48.0, 1.4, NM_COLOR_RAINBOW, 0.78, 0.96, 0.0, 1.0},
-    /* P6F: premium Dual Ring geometry is mask-relative, so camera/source
-     * resolution can no longer make the rails collapse into hairlines. The
-     * last four values are % of current circle radius: 14% outer width,
-     * 10% inner width, 11% frame->inner center and 20% centerline spacing. */
+    /* P6G: keep P6F's mask-relative premium rail mass, but make the two
+     * counter-orbiting objects unmistakable: each arc is < half a circle and
+     * the authored Flow speed is raised for a clearer opposing-motion read. */
     {NM_SHAPE_CIRCLE, NM_ANIM_FLOW, 0x00FFEA28u, 0x00F52CFFu,
-     0.72, 0.0, 0.8, 0.70, 22.0, 0.90, 0.56, 0, NM_STYLE_MINIMAL,
+     0.72, 0.0, 0.8, 0.70, 22.0, 0.90, 0.72, 0, NM_STYLE_MINIMAL,
      true, true, 0.88, 0.90, 0.0, 0.08, NM_ORNAMENT_DUAL_RING, 1.0, 8.0, 0.22,
      20.0, 60.0, 48.0, 15.0, NM_COLOR_DUAL, 0.65, 0.92, 0.0, 1.0,
      18.0, 30.0, 14.0, 10.0, 11.0, 20.0}
