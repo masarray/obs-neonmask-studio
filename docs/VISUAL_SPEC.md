@@ -413,10 +413,10 @@ makes the Dual Ring **mask-relative**: the rail/body/gap proportions scale with
 the current fitted circular mask radius before OBS applies any scene transform.
 
 Canonical preset proportions are:
-- outer rail width: 12% of mask radius;
-- inner rail width: 9%;
-- frame edge -> inner centerline: 10%;
-- inner -> outer centerline spacing: 17%.
+- outer rail width: 14% of mask radius;
+- inner rail width: 10%;
+- frame edge -> inner centerline: 11%;
+- inner -> outer centerline spacing: 20%.
 
 Dedicated percentage controls replace the Dual Ring's generic pixel width
 controls in the UI. Their ranges are intentionally narrow (outer 8–16%, inner
