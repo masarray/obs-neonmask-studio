@@ -105,7 +105,15 @@ assert 'obs_properties_get(arts,"ring_inner_offset_pct")' in host
 assert 'obs_properties_get(arts,"ring_spacing_pct")' in host
 assert 'obs_property_set_visible(p,tech || game);' in host
 assert 'obs_property_set_visible(p,game);' in host
-assert "NM_SHOW(\"speed\",border && animation!=NM_ANIM_STATIC)" in host
+assert 'NM_SHOW("border_width",border && !ring)' in host
+assert 'NM_SHOW("style",border && !ring)' in host
+assert 'NM_SHOW("color_mode",border && !ring)' in host
+assert 'NM_SHOW("segments",border && !ring)' in host
+assert 'NM_SHOW("premium_lighting",border && !ring &&' in host
+assert 'NM_SHOW("primary",border && (ring || color_mode != NM_COLOR_RAINBOW))' in host
+assert "ring ? animation==NM_ANIM_FLOW" in host
+assert 'obs_property_list_item_disable(p,1,ring)' in host
+assert 'obs_property_set_visible(p,!ring)' in host
 assert "NM_SHOW(\"glow_radius\",border && glow)" in host
 assert 'Bubble.TLX="Top-left X"' in en_locale
 assert 'Shape.TechHUD="Tech HUD Advanced — cut corners + brackets"' in en_locale
@@ -188,18 +196,19 @@ assert "dot(ringAnglePoint,ringAnglePoint)<0.0001" in shader
 assert "outerRel=frac(t-phase+1.0)" in shader
 assert "float innerStart=frac(0.50-phase+1.0)" in shader
 assert "float innerRel=frac(t-innerStart+1.0)" in shader
-assert "const float span=0.4400000000" in shader
+assert "const float span=0.3900000000" in shader
 assert "const float span=0.6666666667" not in shader
-assert "const float tipFade=0.055" in shader
-assert "float innerOffset=halfCore+ring_inner_offset" in shader
+assert "const float tipFade=0.065" in shader
+assert "float innerOffset=ring_inner_offset" in shader
+assert "halfCore+ring_inner_offset" not in shader
 assert "float outerOffset=innerOffset+ring_spacing" in shader
 assert "float locatorGap=max(5.0,art_gap*0.65)" not in shader
 assert "float orbitGap=max(7.0,art_gap*0.90)" not in shader
 assert "innerOffset+innerHalf+orbitGap+outerHalf" not in shader
 assert "float outerD=abs(d-outerOffset)" in shader
 assert "float innerD=abs(d-innerOffset)" in shader
-assert "outerHalf*lerp(0.08,1.0,outerTaper)" in shader
-assert "innerHalf*lerp(0.08,1.0,innerTaper)" in shader
+assert "outerHalf*lerp(0.05,1.0,outerTaper)" in shader
+assert "innerHalf*lerp(0.05,1.0,innerTaper)" in shader
 assert "float dualOuterA = 0.0" in shader
 assert "float dualInnerA = 0.0" in shader
 assert "float dualOuterCoreA = 0.0" in shader
@@ -209,8 +218,8 @@ assert "art_intensity*0.40*outerCore" in shader
 assert "art_intensity*0.35*innerCore" in shader
 assert "baseRadius*0.032*glowScale" in shader
 
-assert "dualOuterColor=lerp(color_a.rgb,color_b.rgb,outerMix*0.80)" in shader
-assert "dualInnerColor=lerp(color_b.rgb,color_a.rgb,innerMix*0.80)" in shader
+assert "dualOuterColor=lerp(color_a.rgb,color_b.rgb,outerMix*0.42)" in shader
+assert "dualInnerColor=lerp(color_b.rgb,color_a.rgb,innerMix*0.42)" in shader
 assert "dualOuterGlowA=saturate(art_intensity*glow_strength*0.30" in shader
 assert "dualInnerGlowA=saturate(art_intensity*glow_strength*0.24" in shader
 assert "lerp(dualOuterColor,float3(1.0,1.0,1.0),0.22)" in shader
@@ -250,6 +259,7 @@ assert "float midA =" in shader and "float outerA =" in shader
 assert "float fineA =" in shader and "float hotspotA =" in shader
 assert "float breath =" in shader and "animation_id == 1" in shader
 assert "float turnDelta =" in shader and "animation_id == 2" in shader
+assert "!(ornament_mode == 6 && shape_id == 1)" in shader
 assert "premul = outerColor * outerA" in shader
 assert "outerA *= 1.0-smoothstep(2.30*outerRadius,2.50*outerRadius,gap)" in shader
 assert "float3 outerColor = neon;" in shader
@@ -316,8 +326,8 @@ assert "filter will render transparent" in host
 assert "nm_custom_changed" in host, "User edits should reset preset status to Custom"
 assert 'obs_properties_add_list(props,"color_mode"' in host
 assert 'obs_properties_add_group(props,"rainbow_color"' in host
-assert 'NM_SHOW("secondary",border && color_mode == NM_COLOR_DUAL)' in host
-assert 'NM_SHOW("rainbow_color",border && color_mode == NM_COLOR_RAINBOW)' in host
+assert 'NM_SHOW("secondary",border && (ring || color_mode == NM_COLOR_DUAL))' in host
+assert 'NM_SHOW("rainbow_color",border && !ring && color_mode == NM_COLOR_RAINBOW)' in host
 for key in ("color_mode","rainbow_phase","rainbow_saturation","rainbow_hue_offset","rainbow_spread"):
     assert f'NM_PARAM({key}, "{key}")' in host
 assert "nm_rainbow_tick(&f->motion" in host
