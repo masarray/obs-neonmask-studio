@@ -261,12 +261,19 @@ int main(void)
           near(f.scale,1.0f) && f.pad_left>0 && f.pad_top>0 &&
           f.pad_right>0 && f.pad_bottom>0);
     const float authored_r=0.5f*320.0f*c.mask_width;
-    const float expected_no_glow=0.5f*c.border_px+
-                                 authored_r*(0.11f+0.20f+0.07f)+2.0f;
-    check("P6F expanded envelope matches canonical percentage reach",
+    const float expected_no_glow=authored_r*(0.11f+0.20f+0.07f)+2.0f;
+    check("P6H expanded envelope ignores hidden base-border width",
           fabsf(f.envelope_px-expected_no_glow)<0.05f);
 
     const float base_envelope=f.envelope_px;
+    c.border_px=64.0f;
+    c.style_id=NM_STYLE_HUD;
+    check("P6H hidden border/style cannot move Dual Ring safe-fit",
+          nm_safe_fit_calculate(&c,320,320,&f) && f.fits &&
+          fabsf(f.envelope_px-base_envelope)<0.05f);
+    c.border_px=0.8f;
+    c.style_id=NM_STYLE_MINIMAL;
+
     c.ring_outer_width_pct=16.0f;
     check("P6F width changes only half-width reach at fixed centerlines",
           nm_safe_fit_calculate(&c,320,320,&f) && f.fits &&
