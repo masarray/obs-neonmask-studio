@@ -945,8 +945,8 @@ float4 drawNeonMask(VertData v_in) : TARGET
                 ringAnglePoint=float2(1.0,0.0);
             float t=frac(atan2(ringAnglePoint.y,ringAnglePoint.x)/TAU+1.0);
             float phase=animation_id == 2 ? flow_phase : 0.0;
-            const float span=0.6666666667;
-            const float tipFade=0.070;
+            const float span=0.4400000000;
+            const float tipFade=0.055;
 
             float outerRel=frac(t-phase+1.0);
             float innerStart=frac(0.50-phase+1.0);
@@ -989,22 +989,23 @@ float4 drawNeonMask(VertData v_in) : TARGET
             // Premium rail anatomy: thick chromatic body + a much narrower
             // luminous centerline. The core follows the same taper so the tip
             // remains a fading point rather than terminating as a white bead.
-            float outerCoreHalf=max(0.95,outerHalf*0.42);
-            float innerCoreHalf=max(0.85,innerHalf*0.40);
+            float outerCoreHalf=max(0.80,outerHalf*0.30);
+            float innerCoreHalf=max(0.70,innerHalf*0.28);
             float outerCore=1.0-smoothstep(
                 max(0.0,outerCoreHalf-0.42),outerCoreHalf+0.46,outerD);
             float innerCore=1.0-smoothstep(
                 max(0.0,innerCoreHalf-0.38),innerCoreHalf+0.42,innerD);
-            /* The luminous core is intentionally BROADER but less white and
-             * lower alpha than P6E. Downsampling therefore preserves a thick
-             * colored rail instead of collapsing it into a bright hairline. */
-            dualOuterCoreA=saturate(art_intensity*0.54*outerCore*
+            /* P6G keeps the luminous spine subordinate to the saturated body.
+             * It is narrower, dimmer and less white than P6F so the rail reads
+             * as premium colored light rather than a pastel neon hose. */
+            dualOuterCoreA=saturate(art_intensity*0.40*outerCore*
                                     outerTaper*outerTaper);
-            dualInnerCoreA=saturate(art_intensity*0.48*innerCore*
+            dualInnerCoreA=saturate(art_intensity*0.35*innerCore*
                                     innerTaper*innerTaper);
 
-            // Opposed cyan/magenta progression keeps both orbits distinct
-            // where their 240-degree sectors overlap angularly.
+            // P6G uses short (< half-circle) opposed cyan/magenta objects.
+            // The larger negative space makes CW/CCW motion obvious even at
+            // small facecam scale instead of reading as two incomplete rims.
             float outerProgress=saturate(outerRel/span);
             float innerProgress=saturate(innerRel/span);
             float outerMix=smoothstep(0.05,0.95,outerProgress);
@@ -1018,25 +1019,26 @@ float4 drawNeonMask(VertData v_in) : TARGET
                  * its authored 22px reference instead of reintroducing source
                  * resolution dependence. */
                 float glowScale=clamp(glow_radius/22.0,0.50,2.0);
-                float glowSpread=max(2.0,baseRadius*0.045*glowScale);
+                float glowSpread=max(1.5,baseRadius*0.032*glowScale);
                 float outerGlow=1.0-smoothstep(0.0,glowSpread,
                     max(0.0,outerD-outerTaperHalf));
                 float innerGlow=1.0-smoothstep(0.0,glowSpread*0.84,
                     max(0.0,innerD-innerTaperHalf));
-                dualOuterGlowA=saturate(art_intensity*glow_strength*0.38*
+                dualOuterGlowA=saturate(art_intensity*glow_strength*0.30*
                                         outerGlow*outerTaper);
-                dualInnerGlowA=saturate(art_intensity*glow_strength*0.30*
+                dualInnerGlowA=saturate(art_intensity*glow_strength*0.24*
                                         innerGlow*innerTaper);
             }
 
-            // Locator is now only a positional hint. At scene-size facecams
-            // it should disappear before either orbit loses its visual mass.
-            coreA*=0.10;
-            fineA*=0.08;
-            midA*=0.04;
-            outerA*=0.03;
-            rimA*=0.03;
-            glintA*=0.04;
+            // P6G Dual Ring is self-explanatory without a third circular
+            // locator. Kill every 360-degree base-light layer so only the two
+            // moving objects define the visual grammar.
+            coreA*=0.0;
+            fineA*=0.0;
+            midA*=0.0;
+            outerA*=0.0;
+            rimA*=0.0;
+            glintA*=0.0;
         }
 
         // Tech HUD: rigid orthogonal brackets, sparse track cuts and strong
@@ -1285,8 +1287,8 @@ float4 drawNeonMask(VertData v_in) : TARGET
                  premul * (1.0 - dualInnerA);
         outA = dualInnerA + outA * (1.0 - dualInnerA);
 
-        float3 dualOuterCoreColor=lerp(dualOuterColor,float3(1.0,1.0,1.0),0.34);
-        float3 dualInnerCoreColor=lerp(dualInnerColor,float3(1.0,1.0,1.0),0.30);
+        float3 dualOuterCoreColor=lerp(dualOuterColor,float3(1.0,1.0,1.0),0.22);
+        float3 dualInnerCoreColor=lerp(dualInnerColor,float3(1.0,1.0,1.0),0.18);
         premul = dualOuterCoreColor * dualOuterCoreA +
                  premul * (1.0 - dualOuterCoreA);
         outA = dualOuterCoreA + outA * (1.0 - dualOuterCoreA);
