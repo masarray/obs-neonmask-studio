@@ -971,3 +971,37 @@ inner departure/arrival in the CCW direction. It also samples angular blank
 regions beyond each 44% object at both normal and small-facecam radius, so a
 future regression toward near-complete rings will fail CI.
 
+## P6H — Context-Aware Ring UI + Distinct Orbit Finish
+
+P6G solved the scene-scale readability and motion-speed problems, but real OBS
+review still showed the two 44% arcs visually approaching a broken circle and
+exposed unrelated/no-op controls in the Properties panel. P6H is a focused
+finish pass; it keeps P6F/P6G mask-relative geometry, safe-fit architecture and
+authored rail thickness.
+
+Visual finish:
+- each object spans **39% of a turn (~140.4°)**, leaving ~39.6° between
+  neighboring endpoints at phase zero;
+- speed remains **0.72**;
+- endpoint fade is slightly longer and narrows to ~5% rail width at the tip;
+- outer stays primary/cyan-dominant and inner secondary/magenta-dominant, with
+  restrained 42% cross-color progression instead of near-full color swapping;
+- saved base border width/style no longer move orbit centerlines;
+- legacy hotspot lighting is explicitly suppressed for Dual Ring.
+
+Context-aware UI:
+- hide Shape Rotation, Base Border Width, Border Style, Color Mode, Segments and
+  the generic Premium Lighting group when Circle + Dual Ring is active;
+- always expose Primary + Secondary colors for Dual Ring;
+- keep the dedicated mask-relative four ring controls, Art Intensity, Glow
+  enable/radius/strength, Static/Flow animation and Speed;
+- Pulse remains visible only as a disabled list item because libobs list items
+  can be disabled but not conditionally removed without rebuilding the property;
+- hidden settings remain persisted and are not reset.
+
+Regression gates deliberately use pathological hidden values (64px border width
+and full hotspot strength) to prove they cannot move or contaminate the ring.
+GPU tests retain normal/small-radius rail, gap, fade and CW/CCW checks while
+sampling the larger 39% angular blanks. Safe-fit tests prove hidden border/style
+values cannot alter the Dual Ring envelope.
+
