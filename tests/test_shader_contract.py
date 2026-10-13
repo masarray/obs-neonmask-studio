@@ -123,14 +123,14 @@ assert 'may shrink the mask' in en_locale
 assert 'Art.Gap="Outer ornament gap from frame (px)"' in en_locale
 assert 'Art.RingInnerOffset="Inner orbit center distance from frame (px)"' in en_locale
 assert 'Art.RingSpacing="Inner ↔ outer orbit center spacing (px)"' in en_locale
-assert 'Art.RingGeometryHint="Dual Ring is mask-relative:' in en_locale
+assert 'Art.RingGeometryHint="Dual Ring uses two short mask-relative counter-orbits;' in en_locale
 assert 'Border.Width="Base neon border width (px)"' in en_locale
 assert 'Preset.TechHUD="Tech HUD Advanced — Cyan + Amber"' in en_locale
 assert 'Shape.GameUI="Game UI — corner brackets + inner rail"' in en_locale
 assert 'Preset.GameUI="Game UI — Neon Green"' in en_locale
 assert 'Preset.GradientRainbow="Gradient Rainbow — Rotating Spectrum"' in en_locale
 assert 'Preset.RotatingRing="Rotating Ring — Counter Orbit"' in en_locale
-assert 'Art.DualRing="Dual Ring — counter-rotating 2/3 arcs"' in en_locale
+assert 'Art.DualRing="Dual Ring — short counter-orbits"' in en_locale
 assert 'Art.RingOuterWidthPct="Outer orbit width (% mask radius)"' in en_locale
 assert 'Art.RingInnerWidthPct="Inner orbit width (% mask radius)"' in en_locale
 assert 'Art.RingInnerOffsetPct="Frame → inner orbit center (% mask radius)"' in en_locale
