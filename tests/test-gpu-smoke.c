@@ -1144,7 +1144,9 @@ static int verify_counter_rotating_dual_ring(gs_effect_t *effect)
          * phase 0.125: outer shifts CW to [.125,.515], inner shifts CCW
          * to [.375,.765]. Arrival/departure samples prove opposite motion. */
         outer_leave[frame]=sample_alpha_polar(mapped,stride,160,160,131.0f,0.05f);
-        outer_arrive[frame]=sample_alpha_polar(mapped,stride,160,160,131.0f,0.50f);
+        /* 0.44 is outside phase-0 [0,.39] but comfortably inside the
+         * phase-.125 body [.125,.515], away from the endpoint taper. */
+        outer_arrive[frame]=sample_alpha_polar(mapped,stride,160,160,131.0f,0.44f);
         inner_leave[frame]=sample_alpha_polar(mapped,stride,160,160,111.0f,0.85f);
         inner_arrive[frame]=sample_alpha_polar(mapped,stride,160,160,111.0f,0.45f);
         center_a[frame]=(mapped+160u*stride+160u*4u)[3];
