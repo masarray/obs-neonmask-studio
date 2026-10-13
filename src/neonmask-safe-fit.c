@@ -23,11 +23,15 @@ static float nm_light_envelope(const nm_config *cfg, float mask_radius)
     if (!cfg->show_border) return margin;
 
     const float half_core = fmaxf(0.25f, cfg->border_px * 0.5f);
-    margin = fmaxf(margin, half_core + 2.0f);
-    if (cfg->style_id == NM_STYLE_DOUBLE || cfg->style_id == NM_STYLE_HUD)
-        margin = fmaxf(margin, half_core + 5.0f);
-
     const bool dual_ring = nm_dual_ring_active(cfg);
+    /* P6H Dual Ring owns no base rim/locator. Saved border width/style must
+     * therefore neither move the orbit radii nor inflate its fit envelope. */
+    if (!dual_ring) {
+        margin = fmaxf(margin, half_core + 2.0f);
+        if (cfg->style_id == NM_STYLE_DOUBLE || cfg->style_id == NM_STYLE_HUD)
+            margin = fmaxf(margin, half_core + 5.0f);
+    }
+
     if (!dual_ring && cfg->show_glow && cfg->glow_amount > 0.0f &&
         (cfg->mid_glow_strength > 0.0f || cfg->bloom_strength > 0.0f))
         margin = fmaxf(margin, half_core + 2.5f * cfg->glow_px + 2.0f);
@@ -57,9 +61,9 @@ static float nm_light_envelope(const nm_config *cfg, float mask_radius)
             const float glow_scale=nm_clamp(cfg->glow_px/22.0f,0.5f,2.0f);
             const float glow=cfg->show_glow && cfg->glow_amount>0.0f ?
                 fmaxf(1.5f,r*0.032f*glow_scale) : 0.0f;
-            /* P6G support matches the tighter radius-relative shader glow. */
-            accent=half_core+inner_offset+spacing+
-                   0.5f*outer_width+glow+2.0f;
+            /* P6H matches the shader exactly: centerline offset is measured
+             * directly from d==0 (mask edge), with no hidden border-width term. */
+            accent=inner_offset+spacing+0.5f*outer_width+glow+2.0f;
         }
         if (cfg->ornament_mode != NM_ORNAMENT_NONE)
             margin = fmaxf(margin, accent);

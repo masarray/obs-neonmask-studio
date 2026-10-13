@@ -473,23 +473,36 @@ static void nm_context_visibility(obs_properties_t *props, int shape_id,
                                   bool border, bool glow, bool expanded)
 {
     nm_geometry_visibility(props,shape_id);
+    const bool ring = shape_id==NM_SHAPE_CIRCLE &&
+                      ornament==NM_ORNAMENT_DUAL_RING;
     obs_property_t *p;
 #define NM_SHOW(key, yes) do { p=obs_properties_get(props,key); \
                               if(p) obs_property_set_visible(p,yes); } while(0)
-    NM_SHOW("border_width",border);
-    NM_SHOW("style",border);
-    NM_SHOW("color_mode",border);
-    NM_SHOW("primary",border && color_mode != NM_COLOR_RAINBOW);
-    NM_SHOW("secondary",border && color_mode == NM_COLOR_DUAL);
-    NM_SHOW("rainbow_color",border && color_mode == NM_COLOR_RAINBOW);
+    /* P6H: authored Dual Ring owns its rail anatomy. Hide generic border,
+     * segmentation and color-mode controls that are either ignored or
+     * misleading, but keep the real master enable + dedicated ring controls. */
+    NM_SHOW("border_width",border && !ring);
+    NM_SHOW("style",border && !ring);
+    NM_SHOW("color_mode",border && !ring);
+    NM_SHOW("primary",border && (ring || color_mode != NM_COLOR_RAINBOW));
+    NM_SHOW("secondary",border && (ring || color_mode == NM_COLOR_DUAL));
+    NM_SHOW("rainbow_color",border && !ring && color_mode == NM_COLOR_RAINBOW);
     NM_SHOW("signature_art",border);
     NM_SHOW("glow_enabled",border);
     NM_SHOW("glow_radius",border && glow);
     NM_SHOW("glow_strength",border && glow);
-    NM_SHOW("premium_lighting",border && (glow || animation==NM_ANIM_FLOW));
-    NM_SHOW("speed",border && animation!=NM_ANIM_STATIC);
-    NM_SHOW("segments",border);
+    NM_SHOW("premium_lighting",border && !ring &&
+            (glow || animation==NM_ANIM_FLOW));
+    NM_SHOW("speed",border && (ring ? animation==NM_ANIM_FLOW :
+                                      animation!=NM_ANIM_STATIC));
+    NM_SHOW("segments",border && !ring);
 #undef NM_SHOW
+
+    /* Pulse drives the common rim, not the counter-orbit phase. Keep the
+     * Animation selector because Static/Flow are meaningful, but make Pulse
+     * unavailable while Dual Ring is active. */
+    p=obs_properties_get(props,"animation");
+    if(p) obs_property_list_item_disable(p,1,ring);
     obs_property_t *art=obs_properties_get(props,"signature_art");
     obs_properties_t *arts=art?obs_property_group_content(art):NULL;
     if(arts) {
@@ -499,8 +512,6 @@ static void nm_context_visibility(obs_properties_t *props, int shape_id,
                           ornament==NM_ORNAMENT_TECH_HUD;
         const bool game = shape_id==NM_SHAPE_GAME_UI &&
                           ornament==NM_ORNAMENT_GAME_UI;
-        const bool ring = shape_id==NM_SHAPE_CIRCLE &&
-                          ornament==NM_ORNAMENT_DUAL_RING;
         p=obs_properties_get(arts,"art_gap");
         if(p) obs_property_set_visible(p,ornament!=NM_ORNAMENT_NONE && !ring);
         p=obs_properties_get(arts,"ring_outer_width_pct");
@@ -557,6 +568,8 @@ static void nm_context_visibility(obs_properties_t *props, int shape_id,
             (shape_id==NM_SHAPE_TECH_HUD && ornament==NM_ORNAMENT_TECH_HUD) ||
             (shape_id==NM_SHAPE_GAME_UI && ornament==NM_ORNAMENT_GAME_UI) ||
             (shape_id==NM_SHAPE_CIRCLE && ornament==NM_ORNAMENT_DUAL_RING);
+        p=obs_properties_get(geometry,"shape_rotation");
+        if(p) obs_property_set_visible(p,!ring);
         p=obs_properties_get(geometry,"safe_fit");
         if(p) obs_property_set_visible(p,!expanded && !outer_authored);
     }

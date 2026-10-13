@@ -758,7 +758,8 @@ float4 drawNeonMask(VertData v_in) : TARGET
         // instead of dimming the remaining 360 degrees of its core.
         // Angular routing is provisional until contour-length flow is built.
         float hot = 0.0;
-        if (animation_id == 2 && hotspot_strength > 0.0) {
+        if (animation_id == 2 && hotspot_strength > 0.0 &&
+            !(ornament_mode == 6 && shape_id == 1)) {
             float travelTurn = angle / TAU;
             if (ornament_mode == 1 && (shape_id == 0 || shape_id == 5))
                 travelTurn = roundedContourTurn(rotatePoint(p, shape_rotation),
@@ -928,13 +929,13 @@ float4 drawNeonMask(VertData v_in) : TARGET
                 artBarGlowA = artBarA * glow_strength * 0.22;
         }
 
-        // P6F Resolution-Invariant Premium External Dual Orbit.
+        // P6H Distinct Counter-Orbit Finish.
         //
-        // BOTH 240-degree rails are outside the portrait silhouette. The mask
-        // edge is only a faint locator, followed by a dark breathing gap,
-        // a thick INNER orbit, another dark radial gap, then the thicker
-        // OUTER orbit. Outer moves CW; inner moves CCW from the same bounded
-        // host phase, so relative motion never drifts.
+        // Both authored objects are external to the portrait and each spans
+        // only 39% of a turn (~140.4 degrees). That leaves ~39.6 degrees of
+        // angular breathing room between neighboring endpoints at phase zero,
+        // so the eye reads TWO moving objects instead of one broken circle.
+        // Outer moves CW; inner moves CCW from the same bounded host phase.
         //
         // Endpoints intentionally have NO circular cap primitive. Instead the
         // rail half-width and alpha taper together over a short angular run,
@@ -945,8 +946,8 @@ float4 drawNeonMask(VertData v_in) : TARGET
                 ringAnglePoint=float2(1.0,0.0);
             float t=frac(atan2(ringAnglePoint.y,ringAnglePoint.x)/TAU+1.0);
             float phase=animation_id == 2 ? flow_phase : 0.0;
-            const float span=0.4400000000;
-            const float tipFade=0.055;
+            const float span=0.3900000000;
+            const float tipFade=0.065;
 
             float outerRel=frac(t-phase+1.0);
             float innerStart=frac(0.50-phase+1.0);
@@ -967,17 +968,17 @@ float4 drawNeonMask(VertData v_in) : TARGET
             // CURRENT fitted mask radius. Width and centerline positions are
             // therefore resolution-independent proportions yet remain fully
             // decoupled in shader space.
-            float innerOffset=halfCore+ring_inner_offset;
+            float innerOffset=ring_inner_offset;
             float outerOffset=innerOffset+ring_spacing;
 
             float outerD=abs(d-outerOffset);
             float innerD=abs(d-innerOffset);
 
-            // Width tapers to ~8% at the fading tip while the alpha envelope
+            // Width tapers to ~5% at the fading tip while the alpha envelope
             // simultaneously falls to zero. This is a line termination, not
             // a round cap, so no endpoint dot can be formed.
-            float outerTaperHalf=outerHalf*lerp(0.08,1.0,outerTaper);
-            float innerTaperHalf=innerHalf*lerp(0.08,1.0,innerTaper);
+            float outerTaperHalf=outerHalf*lerp(0.05,1.0,outerTaper);
+            float innerTaperHalf=innerHalf*lerp(0.05,1.0,innerTaper);
             float outerRadial=1.0-smoothstep(
                 max(0.0,outerTaperHalf-0.78),outerTaperHalf+0.82,outerD);
             float innerRadial=1.0-smoothstep(
@@ -1003,18 +1004,19 @@ float4 drawNeonMask(VertData v_in) : TARGET
             dualInnerCoreA=saturate(art_intensity*0.35*innerCore*
                                     innerTaper*innerTaper);
 
-            // P6G uses short (< half-circle) opposed cyan/magenta objects.
-            // The larger negative space makes CW/CCW motion obvious even at
-            // small facecam scale instead of reading as two incomplete rims.
+            // P6H keeps object identity even in a still: outer stays mostly
+            // primary/cyan, inner stays mostly secondary/magenta. A restrained
+            // cross-color progression adds richness without visually merging
+            // the two counter-orbiting objects.
             float outerProgress=saturate(outerRel/span);
             float innerProgress=saturate(innerRel/span);
             float outerMix=smoothstep(0.05,0.95,outerProgress);
             float innerMix=smoothstep(0.05,0.95,innerProgress);
-            dualOuterColor=lerp(color_a.rgb,color_b.rgb,outerMix*0.80);
-            dualInnerColor=lerp(color_b.rgb,color_a.rgb,innerMix*0.80);
+            dualOuterColor=lerp(color_a.rgb,color_b.rgb,outerMix*0.42);
+            dualInnerColor=lerp(color_b.rgb,color_a.rgb,innerMix*0.42);
 
             if(glow_enabled != 0) {
-                /* Default ring glow is 4.5% of mask radius. The existing
+                /* Default ring glow is 3.2% of mask radius. The existing
                  * global radius slider acts as a bounded multiplier around
                  * its authored 22px reference instead of reintroducing source
                  * resolution dependence. */
