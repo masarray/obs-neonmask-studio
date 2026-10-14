@@ -1,5 +1,6 @@
 # Delivery roadmap and evidence ledger
 
+> **Current-state note:** This file is a chronological engineering ledger and intentionally preserves historical “next phase” statements. For the current public release, shipped features, and open gates, use [PROJECT_STATUS.md](PROJECT_STATUS.md).\n\n
 Snapshot: 2026-09-26. Baseline includes Windows preview/D3D11 evidence through PR #8; this ledger is updated with each verified runtime slice.
 This file owns delivery status; [PRODUCT_SPEC.md](PRODUCT_SPEC.md) owns requirements.
 Update the ledger in the same change that advances implementation or verification.
