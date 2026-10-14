@@ -130,13 +130,14 @@ jobs:
           "$hash  $packageZip" | Set-Content -Encoding ascii $packageSha
           Write-Host "Windows package ZIP SHA256: $hash"
           $fixtureHash = (Get-FileHash -Algorithm SHA256 "obs-neonmask-M0-visual-fixtures.zip").Hash.ToLowerInvariant()
+          $releaseTag = if ($isTag) { $env:GITHUB_REF_NAME } else { "" }
           $buildInfo = [ordered]@{
             checkout_commit = (& git rev-parse HEAD).Trim()
             workflow_url = "https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
             obs_sdk = "31.1.1"
             target = "windows-x64"
             build_config = "Release"
-            release_tag = if ($isTag) { $env:GITHUB_REF_NAME } else { $null }
+            release_tag = $releaseTag
             gpu_smoke = "D3D11 effect compilation plus direct shader GPU pixel fixtures; not final OBS canvas"
             plugin_zip = $packageZip
             plugin_zip_sha256 = $hash
@@ -147,7 +148,7 @@ jobs:
       - name: Upload Windows preview plugin
         uses: actions/upload-artifact@v4
         with:
-          name: obs-neonmask-windows-x64-${{ github.ref_name }}
+          name: obs-neonmask-v0.1.0-windows-x64-preview
           path: |
             obs-neonmask-*-windows-x64*.zip
             obs-neonmask-*-windows-x64*.sha256
