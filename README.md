@@ -2,7 +2,7 @@
 
 A native, GPU-rendered OBS facecam filter: **mask + dual-color neon core + analytic glow + animation** driven by the **same signed-distance shape**. **v0.1.0 is the first public unsigned preview release** for Windows x64; it is intentionally labeled preview rather than production-certified software.
 
-**Download:** [Latest GitHub Release](https://github.com/masarray/obs-neonmask-studio/releases/latest) · [v0.1.0 release notes](docs/RELEASE_NOTES_v0.1.0.md)
+**Download:** [OBS NeonMask Studio v0.1.0 — Public Preview](https://github.com/masarray/obs-neonmask-studio/releases/tag/v0.1.0) · [Release notes](docs/RELEASE_NOTES_v0.1.0.md)
 
 ## Project direction
 
