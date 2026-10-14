@@ -3,7 +3,7 @@
 [![Build and test](https://github.com/masarray/obs-neonmask-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/masarray/obs-neonmask-studio/actions/workflows/ci.yml)
 [![GPU shader smoke](https://github.com/masarray/obs-neonmask-studio/actions/workflows/gpu-smoke.yml/badge.svg)](https://github.com/masarray/obs-neonmask-studio/actions/workflows/gpu-smoke.yml)
 [![Windows x64 preview](https://github.com/masarray/obs-neonmask-studio/actions/workflows/windows-preview.yml/badge.svg)](https://github.com/masarray/obs-neonmask-studio/actions/workflows/windows-preview.yml)
-[![Release](https://img.shields.io/github/v/release/masarray/obs-neonmask-studio?include_prereleases&label=public%20preview)](https://github.com/masarray/obs-neonmask-studio/releases/latest)
+[![Release](https://img.shields.io/github/v/release/masarray/obs-neonmask-studio?include_prereleases&label=public%20preview)](https://github.com/masarray/obs-neonmask-studio/releases/tag/v0.1.0)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
 **A native, GPU-rendered OBS facecam mask and neon-frame filter.** NeonMask Studio combines analytic masks, dual-color neon, glow, authored futuristic ornaments, and deterministic animation in one OBS video filter—without a browser source or recurring CPU texture-upload pipeline.
