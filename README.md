@@ -1,89 +1,191 @@
 # OBS NeonMask Studio
 
-A native, GPU-rendered OBS facecam filter: **mask + dual-color neon core + analytic glow + animation** driven by the **same signed-distance shape**. **v0.1.0 is the first public unsigned preview release** for Windows x64; it is intentionally labeled preview rather than production-certified software.
+[![Build and test](https://github.com/masarray/obs-neonmask-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/masarray/obs-neonmask-studio/actions/workflows/ci.yml)
+[![GPU shader smoke](https://github.com/masarray/obs-neonmask-studio/actions/workflows/gpu-smoke.yml/badge.svg)](https://github.com/masarray/obs-neonmask-studio/actions/workflows/gpu-smoke.yml)
+[![Windows x64 preview](https://github.com/masarray/obs-neonmask-studio/actions/workflows/windows-preview.yml/badge.svg)](https://github.com/masarray/obs-neonmask-studio/actions/workflows/windows-preview.yml)
+[![Release](https://img.shields.io/github/v/release/masarray/obs-neonmask-studio?include_prereleases&label=public%20preview)](https://github.com/masarray/obs-neonmask-studio/releases/latest)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
-**Download:** [OBS NeonMask Studio v0.1.0 — Public Preview](https://github.com/masarray/obs-neonmask-studio/releases/tag/v0.1.0) · [Release notes](docs/RELEASE_NOTES_v0.1.0.md)
+**A native, GPU-rendered OBS facecam mask and neon-frame filter.** NeonMask Studio combines analytic masks, dual-color neon, glow, authored futuristic ornaments, and deterministic animation in one OBS video filter—without a browser source or recurring CPU texture-upload pipeline.
 
-## Project direction
+**Current public release:** [v0.1.0 — Public Preview](https://github.com/masarray/obs-neonmask-studio/releases/tag/v0.1.0)  
+**Platform package:** Windows x64 · unsigned preview binary  
+**Release notes:** [docs/RELEASE_NOTES_v0.1.0.md](docs/RELEASE_NOTES_v0.1.0.md) · **Current engineering status:** [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md)
 
-Start with the [product and engineering charter](docs/PRODUCT_SPEC.md). It links the canonical [architecture](docs/ARCHITECTURE.md), [visual specification](docs/VISUAL_SPEC.md), [quality gates](docs/QUALITY_GATES.md) and [delivery roadmap](docs/ROADMAP.md). Requirements are targets; the roadmap distinguishes implemented code from runtime-verified behavior.
+> **Preview status:** v0.1.0 is suitable for hands-on testing and content creation, but it is not presented as a production-certified/stable compatibility release. See [Known limitations](#known-limitations).
 
-## Implemented
+## Why NeonMask Studio?
 
-- One OBS video filter: `NeonMask Studio — Facecam Mask & Border`.
-- Rounded rectangle, circle, oval, rectangle, hexagon, diamond, triangle, polygon, **integrated Chat Bubble**, **Angled Card**, **HUD Cut Panel**, **Squircle** and opt-in restricted **local SVG-path mask**; independent mask size/X/Y, subject pan/zoom, rotation and feather.
-- Dual-color neon, width, analytic halo radius/intensity, static/pulse/traveling-light modes, angular segmentation.
-- Four GPU-composited border styles: Classic Neon, Cyber Double Rim, Tech HUD, Minimal Glow.
-- Nine editable presets: Cyber Rounded, Reactor Ring, Emerald Hex, Ember Frame, Tech HUD, Streamer Bubble, Angled Card, HUD Cut Panel and Squircle. Existing IDs 1–7 are stable; HUD/Squircle append 8/9. Reselecting Streamer uses the integrated bubble; previously saved rounded Streamer scenes retain their stored shape. Explicit signature ornament recipes (Cyber corner traces, Reactor arcs, HUD brackets, legacy Streamer decorative bubble tail) are optional and follow the mask contour.
-- OBS-native properties, English and Indonesian strings, direct GPU effect. No web browser or recurring texture uploads.
-- Release-safe C geometry, contour, preset and motion tests; static shader/host contract and actual libobs OpenGL/D3D11 direct-effect pixel fixtures.
-- Corrected RGBA color handling, captured-alpha compositing and base-size calculations.
+- **Native OBS filter** — no browser overlay and no web runtime.
+- **One contour authority** — mask, border, glow, ornaments, and animation are derived from the same geometry contract.
+- **Facecam-first framing** — independent mask placement plus subject pan/zoom.
+- **Premium authored designs** — not just a uniform outline with different colors.
+- **Scene-scale readable motion** — mask-relative counter-orbits retain visual mass when a facecam is scaled down.
+- **Context-aware controls** — irrelevant controls are hidden/disabled for specialized designs such as Dual Ring.
+- **GPU verification** — OpenGL/Mesa and Windows D3D11 direct-effect pixel fixtures run in CI.
+- **Portable release package** — public Windows ZIP uses the standard OBS plugin folder layout.
 
-## Build
+## Featured designs
 
-Requires a matching OBS Studio **libobs development SDK**, CMake 3.20+, and C11 compiler.
+v0.1.0 ships **12 editable presets**:
+
+| # | Preset | Character |
+| ---: | --- | --- |
+| 1 | Cyber Rounded | Pink/cyan double-rim rounded frame |
+| 2 | Reactor Ring | Blue/pink circular reactor treatment |
+| 3 | Emerald Hex | Green/cyan hexagonal neon |
+| 4 | Ember Frame | Warm orange/gold minimal frame |
+| 5 | Tech HUD Advanced | Futuristic cyan/amber cut-frame treatment |
+| 6 | Streamer Bubble | Integrated chat-bubble silhouette |
+| 7 | Angled Card | Diagonal authored contour |
+| 8 | HUD Cut Panel | Stepped/cut HUD panel |
+| 9 | Neon Squircle | Soft superellipse-style contour |
+| 10 | Game UI | Green authored corner modules |
+| 11 | Gradient Rainbow | Animated rotating spectrum |
+| 12 | Rotating Ring — Counter Orbit | Two short external light objects rotating in opposite directions |
+
+The **Rotating Ring** design uses two 39%-turn mask-relative light objects, outer CW / inner CCW motion, independent primary/secondary identity, tapered fading endpoints, and dedicated orbit width/spacing controls.
+
+## Install on Windows
+
+1. Open the [v0.1.0 release](https://github.com/masarray/obs-neonmask-studio/releases/tag/v0.1.0).
+2. Download **`obs-neonmask-v0.1.0-windows-x64.zip`**.
+3. Optional but recommended: verify it against **`obs-neonmask-v0.1.0-windows-x64.sha256`**.
+4. Close OBS.
+5. Extract the ZIP into the OBS installation/portable root, preserving the included directory structure.
+6. Restart OBS.
+7. Right-click a camera/image/video source → **Filters** → **Effect Filters** → **+** → **NeonMask Studio**.
+
+The package installs:
+
+```text
+obs-plugins/64bit/obs-neonmask.dll
+data/obs-plugins/obs-neonmask/
+├── shaders/
+├── locale/
+└── designs/
+```
+
+The Windows binary is currently **unsigned**, so browser/Windows reputation systems may warn on download. The source and exact release provenance are public; see [Windows preview and verification](docs/WINDOWS_PREVIEW.md).
+
+## Core capabilities
+
+### Masking and framing
+
+- Rounded rectangle, circle, oval, rectangle, hexagon, diamond, triangle, regular polygon.
+- Authored Chat Bubble, Angled Card, HUD Cut Panel, Tech HUD, Game UI, and Squircle shapes.
+- Independent mask width/height and mask X/Y.
+- Independent subject pan X/Y and subject zoom.
+- Rotation/shape-detail controls where geometrically relevant.
+- Feathered alpha masking.
+- Restricted local SVG-path mask preview for simple closed path artwork.
+
+### Neon and motion
+
+- Solid, dual-color, and animated rainbow color pipelines.
+- Sharp core + controlled glow/bloom hierarchy.
+- Static, pulse, and flow animation where supported.
+- Authored ornaments such as cyber traces, HUD modules, reactor details, and external counter-orbits.
+- Mask-relative Dual Ring geometry designed to survive facecam downscaling.
+
+### Bounds and output
+
+- Automatic safe-fit for supported authored outer ornaments.
+- Optional **expanded output** that adds filter-local padding so glow/outer ornaments can be preserved without shrinking the portrait.
+- Rotation-aware bounds for authored external L-shaped modules.
+- Transparent source sampling outside the captured input instead of clamped edge smearing.
+
+### OBS integration
+
+- OBS-native property UI.
+- English and Indonesian localization.
+- Versioned persisted config with additive migration through current schema v4.
+- Existing enum/source identity preserved across the preview development line.
+
+## Compatibility and verification
+
+| Area | v0.1.0 status |
+| --- | --- |
+| Windows x64 public package | **Published** |
+| Build SDK | **OBS 31.1.1 pinned in CI** |
+| Windows GPU backend | **D3D11 direct-effect smoke/pixel fixtures** |
+| Linux GPU backend | **OpenGL/Mesa direct-effect smoke/pixel fixtures** |
+| Headless tests | **Windows, Ubuntu, macOS CI** |
+| Undefined behavior checks | **UBSan CI** |
+| Linux native plugin build | **CI verified; no official binary release yet** |
+| macOS native package | **Not published** |
+| Newer OBS frontends | Development testing has exercised newer builds; full compatibility matrix is not yet claimed |
+| Stable/production certification | **Not claimed for v0.1.0** |
+
+A green CI run proves the covered build/config/geometry/shader contracts. It does **not** by itself prove every OBS frontend/filter-chain/GPU/driver combination. The evidence boundaries are documented in [QUALITY_GATES.md](docs/QUALITY_GATES.md).
+
+## Known limitations
+
+- The Windows release is unsigned and can trigger browser/SmartScreen reputation warnings.
+- General image-alpha/luma masks, live OBS-source masks, unrestricted SVG, and arbitrary user shaders are not implemented.
+- Local SVG import is intentionally restricted to a bounded path-only subset; unsupported constructs are rejected.
+- Background removal, AI portrait segmentation, face tracking, and camera tracking are explicit non-goals.
+- Universal contour-length motion is not yet available for every non-circular shape; some preview motion remains angle/perimeter approximated.
+- Full multi-version OBS compatibility, named-hardware performance budgets, long-duration OBS soak, and broad filter-chain certification remain open engineering gates.
+- HDR behavior is not certified.
+- Linux/macOS public packages are not published in v0.1.0.
+
+## Build from source
+
+Requirements:
+
+- CMake 3.20+
+- C11 compiler
+- Matching OBS/libobs development SDK for native plugin builds
+
+Headless core tests:
+
+```sh
+cmake -S . -B build-test \
+  -DNEONMASK_BUILD_PLUGIN=OFF \
+  -DNEONMASK_BUILD_TESTS=ON \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build build-test --config Release --parallel
+ctest --test-dir build-test -C Release --output-on-failure
+```
+
+Native plugin build:
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --config Release
+cmake --build build --config Release --parallel
 ctest --test-dir build --output-on-failure
-cmake --install build --prefix /path/to/obs-portable-root
+cmake --install build --prefix /path/to/obs-root
 ```
 
-For headless-only tests without OBS installed:
+On Windows, provide the matching `libobsConfig.cmake` location as required by your OBS SDK toolchain. The official release workflow builds against a pinned OBS 31.1.1 source/dependency snapshot.
 
-```sh
-cmake -S . -B build-test -DNEONMASK_BUILD_PLUGIN=OFF
-cmake --build build-test
-ctest --test-dir build-test --output-on-failure
-```
+## Project documentation
 
-On Windows, select your OBS SDK toolchain and supply `-Dlibobs_DIR=<directory containing libobs-config.cmake>` as needed. For portable Windows installations, staged output uses `obs-plugins/64bit/obs-neonmask.dll` and `data/obs-plugins/obs-neonmask/`. Restart OBS after installation. Tagged public previews are published on [GitHub Releases](https://github.com/masarray/obs-neonmask-studio/releases), while every `main` build also produces a short-lived [Windows x64 CI artifact](https://github.com/masarray/obs-neonmask-studio/actions/workflows/windows-preview.yml). Both are built from the pinned OBS 31.1.1 SDK; see [Windows preview instructions](docs/WINDOWS_PREVIEW.md). The shader compiles and renders directly sampled GPU pixel fixtures on libobs OpenGL (Mesa) and Windows Direct3D 11 CI backends. Linux staging places the data files under `share/obs/obs-plugins/obs-neonmask/`.
+| Document | Purpose |
+| --- | --- |
+| [PROJECT_STATUS.md](docs/PROJECT_STATUS.md) | Current shipped/pending state — start here |
+| [RELEASE_NOTES_v0.1.0.md](docs/RELEASE_NOTES_v0.1.0.md) | Public release notes |
+| [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) | Product charter and non-goals |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Runtime/config/render contracts |
+| [VISUAL_SPEC.md](docs/VISUAL_SPEC.md) | Visual families and acceptance direction |
+| [QUALITY_GATES.md](docs/QUALITY_GATES.md) | Evidence boundaries and release gates |
+| [ROADMAP.md](docs/ROADMAP.md) | Chronological engineering ledger and future work |
+| [WINDOWS_PREVIEW.md](docs/WINDOWS_PREVIEW.md) | Windows package provenance and test workflow |
+| [GPU_SMOKE.md](docs/GPU_SMOKE.md) | Direct libobs GPU smoke methodology |
 
-## In OBS
+The roadmap intentionally retains historical phase notes. For the **current** state, use [PROJECT_STATUS.md](docs/PROJECT_STATUS.md), not an old “next phase” paragraph deep in the engineering ledger.
 
-Right-click webcam source → **Filters** → **Effect Filters** → **+** → **NeonMask Studio**. Choose an authored preset, or set **Signature Frame Detailing** to Legacy/Cyber/Reactor/Tech HUD/Streamer and customize its intensity/gap. Mask X/Y moves the geometric frame; Subject Pan/Zoom reframes only the source image. The filter operates on the **source itself**, not a scene-wide frame.
+## Contributing
 
-## Deliberate MVP limitations
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Bugs should include OBS version, OS/GPU backend, reproduction steps, and an OBS log where possible.
 
-- Halo stays **within the original source rectangle**; use the built-in scale margin. Expanded output padding / companion frame source is next.
-- Custom alpha images, unrestricted/general **SVG import** and source masks are **not yet implemented**. A strict local path-only SVG subset is available as a D2.4 preview; unsupported constructs are refused. Bubble, Angled Card, stepped HUD Panel and superellipse Squircle are analytic GPU geometry, not imported SVG files. No graphical gallery, audio reactivity or GPU benchmark evidence yet.
-- Ellipse and segmented non-circular paths remain approximate; Cyber Rounded has rounded-perimeter travel, while universal contour-length motion is not yet delivered. Actual visual parity with the concept artwork and final OBS output are **not yet verified**.
-- GPU compilation and direct-effect pixel smoke tests run on libobs OpenGL and D3D11. Real OBS frontend/final-output visual tests, filter-chain validation, compatibility matrix and performance measurements remain pending.
+For security-sensitive reports, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
 
-## Engineering quality gate
+## License and attribution
 
-See [docs/PRE_PHASE2_AUDIT.md](docs/PRE_PHASE2_AUDIT.md) for the upstream comparison, resolved baseline defects, CI coverage, and explicit remaining runtime checks.
+Distributed under the repository's [GNU GPL v3](LICENSE). New implementation work is written around documented libobs APIs and signed-distance geometry. The architecture has been informed by the official OBS plugin ecosystem and prior-art masking plugins; imported upstream code, if introduced in the future, must retain provenance and compatible notices.
 
-## Attribution and reuse
+---
 
-This implementation is newly written around the documented libobs filter/effect APIs and signed-distance geometry. The architecture was informed by [FiniteSingularity/obs-advanced-masks](https://github.com/FiniteSingularity/obs-advanced-masks) and [the official OBS plugin template](https://github.com/obsproject/obs-plugintemplate). No upstream source file is pasted or mechanically renamed. If upstream code is subsequently imported, keep its copyright notices and comply with the GPL. The rounded-rectangle SDF method is widely documented by [Inigo Quilez](https://iquilezles.org/articles/distfunctions2d/). The repository is distributed under its existing GPL-3.0 license; new source files carry GPL-2.0-or-later notices, which are GPL-3.0-compatible.
-
-## Phase D: actual authored mask contours
-
-The Chat Bubble tail, Angled Card arcs, HUD Cut Panel notch and Squircle contour are **part of the source alpha mask and its shared neon contour**, not detached overlay ornaments. Shape detail changes tail depth, cut depth or Squircle curvature depending on the selected shape. D2.4 adds a restricted local SVG-path SDF importer; unrestricted SVG, a wider authored library, safe-fit and actual OBS concept comparison remain pending. See [Phase D implementation contract](docs/PHASE_D_IMPLEMENTATION.md).
-
-## Roadmap
-
-See the [canonical delivery roadmap and evidence ledger](docs/ROADMAP.md) for milestone order, active work and acceptance gates.
-
-## Local SVG path mask (D2.4 preview subset)
-
-Select **Mask shape → SVG File — local path mask**, choose a local
-`.svg` file under Mask Geometry, and use **Reload SVG file** after
-editing the file in place. Input must be a simple standalone SVG with a
-finite `viewBox` and closed, solid-filled `<path/>` shapes. Supported path
-commands are M/L/H/V/Q/C/Z (absolute/relative), up to eight paths and
-512 flattened line edges; evenodd/nonzero holes work. This is *not* a
-full SVG interpreter: groups, transforms, stroke/style, arcs, external
-resources, scripts/DTD/entities/fonts and URLs are explicitly rejected.
-No arbitrary image/background removal is performed. The shape is fitted
-within the mask with aspect ratio preserved (contain, not stretch).
-
-SVG is rasterized into a cached 256×256 signed distance field when the
-file or mask/source size changes. Invalid/missing files output **transparent**
-rather than silently exposing the original facecam. Unsupported path features
-are a known preview limitation; convert artwork to simple paths before
-importing. The optional import is distinct from the built-in analytic
-Bubble/Card/HUD/Squircle shapes. Always test in actual OBS and keep a
-backup of your scene before updating preview builds.
+**NeonMask Studio v0.1.0 is a public preview.** Back up important OBS scene collections before testing preview updates, and validate the look on the actual camera/source resolution and scene scale you intend to use.
