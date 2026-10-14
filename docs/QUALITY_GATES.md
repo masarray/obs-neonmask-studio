@@ -1,5 +1,5 @@
 # Quality, performance and release gates
-
+\n> **v0.1.0 status:** the public preview has a traceable packaged Windows release and substantial automated G1–G4-effect evidence, but publication as a preview is not a declaration that every G4-V/G5/G6 stable-release gate is complete. See [PROJECT_STATUS.md](PROJECT_STATUS.md).\n
 All numeric budgets below are initial engineering targets, not measurements of v0.1.0.
 Every release report names the exact commit, OBS/SDK version, OS, GPU, driver, source resolution, canvas resolution, frame rate and preset.
 

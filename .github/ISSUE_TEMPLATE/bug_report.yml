@@ -1,0 +1,53 @@
+name: Bug report
+description: Report reproducible NeonMask behavior
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please remove stream keys, credentials, and private media from logs/screenshots.
+  - type: input
+    id: version
+    attributes:
+      label: NeonMask version / commit
+      placeholder: v0.1.0 or commit SHA
+    validations:
+      required: true
+  - type: input
+    id: obs
+    attributes:
+      label: OBS version
+      placeholder: 31.1.1
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: OS and GPU
+      placeholder: Windows 11, NVIDIA RTX ...
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Include source type/resolution, preset, and changed controls.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs / screenshots / video
+      description: Paste or attach relevant OBS logs and visual evidence. Remove private data first.

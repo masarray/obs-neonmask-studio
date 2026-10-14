@@ -10,7 +10,7 @@ Status: incremental target architecture anchored to [PRODUCT_SPEC.md](PRODUCT_SP
 | 002 | GPU effects render video; no worker per frame or per filter | Worker count does not reduce pixel cost; add a bounded service when asset loading exists |
 | 003 | One validated config and one geometry contract | UI, presets, masks and ornaments cannot diverge |
 | 004 | Procedural analytic halo first | Avoid full-frame blur and additional textures for simple shapes |
-| 005 | Safe-fit within original canvas first | Expanded output changes coordinates/filter-chain behavior; requires its own proof |
+| 005 | Safe-fit and explicit expanded output are separate supported modes | Expanded output changes filter-local dimensions/origin and remains subject to G5 final-chain verification |
 | 006 | Explicit ownership, bounded caches, cancellable jobs | Control lifetime and resource growth before adding external assets |
 | 007 | Fixed quality initially; opt-in adaptive quality later | Predictable streaming appearance; profile before adding a controller |
 | 008 | Reject arbitrary shaders and remote asset fetching | Keep import behavior deterministic and supportable |
@@ -80,9 +80,9 @@ translated bounds as part of safe-fit and communicate any insufficient
 margin. Distinguish the OBS scene transform from filter-local coordinates.
 CPU geometry and GPU uniforms must use the same validated transform.
 
-Initial implementation should prioritize independent X/Y + uniform zoom,
-followed by independent mask width/height and safe-fit. Test an off-center
-subject at 16:9, 4:3, 1:1 and portrait, source resizing, filter order,
+The preview implementation provides independent X/Y + uniform zoom,
+independent mask width/height and safe-fit. Remaining validation still includes
+off-center subjects across common aspect ratios, source resizing, filter order,
 reset, preset changes and scene-restart preservation. Source UV does not
 magically expose video outside the actual captured source; user pan is
 limited to the provided pixels, or reveals intentional transparency.
@@ -99,7 +99,7 @@ Safe-fit design: compute the entire effect envelope, including outer rim offset,
 
 When an effect cannot fit, offer a predictable fit adjustment or report the limit. Do not silently stretch video. Preserve existing scene behavior via an explicit legacy/safe-fit migration choice.
 
-Expanded padding is a later experiment: distinguish input dimensions, output dimensions, source UV transform and scene anchor; explicitly zero out samples outside the original input so clamp sampling cannot smear the webcam edge. Test crop/filter order, transform bounds and transitions. A linked companion source is a fallback design with lifecycle/scene-sync costs, not a free optimization.
+Expanded output is now implemented as an explicit, default-off filter mode. It distinguishes input dimensions, padded output dimensions, source UV transform and filter-local origin; samples outside the original input are explicitly transparent so clamp sampling cannot smear the source edge. It preserves authored outer ornaments/glow without shrinking the mask, but OBS scene-item transforms remain downstream and are never rewritten implicitly. Crop/filter order, transform bounds and transitions remain G5 runtime evidence.
 
 ## Premium neon layering and animation contract
 
