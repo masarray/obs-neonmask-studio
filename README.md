@@ -1,6 +1,8 @@
 # OBS NeonMask Studio
 
-A native, GPU-rendered OBS facecam filter: **mask + dual-color neon core + analytic glow + animation** driven by the **same signed-distance shape**. This is an early **v0.1.0 unsigned preview** with a native Windows x64 CI artifact, not a production release.
+A native, GPU-rendered OBS facecam filter: **mask + dual-color neon core + analytic glow + animation** driven by the **same signed-distance shape**. **v0.1.0 is the first public unsigned preview release** for Windows x64; it is intentionally labeled preview rather than production-certified software.
+
+**Download:** [Latest GitHub Release](https://github.com/masarray/obs-neonmask-studio/releases/latest) · [v0.1.0 release notes](docs/RELEASE_NOTES_v0.1.0.md)
 
 ## Project direction
 
@@ -36,7 +38,7 @@ cmake --build build-test
 ctest --test-dir build-test --output-on-failure
 ```
 
-On Windows, select your OBS SDK toolchain and supply `-Dlibobs_DIR=<directory containing libobs-config.cmake>` as needed. For portable Windows installations, staged output uses `obs-plugins/64bit/obs-neonmask.dll` and `data/obs-plugins/obs-neonmask/`. Restart OBS after installation. An [unsigned Windows x64 preview artifact](https://github.com/masarray/obs-neonmask-studio/actions/workflows/windows-preview.yml) is built from the pinned OBS 31.1.1 SDK; see [Windows preview instructions](docs/WINDOWS_PREVIEW.md). The shader compiles and renders directly sampled GPU pixel fixtures on libobs OpenGL (Mesa) and Windows Direct3D 11 CI backends, but the OBS frontend, filter chaining and final canvas pixels have not yet been verified. Linux staging places the data files under `share/obs/obs-plugins/obs-neonmask/`.
+On Windows, select your OBS SDK toolchain and supply `-Dlibobs_DIR=<directory containing libobs-config.cmake>` as needed. For portable Windows installations, staged output uses `obs-plugins/64bit/obs-neonmask.dll` and `data/obs-plugins/obs-neonmask/`. Restart OBS after installation. Tagged public previews are published on [GitHub Releases](https://github.com/masarray/obs-neonmask-studio/releases), while every `main` build also produces a short-lived [Windows x64 CI artifact](https://github.com/masarray/obs-neonmask-studio/actions/workflows/windows-preview.yml). Both are built from the pinned OBS 31.1.1 SDK; see [Windows preview instructions](docs/WINDOWS_PREVIEW.md). The shader compiles and renders directly sampled GPU pixel fixtures on libobs OpenGL (Mesa) and Windows Direct3D 11 CI backends. Linux staging places the data files under `share/obs/obs-plugins/obs-neonmask/`.
 
 ## In OBS
 

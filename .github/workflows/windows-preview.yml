@@ -2,10 +2,11 @@ name: Windows x64 preview
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: neonmask-windows-${{ github.ref }}
   cancel-in-progress: true
@@ -116,18 +117,29 @@ jobs:
             if (!(Test-Path $file)) { throw "Missing staged file: $file" }
             if ((Get-Item $file).Length -eq 0) { throw "Empty staged file: $file" }
           }
-          Compress-Archive -Path "package-win/*" -DestinationPath "obs-neonmask-v0.1.0-windows-x64-preview.zip" -Force
-          $hash = (Get-FileHash -Algorithm SHA256 "obs-neonmask-v0.1.0-windows-x64-preview.zip").Hash.ToLowerInvariant()
-          "$hash  obs-neonmask-v0.1.0-windows-x64-preview.zip" | Set-Content -Encoding ascii "obs-neonmask-v0.1.0-windows-x64-preview.sha256"
-          Write-Host "Windows preview ZIP SHA256: $hash"
+          $isTag = $env:GITHUB_REF_TYPE -eq "tag"
+          if ($isTag) {
+            $packageBase = "obs-neonmask-$env:GITHUB_REF_NAME-windows-x64"
+          } else {
+            $packageBase = "obs-neonmask-v0.1.0-windows-x64-preview"
+          }
+          $packageZip = "$packageBase.zip"
+          $packageSha = "$packageBase.sha256"
+          Compress-Archive -Path "package-win/*" -DestinationPath $packageZip -Force
+          $hash = (Get-FileHash -Algorithm SHA256 $packageZip).Hash.ToLowerInvariant()
+          "$hash  $packageZip" | Set-Content -Encoding ascii $packageSha
+          Write-Host "Windows package ZIP SHA256: $hash"
           $fixtureHash = (Get-FileHash -Algorithm SHA256 "obs-neonmask-M0-visual-fixtures.zip").Hash.ToLowerInvariant()
+          $releaseTag = if ($isTag) { $env:GITHUB_REF_NAME } else { "" }
           $buildInfo = [ordered]@{
             checkout_commit = (& git rev-parse HEAD).Trim()
             workflow_url = "https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
             obs_sdk = "31.1.1"
             target = "windows-x64"
             build_config = "Release"
+            release_tag = $releaseTag
             gpu_smoke = "D3D11 effect compilation plus direct shader GPU pixel fixtures; not final OBS canvas"
+            plugin_zip = $packageZip
             plugin_zip_sha256 = $hash
             fixture_zip_sha256 = $fixtureHash
           }
@@ -138,10 +150,24 @@ jobs:
         with:
           name: obs-neonmask-v0.1.0-windows-x64-preview
           path: |
-            obs-neonmask-v0.1.0-windows-x64-preview.zip
-            obs-neonmask-v0.1.0-windows-x64-preview.sha256
+            obs-neonmask-*-windows-x64*.zip
+            obs-neonmask-*-windows-x64*.sha256
             obs-neonmask-M0-visual-fixtures.zip
             obs-neonmask-M0-visual-fixtures.sha256
             build-info.json
           if-no-files-found: error
           retention-days: 14
+      - name: Publish tagged GitHub release assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: OBS NeonMask Studio ${{ github.ref_name }} — Public Preview
+          prerelease: true
+          body_path: docs/RELEASE_NOTES_v0.1.0.md
+          files: |
+            obs-neonmask-${{ github.ref_name }}-windows-x64.zip
+            obs-neonmask-${{ github.ref_name }}-windows-x64.sha256
+            obs-neonmask-M0-visual-fixtures.zip
+            obs-neonmask-M0-visual-fixtures.sha256
+            build-info.json
+          fail_on_unmatched_files: true
