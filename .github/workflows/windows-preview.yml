@@ -1,7 +1,9 @@
 name: Windows x64 preview
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'release-publish/**'
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -23,6 +25,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Resolve release-publish branch tag
+        if: startsWith(github.ref, 'refs/heads/release-publish/')
+        run: |
+          $ErrorActionPreference = "Stop"
+          $prefix = "release-publish/"
+          if (!$env:GITHUB_REF_NAME.StartsWith($prefix)) { throw "Unexpected release branch: $env:GITHUB_REF_NAME" }
+          $tag = $env:GITHUB_REF_NAME.Substring($prefix.Length)
+          if (!$tag.StartsWith("v")) { throw "Release tag must start with v: $tag" }
+          if ($tag.Length -lt 2) { throw "Empty release version" }
+          "RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Release branch resolves to tag: $tag"
       - name: Download and verify official OBS SDK sources
         run: |
           $ErrorActionPreference = "Stop"
@@ -118,8 +131,16 @@ jobs:
             if ((Get-Item $file).Length -eq 0) { throw "Empty staged file: $file" }
           }
           $isTag = $env:GITHUB_REF_TYPE -eq "tag"
+          $isReleaseBranch = $env:GITHUB_REF -like "refs/heads/release-publish/*"
           if ($isTag) {
-            $packageBase = "obs-neonmask-$env:GITHUB_REF_NAME-windows-x64"
+            $releaseTag = $env:GITHUB_REF_NAME
+          } elseif ($isReleaseBranch) {
+            $releaseTag = $env:RELEASE_TAG
+          } else {
+            $releaseTag = ""
+          }
+          if ($releaseTag) {
+            $packageBase = "obs-neonmask-$releaseTag-windows-x64"
           } else {
             $packageBase = "obs-neonmask-v0.1.0-windows-x64-preview"
           }
@@ -130,7 +151,6 @@ jobs:
           "$hash  $packageZip" | Set-Content -Encoding ascii $packageSha
           Write-Host "Windows package ZIP SHA256: $hash"
           $fixtureHash = (Get-FileHash -Algorithm SHA256 "obs-neonmask-M0-visual-fixtures.zip").Hash.ToLowerInvariant()
-          $releaseTag = if ($isTag) { $env:GITHUB_REF_NAME } else { "" }
           $buildInfo = [ordered]@{
             checkout_commit = (& git rev-parse HEAD).Trim()
             workflow_url = "https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
@@ -171,3 +191,20 @@ jobs:
             obs-neonmask-M0-visual-fixtures.sha256
             build-info.json
           fail_on_unmatched_files: true
+      - name: Publish release from release-publish branch
+        if: startsWith(github.ref, 'refs/heads/release-publish/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: OBS NeonMask Studio ${{ env.RELEASE_TAG }} — Public Preview
+          prerelease: true
+          body_path: docs/RELEASE_NOTES_${{ env.RELEASE_TAG }}.md
+          files: |
+            obs-neonmask-${{ env.RELEASE_TAG }}-windows-x64.zip
+            obs-neonmask-${{ env.RELEASE_TAG }}-windows-x64.sha256
+            obs-neonmask-M0-visual-fixtures.zip
+            obs-neonmask-M0-visual-fixtures.sha256
+            build-info.json
+          fail_on_unmatched_files: true
+
